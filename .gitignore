@@ -1,0 +1,65 @@
+# Python / Django
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyc
+*.pyo
+*.pyd
+
+# Ambientes virtuais
+.venv/
+venv/
+ENV/
+env/
+*.env               # ← seu arquivo de variáveis de ambiente (chaves, senhas)
+.env.example        # ← geralmente versionado, mas .env NÃO
+
+# Banco de dados local (muito importante!)
+db.sqlite3
+db.sqlite3-journal
+
+# Arquivos de mídia e estáticos gerados em dev
+media/
+!media/.gitkeep     # (opcional: mantém a pasta vazia no git)
+
+staticfiles/        # coletados com collectstatic
+static/             # se você gerar localmente
+
+# Logs e caches
+*.log
+*.pot
+*.cache
+.coverage
+coverage.xml
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+
+# Editores e IDEs (VS Code)
+.vscode/
+!.vscode/settings.json   # ← se quiser versionar configurações compartilhadas
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/extensions.json
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# Outros comuns
+*.bak
+*.swp
+*.swo
+*.swn
+*.idea/             # se alguém usar PyCharm
+node_modules/       # se tiver frontend JS
+dist/
+build/
+
+# Migrações (opcional - só ignore se for projeto solo / iniciante)
+**/migrations/*
+!**/migrations/__init__.py
