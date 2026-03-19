@@ -63,3 +63,5 @@ build/
 # Migrações (opcional - só ignore se for projeto solo / iniciante)
 **/migrations/*
 !**/migrations/__init__.py
+
+*.code-workspace
