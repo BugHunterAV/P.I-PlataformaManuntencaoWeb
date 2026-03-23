@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'ativos',
     'corsheaders', 
     'manutencao',
+    'drf_spectacular', 
 ]
 
 MIDDLEWARE = [
@@ -130,3 +131,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 AUTH_USER_MODEL = 'accounts.Usuario'
 CORS_ALLOW_ALL_ORIGINS = True
+
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
