@@ -99,15 +99,24 @@ P.I-PlataformaManuntencaoWeb/
 │   ├── views.py                #     CRUD de manutenções + filtros
 │   └── urls.py                 #     Rotas: /api/manutencao/...
 │
-| `GET` | `/api/telemetria/leituras/` | Lista leituras de sensores | *(Pendente)* |
-| `POST` | `/api/telemetria/leituras/` | Envia uma nova leitura | *(Pendente)* |
+├── telemetria/                 # 📡  Módulo de sensores e IoT
+│   ├── models.py               #     Sensor e Telemetria (Leituras)
+│   ├── serializers.py
+│   ├── views.py                #     Ingestão de dados e CRUD de sensores
+│   └── urls.py                 #     Rotas: /api/telemetria/...
 │
-├── dashboards/                 # 📊  Módulo de KPIs (planejado)
+├── alertas/                    # 🚨  Módulo de alertas automáticos
+│   ├── models.py               #     Geração de alertas via Signals
+│   ├── serializers.py
+│   ├── views.py                #     Listagem e gestão de alertas
+│   └── urls.py                 #     Rotas: /api/alertas/
 │
-├── alertas/                    # 🚨  Módulo de alertas automáticos (planejado)
+├── dashboards/                 # 📊  Módulo de KPIs Industriais
+│   ├── views.py                #     Cálculo de MTBF, MTTR e Disponibilidade
+│   └── urls.py                 #     Rotas: /api/dashboards/kpis/
 │
 ├── manage.py                   # 🎛️  Ponto de entrada do Django (CLI)
-├── requeriments.txt            # 📦  Dependências Python do projeto
+├── requirements.txt            # 📦  Dependências Python do projeto
 ├── .env.example                # 🔐  Exemplo de variáveis de ambiente
 └── .gitignore                  # 🙈  Arquivos ignorados pelo Git
 ```
@@ -317,14 +326,26 @@ GET /api/ativos/?criado_depois=2024-01-01&status=ativo
 | `PATCH` | `/api/manutencao/{id}/` | Atualiza parcialmente |
 | `DELETE` | `/api/manutencao/{id}/` | Remove uma ordem |
 
-### Telemetria *(em desenvolvimento)*
-
+### Telemetria e Sensores
 | Método | Rota | Descrição |
 |---|---|---|
-| `GET` | `/api/telemetria/leituras/` | Lista leituras de sensores |
-| `POST` | `/api/telemetria/leituras/` | Envia uma nova leitura de sensor |
-| `GET` | `/api/telemetria/leituras/?ativo={id}` | Filtra leituras por ativo |
-| `GET` | `/api/telemetria/leituras/?tipo=temperatura` | Filtra por tipo de sensor |
+| `GET` | `/api/telemetria/sensores/` | Lista sensores cadastrados |
+| `POST` | `/api/telemetria/sensores/` | Cadastra novo sensor em equipamento |
+| `GET` | `/api/telemetria/leituras/` | Lista histórico de telemetria |
+| `POST` | `/api/telemetria/leituras/` | Envia nova leitura (Gera alertas automáticos) |
+
+### Alertas e Localização
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/api/alertas/` | Lista alertas gerados por anomalias |
+| `GET` | `/api/localizacao/` | Lista localização industrial dos ativos |
+| `POST` | `/api/localizacao/` | Define setor e planta de um equipamento |
+
+### Dashboards (KPIs)
+| Método | Rota | Descrição |
+|---|---|---|
+| `GET` | `/api/dashboards/kpis/` | Retorna MTBF, MTTR e disponibilidade |
+| `GET` | `/api/manutencao/historico/` | Histórico técnico e custos de manutenção |
 
 ---
 
@@ -426,15 +447,15 @@ Reinicie o servidor após qualquer mudança no `.env`.
 - [x] CRUD de ativos industriais (Equipamentos)
 - [x] CRUD de ordens de manutenção (OS)
 - [x] CRUD de usuários e empresas
+- [x] **Passo 1:** App `telemetria` — Sensores e IoT
+- [x] **Passo 2:** App `alertas` — Inteligência preditiva e Localização
+- [x] **Passo 3:** Histórico de Manutenção e Controle de Custos
+- [x] **Passo 4:** App `dashboards` — KPIs: MTBF, MTTR e Disponibilidade
 - [x] Configuração central de CORS e API Schema (Swagger)
 
-### 🔄 Em Desenvolvimento (Passo 1 a 6)
-- [ ] **Passo 1:** App `telemetria` — leituras de sensores e IoT
-- [ ] **Passo 2:** App `alertas` — inteligência preditiva e notificações
-- [ ] **Passo 3:** App `dashboards` — KPIs industriais (MTBF, MTTR)
-- [ ] **Passo 4:** Permissões refinadas por perfil (Admin, Técnico, Operador)
-- [ ] **Passo 5:** Autenticação JWT e Segurança avançada
-- [ ] **Passo 6:** Testes automatizados e preparação para Deploy
+### 🔄 Em Desenvolvimento (Passo 5 e 6)
+- [ ] **Passo 5:** Autenticação JWT e Segurança de Perffis (Gestor/Técnico)
+- [ ] **Passo 6:** Testes automatizados e Documentação Final
 
 ---
 
