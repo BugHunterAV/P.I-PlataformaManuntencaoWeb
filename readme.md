@@ -66,7 +66,7 @@ O projeto é modular: cada funcionalidade vive em seu próprio app Django. Adici
 | Tecnologia | Função |
 |---|---|
 | Node.js | Runtime do servidor front-end |
-| *(framework a definir)* | React, Next.js ou Vue — a ser escolhido |
+| Vue.js | Progressive JavaScript Framework |
 
 ---
 
@@ -99,11 +99,8 @@ P.I-PlataformaManuntencaoWeb/
 │   ├── views.py                #     CRUD de manutenções + filtros
 │   └── urls.py                 #     Rotas: /api/manutencao/...
 │
-├── telemetria/                 # 📡  Módulo de sensores (em desenvolvimento)
-│   ├── models.py               #     LeituraSensor: tipo, valor, timestamp
-│   ├── serializers.py
-│   ├── views.py
-│   └── urls.py                 #     Rotas: /api/telemetria/...
+| `GET` | `/api/telemetria/leituras/` | Lista leituras de sensores | *(Pendente)* |
+| `POST` | `/api/telemetria/leituras/` | Envia uma nova leitura | *(Pendente)* |
 │
 ├── dashboards/                 # 📊  Módulo de KPIs (planejado)
 │
@@ -285,10 +282,10 @@ Authorization: Token seu_token_aqui
 
 | Método | Rota | Descrição | Auth |
 |---|---|---|---|
-| `POST` | `/api/accounts/register/` | Cadastra um novo usuário | Não |
-| `POST` | `/api/accounts/login/` | Login — retorna o token | Não |
-| `POST` | `/api/accounts/logout/` | Invalida o token atual | Sim |
-| `GET` | `/api/accounts/me/` | Dados do usuário logado | Sim |
+| `POST` | `/api/accounts/register/` | Cadastra um novo usuário | *(Pendente)* |
+| `POST` | `/api/accounts/login/` | Login — retorna o token | *(Pendente)* |
+| `POST` | `/api/accounts/logout/` | Invalida o token atual | *(Pendente)* |
+| `GET` | `/api/accounts/me/` | Dados do usuário logado | *(Pendente)* |
 
 ### Ativos industriais
 
@@ -426,25 +423,18 @@ Reinicie o servidor após qualquer mudança no `.env`.
 
 ### ✅ Concluído
 - [x] Estrutura base do projeto Django
-- [x] CRUD de ativos industriais
-- [x] CRUD de ordens de manutenção
-- [x] Sistema de autenticação por token
-- [x] Documentação automática Swagger UI via drf-spectacular
-- [x] Configuração de CORS para front-end externo
+- [x] CRUD de ativos industriais (Equipamentos)
+- [x] CRUD de ordens de manutenção (OS)
+- [x] CRUD de usuários e empresas
+- [x] Configuração central de CORS e API Schema (Swagger)
 
-### 🔄 Em Desenvolvimento
-- [ ] App `telemetria` — leituras de sensores por ativo
-- [ ] Filtros avançados por data e intervalo de valor
-- [ ] Permissões por perfil de usuário (admin, técnico, operador)
-
-### 📋 Planejado
-- [ ] App `alertas` — notificações automáticas quando leituras ultrapassam limites
-- [ ] App `dashboards` — KPIs: MTBF, MTTR, taxa de disponibilidade
-- [ ] Autenticação JWT (mais segura que token simples)
-- [ ] Migração do banco para PostgreSQL em produção
-- [ ] Exportação de relatórios em PDF
-- [ ] Deploy em servidor (Railway / Render / VPS)
-- [ ] Testes automatizados com pytest
+### 🔄 Em Desenvolvimento (Passo 1 a 6)
+- [ ] **Passo 1:** App `telemetria` — leituras de sensores e IoT
+- [ ] **Passo 2:** App `alertas` — inteligência preditiva e notificações
+- [ ] **Passo 3:** App `dashboards` — KPIs industriais (MTBF, MTTR)
+- [ ] **Passo 4:** Permissões refinadas por perfil (Admin, Técnico, Operador)
+- [ ] **Passo 5:** Autenticação JWT e Segurança avançada
+- [ ] **Passo 6:** Testes automatizados e preparação para Deploy
 
 ---
 
