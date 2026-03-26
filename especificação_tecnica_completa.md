@@ -10,7 +10,7 @@ Nosso sistema utiliza uma **Arquitetura Baseada em Domínios**. Cada "App" Djang
 ### O Fluxo de Comunicação:
 A comunicação entre apps acontece de duas formas:
 1.  **Síncrona (Foreign Keys)**: Quando um dado precisa do outro para existir (ex: Uma Telemetria **precisa** de um Sensor).
-2.  **Assíncrona/Reativa (Signals)**: Quando uma ação em um app deve disparar algo em outro sem que eles estejam "grudados" (ex: Uma Telemetria dispara um Alerta). s
+2.  **Assíncrona/Reativa (Signals)**: Quando uma ação em um app deve disparar algo em outro sem que eles estejam "grudados" (ex: Uma Telemetria dispara um Alerta). 
 
 ---
 

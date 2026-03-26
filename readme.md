@@ -2,6 +2,8 @@
 
 > API REST para gestão inteligente de ativos industriais, ordens de manutenção e telemetria de sensores — construída com Django + Django REST Framework, pronta para integração com front-end Node.js.
 
+TESTE
+
 <div align="center">
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat&logo=python&logoColor=white)
