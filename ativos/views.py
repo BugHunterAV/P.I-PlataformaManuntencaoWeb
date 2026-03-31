@@ -1,12 +1,14 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, filters
 from .models import Equipamento, EquipamentoLocalizacao
 from .serializers import EquipamentoSerializer, EquipamentoLocalizacaoSerializer
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters
+from accounts.permissions import IsGestorOrReadOnly
 
 class EquipamentoViewSet(viewsets.ModelViewSet):
     queryset = Equipamento.objects.all()
     serializer_class = EquipamentoSerializer
+    
+    permission_classes = [IsGestorOrReadOnly]
     
     # Já vamos deixar os filtros Sênior prontos!
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
@@ -16,5 +18,6 @@ class EquipamentoViewSet(viewsets.ModelViewSet):
 class EquipamentoLocalizacaoViewSet(viewsets.ModelViewSet):
     queryset = EquipamentoLocalizacao.objects.all()
     serializer_class = EquipamentoLocalizacaoSerializer
+    permission_classes = [IsGestorOrReadOnly]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['equipamento', 'setor']

@@ -45,11 +45,20 @@ class KpiDashboardView(APIView):
             else:
                 mtbf = timedelta(0)
 
+            # 3. Disponibilidade (Availability %)
+            # Fórmula: MTBF / (MTBF + MTTR) * 100
+            total_time = mtbf + mttr
+            if total_time.total_seconds() > 0:
+                disponibilidade = (mtbf.total_seconds() / total_time.total_seconds()) * 100
+            else:
+                disponibilidade = 100.0 if eq.status == 'ativo' else 0.0
+
             results.append({
                 'equipamento': eq.nome,
                 'equipamento_id': eq.id,
                 'mttr_hours': round(mttr.total_seconds() / 3600, 2),
                 'mtbf_hours': round(mtbf.total_seconds() / 3600, 2),
+                'disponibilidade_porcentagem': round(disponibilidade, 2),
                 'total_manutencoes': os_eq.count()
             })
 

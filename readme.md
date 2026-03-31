@@ -38,10 +38,10 @@ Esta plataforma centraliza e digitaliza a gestão de manutenção industrial pre
 
 - 📦 **Gerenciar ativos industriais** — máquinas, equipamentos e sensores da planta
 - 🔧 **Controlar ordens de manutenção** — histórico, status e responsáveis por cada intervenção
-- 📡 **Receber telemetria de sensores** — temperatura, vibração, pressão e corrente em tempo real *(em desenvolvimento)*
-- 🚨 **Emitir alertas automáticos** — quando leituras ultrapassam limites críticos *(planejado)*
-- 📊 **Exibir dashboards analíticos** — KPIs como MTBF, MTTR e disponibilidade *(planejado)*
-- 👥 **Controlar acesso por perfil** — admin, técnico e operador com permissões distintas
+- 📡 **Receber telemetria de sensores** — temperatura, vibração, pressão e corrente em tempo real
+- 🚨 **Emitir alertas automáticos** — sistema de inteligência que gera alertas ao detectar anomalias
+- 📊 **Exibir dashboards analíticos** — KPIs como MTBF, MTTR e Disponibilidade atualizados em tempo real
+- 👥 **Controlar acesso por perfil** — restrições automáticas para Gestores e Técnicos (RBAC)
 
 O projeto é modular: cada funcionalidade vive em seu próprio app Django. Adicionar um novo módulo não quebra o que já existe.
 
@@ -434,13 +434,47 @@ await fetch('http://localhost:8000/api/telemetria/leituras/', {
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
-    ativo: 1,
-    tipo: 'temperatura',
-    valor: 78.5,
-    unidade: '°C'
+    sensor: 1,
+    valor: 95.5
   })
 })
 ```
+
+---
+
+## 🚨 Alertas Automáticos e Configuração
+
+A plataforma possui um sistema de **Inteligência Preditiva** que monitora todas as entradas de telemetria e gera alertas instantâneos se detectar valores fora do normal.
+
+### Como funciona?
+Sempre que uma nova leitura chega via API (`/api/telemetria/leituras/`), o Django dispara um *Signal* que:
+1. Identifica o **Tipo de Equipamento** (ex: Motor, Bomba).
+2. Busca o **Limite Máximo** configurado para aquele sensor.
+3. Se o valor for maior que o limite, cria um registro automático na tabela de **Alertas** com nível "Crítico".
+
+### ⚙️ Como configurar os limites (Onde editar?)
+Para facilitar a manutenção, os limites **não estão fixos no código**. Eles vivem em um arquivo de configuração didático:
+
+📂 **Caminho**: `telemetria/config_alertas.py`
+
+Basta editar o dicionário `LIMITES_ALERTA`:
+```python
+LIMITES_ALERTA = {
+    'Motor Elétrico': {
+        'temperatura': 85.0,  # Dispara alerta se > 85°C
+        'vibracao': 8.5       # Dispara alerta se > 8.5 mm/s
+    },
+    'Bomba Hidráulica': {
+        'pressao': 12.0       # Dispara alerta se > 12 bar
+    },
+    'default': {
+        'temperatura': 80.0   # Valor padrão para outros equipamentos
+    }
+}
+```
+
+> [!TIP]
+> Você pode adicionar novos tipos de equipamentos ou novos sensores (como 'umidade', 'corrente') diretamente nesse arquivo sem precisar reiniciar o servidor se estiver em modo Debug.
 
 ### CORS
 

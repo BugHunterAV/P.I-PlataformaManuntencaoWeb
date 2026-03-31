@@ -2,36 +2,31 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .models import Telemetria
 from alertas.models import Alerta
+from .config_alertas import obter_limite
 
 @receiver(post_save, sender=Telemetria)
 def checar_limites_telemetria(sender, instance, created, **kwargs):
+    """
+    SISTEMA DE INTELIGÊNCIA PREDITIVA (BPMN)
+    Analisa os dados de telemetria e gera alertas se anomalias forem detectadas.
+    """
     if created:
         sensor = instance.sensor
         valor = instance.valor
         equipamento = sensor.equipamento
 
-        # Lógica de exemplo: se a temperatura passar de 80 ou vibração passar de 10
-        alerta_necessario = False
-        tipo = ""
-        nivel = "baixo"
-        descricao = ""
+        # Busca o limite configurado em config_alertas.py
+        limite = obter_limite(equipamento.tipo, sensor.tipo_sensor)
 
-        if sensor.tipo_sensor == 'temperatura' and valor > 80:
-            alerta_necessario = True
-            tipo = "Temperatura Excessiva"
-            nivel = "critico"
-            descricao = f"O sensor {sensor.id} detectou {valor}°C no equipamento {equipamento.nome}. Limite de 80°C excedido."
-        
-        elif sensor.tipo_sensor == 'vibracao' and valor > 10:
-            alerta_necessario = True
-            tipo = "Vibração Anômala"
-            nivel = "medio"
-            descricao = f"O sensor {sensor.id} detectou vibração de {valor} mm/s no equipamento {equipamento.nome}."
-
-        if alerta_necessario:
+        if limite is not None and valor > limite:
+            # Gerar Alerta de Falha (Nível Crítico por padrão se ultrapassar limite)
             Alerta.objects.create(
                 equipamento=equipamento,
-                tipo_alerta=tipo,
-                nivel=nivel,
-                descricao=descricao
+                tipo_alerta=f"Alerta de {sensor.get_tipo_sensor_display()}",
+                nivel='critico',
+                descricao=(
+                    f"Anomalia detectada no {equipamento.nome} ({equipamento.tipo}). "
+                    f"O sensor de {sensor.get_tipo_sensor_display()} registrou {valor}{sensor.unidade_medida}, "
+                    f"excedendo o limite configurado de {limite}{sensor.unidade_medida}."
+                )
             )
