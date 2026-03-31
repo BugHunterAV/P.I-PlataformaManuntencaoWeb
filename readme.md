@@ -7,8 +7,8 @@ TESTE
 <div align="center">
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat&logo=python&logoColor=white)
-![Django](https://img.shields.io/badge/Django-5.2-092E20?style=flat&logo=django&logoColor=white)
-![DRF](https://img.shields.io/badge/Django_REST_Framework-3.16-ff1709?style=flat)
+![Django](https://img.shields.io/badge/Django-6.0-092E20?style=flat&logo=django&logoColor=white)
+![DRF](https://img.shields.io/badge/Django_REST_Framework-3.17-ff1709?style=flat)
 ![Status](https://img.shields.io/badge/Status-Em_Desenvolvimento-yellow?style=flat)
 ![License](https://img.shields.io/badge/Licença-Acadêmica-blue?style=flat)
 
@@ -53,13 +53,14 @@ O projeto é modular: cada funcionalidade vive em seu próprio app Django. Adici
 
 | Tecnologia | Versão | Função |
 |---|---|---|
-| Python | 3.11+ | Linguagem principal |
-| Django | 5.2 | Framework web e ORM |
-| Django REST Framework | 3.16 | Construção da API REST |
-| drf-spectacular | latest | Documentação automática Swagger/OpenAPI |
+| Python | 3.14+ | Linguagem principal |
+| Django | 6.0 | Framework web e ORM |
+| Django REST Framework | 3.17 | Construção da API REST |
+| djangorestframework-simplejwt | 5.5 | Autenticação JWT segura |
+| drf-spectacular | 0.29 | Documentação automática Swagger/OpenAPI |
 | django-cors-headers | 4.9 | Permite requisições do front-end em outro domínio |
 | django-filter | 25.2 | Filtros avançados nos endpoints de listagem |
-| Faker | 40.11 | Geração de dados falsos para testes |
+| Faker | 40.12 | Geração de dados falsos para testes |
 | SQLite | — | Banco de dados local (desenvolvimento) |
 | PostgreSQL | — | Banco de dados em produção *(planejado)* |
 
@@ -187,7 +188,7 @@ Quando ativo, você verá `(.venv)` no início da linha do terminal:
 
 ```bash
 pip install --upgrade pip
-pip install -r requeriments.txt
+pip install -r requirements.txt
 ```
 
 ---
@@ -208,26 +209,38 @@ Edite o `.env` com um editor de texto. Veja a seção [Variáveis de Ambiente](#
 
 ---
 
-### 5. Aplique as migrações do banco de dados
+### 6. População Inteligente e Superusuário (Recomendado)
 
-As migrações criam as tabelas no banco com base nos models definidos no código.
+Para agilizar o setup, criamos um script de automação que limpa o banco, aplica a população de dados de exemplo e configura o administrador padrão.
 
 ```bash
-python manage.py makemigrations
-python manage.py migrate
+# Roda o script de setup automático
+python scripts/automate_seed.py
 ```
+
+Este script irá:
+1. Limpar o banco de dados.
+2. Popular **5 empresas** e diversos usuários.
+3. Gerar **~200 ativos** com localizações industriais.
+4. Criar histórico de **7 dias de telemetria** para cada sensor.
+5. Garantir o superusuário `admin` com a senha `admin123`.
 
 ---
 
-### 6. (Opcional) Crie um superusuário
+### 7. (Alternativa) Setup Manual
 
-O superusuário tem acesso total ao painel administrativo do Django.
+Se preferir fazer manualmente:
 
 ```bash
-python manage.py createsuperuser
-```
+# Aplique as migrações
+python manage.py migrate
 
-O terminal pedirá nome de usuário, e-mail (opcional) e senha. Escolha uma senha segura.
+# Crie seu próprio superusuário
+python manage.py createsuperuser
+
+# (Opcional) Popule o banco interativamente
+python scripts/seed_db.py
+```
 
 ---
 
@@ -286,17 +299,16 @@ Base URL em desenvolvimento: `http://localhost:8000/api/`
 
 Todas as rotas (exceto login e registro) exigem o header de autenticação:
 ```
-Authorization: Token seu_token_aqui
+Authorization: Bearer seu_token_aqui
 ```
 
 ### Autenticação
 
 | Método | Rota | Descrição | Auth |
 |---|---|---|---|
-| `POST` | `/api/accounts/register/` | Cadastra um novo usuário | *(Pendente)* |
-| `POST` | `/api/accounts/login/` | Login — retorna o token | *(Pendente)* |
-| `POST` | `/api/accounts/logout/` | Invalida o token atual | *(Pendente)* |
-| `GET` | `/api/accounts/me/` | Dados do usuário logado | *(Pendente)* |
+| `POST` | `/api/auth/login/` | Login — retorna access/refresh tokens | Livre |
+| `POST` | `/api/auth/refresh/` | Renova o access token expirado | Ref. Token |
+| `GET` | `/api/auth/me/` | Dados do usuário logado | JWT |
 
 ### Ativos industriais
 
@@ -374,7 +386,7 @@ Esta API foi projetada para ser consumida por um front-end Node.js separado (Rea
 
 **1. Login — obter o token:**
 ```javascript
-const response = await fetch('http://localhost:8000/api/accounts/login/', {
+const response = await fetch('http://localhost:8000/api/auth/login/', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ username: 'seu_usuario', password: 'sua_senha' })
@@ -390,7 +402,7 @@ const token = localStorage.getItem('token')
 
 const response = await fetch('http://localhost:8000/api/ativos/', {
   headers: {
-    'Authorization': `Token ${token}`,
+    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json'
   }
 })
@@ -402,7 +414,7 @@ const ativos = await response.json()
 await fetch('http://localhost:8000/api/ativos/', {
   method: 'POST',
   headers: {
-    'Authorization': `Token ${token}`,
+    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
@@ -418,7 +430,7 @@ await fetch('http://localhost:8000/api/ativos/', {
 await fetch('http://localhost:8000/api/telemetria/leituras/', {
   method: 'POST',
   headers: {
-    'Authorization': `Token ${token}`,
+    'Authorization': `Bearer ${token}`,
     'Content-Type': 'application/json'
   },
   body: JSON.stringify({
@@ -456,7 +468,8 @@ Reinicie o servidor após qualquer mudança no `.env`.
 - [x] Configuração central de CORS e API Schema (Swagger)
 
 ### 🔄 Em Desenvolvimento (Passo 5 e 6)
-- [ ] **Passo 5:** Autenticação JWT e Segurança de Perffis (Gestor/Técnico)
+- [x] **Passo 5:** Autenticação JWT e Segurança de Perfis (Gestor/Técnico)
+- [x] scripts de automação de população e setup
 - [ ] **Passo 6:** Testes automatizados e Documentação Final
 
 ---
