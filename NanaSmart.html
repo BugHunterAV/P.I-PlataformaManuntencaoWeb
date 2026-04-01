@@ -3,626 +3,230 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NanaSmart — Plataforma Industrial</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>NanaSmart - Plataforma Industrial</title>
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --blue: #1565C0;
-    --blue-light: #1E88E5;
-    --blue-dark: #0D47A1;
-    --blue-glow: rgba(30,136,229,0.25);
-    --orange: #F57C00;
-    --orange-light: #FB8C00;
-    --orange-dark: #E65100;
-    --orange-glow: rgba(245,124,0,0.3);
-    --bg: #060D1A;
-    --bg2: #0B1628;
-    --bg3: #112240;
-    --surface: #0F1E35;
-    --surface2: #162845;
-    --border: rgba(30,136,229,0.18);
-    --text: #E8EDF5;
-    --text-muted: #7B8FA8;
-    --text-dim: #4A6080;
-    --success: #00C853;
-    --danger: #FF1744;
-    --warning: #FFD600;
-    --radius: 8px;
-    --radius-lg: 14px;
-  }
-
-  * { margin:0; padding:0; box-sizing:border-box; }
-
-  body {
-    font-family: 'Inter', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* ── Background grid ── */
-  body::before {
-    content:'';
-    position:fixed; inset:0; z-index:0;
-    background-image:
-      linear-gradient(rgba(30,136,229,0.04) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(30,136,229,0.04) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events:none;
-  }
-
-  /* ── Layout ── */
-  .shell { display:flex; min-height:100vh; position:relative; z-index:1; }
-
-  /* ── Sidebar ── */
-  .sidebar {
-    width: 240px;
-    background: var(--bg2);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    position: fixed;
-    top:0; left:0; bottom:0;
-    z-index: 100;
-    transition: transform .3s;
-  }
-
-  .logo {
-    padding: 22px 20px 18px;
-    border-bottom: 1px solid var(--border);
-  }
-  .logo-mark {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--text);
-    letter-spacing: 1px;
-  }
-  .logo-mark span { color: var(--orange); }
-  .logo-sub {
-    font-size: 10px;
-    color: var(--text-dim);
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    margin-top: 2px;
-  }
-
-  .nav { flex:1; padding: 16px 0; overflow-y:auto; }
-
-  .nav-section {
-    font-size: 9px;
-    font-weight: 600;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: var(--text-dim);
-    padding: 12px 20px 6px;
-  }
-
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 20px;
-    cursor: pointer;
-    transition: all .2s;
-    border-left: 2px solid transparent;
-    font-size: 13px;
-    color: var(--text-muted);
-    font-weight: 500;
-  }
-  .nav-item:hover { background: rgba(30,136,229,0.07); color: var(--text); }
-  .nav-item.active {
-    background: rgba(30,136,229,0.12);
-    color: var(--blue-light);
-    border-left-color: var(--orange);
-  }
-  .nav-item .icon { font-size: 16px; width:20px; text-align:center; }
-
-  .sidebar-footer {
-    padding: 16px 20px;
-    border-top: 1px solid var(--border);
-    font-size: 11px;
-    color: var(--text-dim);
-  }
-
-  /* ── Main ── */
-  .main {
-    margin-left: 240px;
-    flex:1;
-    display:flex;
-    flex-direction:column;
-    min-height:100vh;
-  }
-
-  /* ── Topbar ── */
-  .topbar {
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    padding: 0 28px;
-    height: 58px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top:0;
-    z-index: 90;
-  }
-  .topbar-title {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text);
-    letter-spacing: .5px;
-  }
-  .topbar-right { display:flex; align-items:center; gap:14px; }
-
-  .api-url-bar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 6px 12px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    color: var(--text-muted);
-  }
-  .api-url-bar input {
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--orange-light);
-    font-family: inherit;
-    font-size: inherit;
-    width: 220px;
-  }
-  .api-dot { width:7px; height:7px; border-radius:50%; background:var(--success); }
-  .api-dot.off { background: var(--danger); }
-
-  .btn {
-    display:inline-flex; align-items:center; gap:6px;
-    padding: 8px 16px;
-    border-radius: var(--radius);
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    transition: all .2s;
-    font-family: 'Inter', sans-serif;
-    letter-spacing: .3px;
-  }
-  .btn-primary { background: var(--blue); color:#fff; }
-  .btn-primary:hover { background: var(--blue-light); box-shadow: 0 0 16px var(--blue-glow); }
-  .btn-orange { background: var(--orange); color:#fff; }
-  .btn-orange:hover { background: var(--orange-light); box-shadow: 0 0 16px var(--orange-glow); }
-  .btn-outline {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-muted);
-  }
-  .btn-outline:hover { border-color: var(--blue-light); color: var(--blue-light); }
-  .btn-danger { background: var(--danger); color:#fff; font-size:11px; padding:5px 10px; }
-  .btn-sm { padding: 5px 12px; font-size: 11px; }
-  .btn:disabled { opacity:.4; cursor:not-allowed; }
-
-  /* ── Content area ── */
-  .content { padding: 28px; flex:1; }
-
-  /* ── Pages ── */
-  .page { display:none; animation: fadeIn .3s ease; }
-  .page.active { display:block; }
-  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-
-  /* ── Stats grid ── */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 16px;
-    margin-bottom: 28px;
-  }
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 20px;
-    position: relative;
-    overflow: hidden;
-    transition: border-color .2s;
-  }
-  .stat-card:hover { border-color: var(--blue-light); }
-  .stat-card::after {
-    content:'';
-    position:absolute; top:0; left:0; right:0; height:2px;
-    background: linear-gradient(90deg, var(--blue), var(--orange));
-  }
-  .stat-label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
-  .stat-value {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 36px;
-    font-weight: 700;
-    color: var(--text);
-    line-height:1;
-  }
-  .stat-value.orange { color: var(--orange-light); }
-  .stat-value.blue { color: var(--blue-light); }
-  .stat-value.green { color: var(--success); }
-  .stat-value.red { color: var(--danger); }
-  .stat-sub { font-size:11px; color:var(--text-dim); margin-top:6px; }
-
-  /* ── Section header ── */
-  .section-header {
-    display:flex; align-items:center; justify-content:space-between;
-    margin-bottom: 18px;
-  }
-  .section-title {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--text);
-  }
-  .section-title span { color: var(--orange); }
-
-  /* ── Table ── */
-  .table-wrap {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-  }
-  table { width:100%; border-collapse:collapse; }
-  thead { background: var(--bg3); }
-  th {
-    padding: 12px 16px;
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    color: var(--text-muted);
-    text-align:left;
-    border-bottom: 1px solid var(--border);
-  }
-  td {
-    padding: 13px 16px;
-    font-size: 13px;
-    color: var(--text);
-    border-bottom: 1px solid rgba(30,136,229,0.08);
-    vertical-align: middle;
-  }
-  tbody tr:hover { background: rgba(30,136,229,0.04); }
-  tbody tr:last-child td { border-bottom:none; }
-
-  /* ── Badges ── */
-  .badge {
-    display:inline-flex; align-items:center; gap:4px;
-    padding: 3px 9px;
-    border-radius: 20px;
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: .5px;
-    text-transform: uppercase;
-  }
-  .badge-green { background:rgba(0,200,83,0.15); color:var(--success); border:1px solid rgba(0,200,83,0.3); }
-  .badge-orange { background:rgba(245,124,0,0.15); color:var(--orange-light); border:1px solid rgba(245,124,0,0.3); }
-  .badge-red { background:rgba(255,23,68,0.15); color:var(--danger); border:1px solid rgba(255,23,68,0.3); }
-  .badge-blue { background:rgba(30,136,229,0.15); color:var(--blue-light); border:1px solid rgba(30,136,229,0.3); }
-  .badge-gray { background:rgba(123,143,168,0.15); color:var(--text-muted); border:1px solid rgba(123,143,168,0.2); }
-
-  /* ── Modal ── */
-  .modal-overlay {
-    display:none; position:fixed; inset:0;
-    background: rgba(6,13,26,0.85);
-    z-index: 500;
-    align-items:center; justify-content:center;
-    backdrop-filter: blur(4px);
-  }
-  .modal-overlay.open { display:flex; }
-  .modal {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    width: 520px;
-    max-width: 95vw;
-    max-height: 90vh;
-    overflow-y: auto;
-    animation: modalIn .25s ease;
-  }
-  @keyframes modalIn { from{opacity:0;transform:scale(.95)} to{opacity:1;transform:scale(1)} }
-  .modal-header {
-    padding: 20px 24px 16px;
-    border-bottom: 1px solid var(--border);
-    display:flex; align-items:center; justify-content:space-between;
-  }
-  .modal-title {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--text);
-  }
-  .modal-close {
-    width:28px; height:28px;
-    border-radius:50%; border:none;
-    background: var(--bg3);
-    color: var(--text-muted);
-    cursor:pointer; font-size:16px;
-    display:flex; align-items:center; justify-content:center;
-    transition: all .2s;
-  }
-  .modal-close:hover { background:var(--danger); color:#fff; }
-  .modal-body { padding: 24px; }
-  .modal-footer {
-    padding: 16px 24px;
-    border-top: 1px solid var(--border);
-    display:flex; gap:10px; justify-content:flex-end;
-  }
-
-  /* ── Form fields ── */
-  .form-group { margin-bottom: 16px; }
-  .form-label { display:block; font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.8px; margin-bottom:6px; }
-  .form-input, .form-select, .form-textarea {
-    width:100%;
-    background: var(--bg3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 10px 14px;
-    color: var(--text);
-    font-size: 13px;
-    font-family: 'Inter', sans-serif;
-    outline: none;
-    transition: border-color .2s;
-  }
-  .form-input:focus, .form-select:focus, .form-textarea:focus {
-    border-color: var(--blue-light);
-    box-shadow: 0 0 0 3px var(--blue-glow);
-  }
-  .form-select { cursor:pointer; }
-  .form-textarea { resize:vertical; min-height:80px; }
-  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-
-  /* ── Filters ── */
-  .filters {
-    display:flex; gap:10px; align-items:center;
-    margin-bottom: 18px; flex-wrap:wrap;
-  }
-  .filter-input {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 8px 14px;
-    color: var(--text);
-    font-size: 12px;
-    font-family: 'Inter', sans-serif;
-    outline:none; flex:1; min-width:180px;
-  }
-  .filter-input:focus { border-color: var(--blue-light); }
-  .filter-select {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 8px 14px;
-    color: var(--text);
-    font-size: 12px;
-    font-family: 'Inter', sans-serif;
-    outline:none; cursor:pointer;
-  }
-
-  /* ── Toast ── */
-  .toast-wrap { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; }
-  .toast {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 12px 18px;
-    font-size:13px;
-    color: var(--text);
-    display:flex; align-items:center; gap:10px;
-    box-shadow: 0 8px 24px rgba(0,0,0,.5);
-    animation: toastIn .3s ease;
-    min-width: 280px;
-  }
-  @keyframes toastIn { from{opacity:0;transform:translateX(30px)} to{opacity:1;transform:translateX(0)} }
-  .toast.success .ti { color:var(--success); }
-  .toast.error .ti { color:var(--danger); }
-  .toast.info .ti { color:var(--blue-light); }
-
-  /* ── Auth gate ── */
-  #auth-gate {
-    position:fixed; inset:0;
-    background: var(--bg);
-    z-index:1000;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .auth-card {
-    background: var(--bg2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    width: 400px;
-    padding: 36px;
-    position:relative;
-    overflow:hidden;
-  }
-  .auth-card::before {
-    content:'';
-    position:absolute; top:0; left:0; right:0; height:3px;
-    background: linear-gradient(90deg, var(--blue), var(--orange));
-  }
-  .auth-logo {
-    font-family: 'Rajdhani', sans-serif;
-    font-size: 32px;
-    font-weight: 700;
-    text-align:center;
-    margin-bottom:6px;
-  }
-  .auth-logo span { color: var(--orange); }
-  .auth-subtitle { text-align:center; font-size:12px; color:var(--text-dim); margin-bottom:28px; letter-spacing:1.5px; text-transform:uppercase; }
-  .auth-tabs { display:flex; gap:0; margin-bottom:24px; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
-  .auth-tab {
-    flex:1; padding:9px; text-align:center; font-size:12px; font-weight:600;
-    cursor:pointer; color:var(--text-muted); transition:all .2s;
-    border:none; background:transparent; font-family:'Inter',sans-serif;
-  }
-  .auth-tab.active { background:var(--blue); color:#fff; }
-
-  /* ── Telemetry cards ── */
-  .sensor-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:16px; margin-bottom:24px; }
-  .sensor-card {
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:var(--radius-lg);
-    padding:18px;
-    position:relative;
-    overflow:hidden;
-    transition: border-color .2s, transform .2s;
-  }
-  .sensor-card:hover { border-color:var(--orange); transform:translateY(-2px); }
-  .sensor-type { font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
-  .sensor-val {
-    font-family:'Rajdhani',sans-serif; font-size:32px; font-weight:700;
-    color:var(--orange-light);
-  }
-  .sensor-unit { font-size:13px; color:var(--text-muted); margin-left:3px; }
-  .sensor-name { font-size:12px; color:var(--text-muted); margin-top:6px; }
-  .sensor-card .pulse {
-    position:absolute; top:14px; right:14px;
-    width:8px; height:8px; border-radius:50%; background:var(--success);
-    animation: pulse 2s infinite;
-  }
-  @keyframes pulse {
-    0%,100%{ box-shadow:0 0 0 0 rgba(0,200,83,.4); }
-    50%{ box-shadow:0 0 0 6px rgba(0,200,83,0); }
-  }
-
-  /* ── KPI bars ── */
-  .kpi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin-bottom:24px; }
-  .kpi-card {
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:var(--radius-lg);
-    padding:22px;
-  }
-  .kpi-title { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:10px; }
-  .kpi-main {
-    font-family:'Rajdhani',sans-serif; font-size:40px; font-weight:700; color:var(--text); line-height:1;
-  }
-  .kpi-unit { font-size:14px; color:var(--text-muted); margin-left:4px; }
-  .kpi-bar { height:4px; border-radius:2px; background:var(--bg3); margin-top:14px; overflow:hidden; }
-  .kpi-bar-fill { height:100%; border-radius:2px; background: linear-gradient(90deg,var(--blue),var(--orange)); transition:width 1s ease; }
-  .kpi-legend { display:flex; justify-content:space-between; font-size:10px; color:var(--text-dim); margin-top:5px; }
-
-  /* ── Alert cards ── */
-  .alert-list { display:flex; flex-direction:column; gap:10px; }
-  .alert-item {
-    background:var(--surface);
-    border:1px solid var(--border);
-    border-radius:var(--radius);
-    padding:14px 18px;
-    display:flex; align-items:center; gap:14px;
-    transition: border-color .2s;
-  }
-  .alert-item.critical { border-left:3px solid var(--danger); }
-  .alert-item.warning { border-left:3px solid var(--orange); }
-  .alert-item.info { border-left:3px solid var(--blue-light); }
-  .alert-icon { font-size:20px; }
-  .alert-text { flex:1; }
-  .alert-title { font-size:13px; font-weight:600; color:var(--text); }
-  .alert-desc { font-size:11px; color:var(--text-muted); margin-top:2px; }
-  .alert-time { font-size:11px; color:var(--text-dim); font-family:'JetBrains Mono',monospace; }
-
-  /* ── Loading ── */
-  .loading { display:flex; align-items:center; justify-content:center; padding:40px; gap:12px; color:var(--text-muted); font-size:13px; }
-  .spinner {
-    width:20px; height:20px; border-radius:50%;
-    border:2px solid var(--border);
-    border-top-color:var(--blue-light);
-    animation:spin .7s linear infinite;
-  }
-  @keyframes spin{to{transform:rotate(360deg)}}
-
-  /* ── Empty state ── */
-  .empty { padding:48px; text-align:center; color:var(--text-dim); }
-  .empty-icon { font-size:36px; margin-bottom:12px; opacity:.5; }
-  .empty-text { font-size:13px; }
-
-  /* ── Inline code ── */
-  code {
-    font-family:'JetBrains Mono',monospace;
-    font-size:11px;
-    background:var(--bg3);
-    padding:2px 6px;
-    border-radius:4px;
-    color:var(--orange-light);
-  }
-
-  /* ── Scrollbar ── */
-  ::-webkit-scrollbar { width:5px; height:5px; }
-  ::-webkit-scrollbar-track { background:transparent; }
-  ::-webkit-scrollbar-thumb { background:var(--border); border-radius:10px; }
-  ::-webkit-scrollbar-thumb:hover { background:var(--blue); }
-
-  /* Tab actions row */
-  .row-actions { display:flex; gap:6px; }
-
-  /* mini live badge */
-  .live-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--success); margin-right:5px; animation:pulse 1.5s infinite; }
+:root {
+  --blue: #1565C0;
+  --blue-l: #1E88E5;
+  --blue-d: #0D47A1;
+  --blue-glow: rgba(30,136,229,0.22);
+  --orange: #F57C00;
+  --orange-l: #FB8C00;
+  --orange-glow: rgba(245,124,0,0.28);
+  --bg: #060D1A;
+  --bg2: #0B1628;
+  --bg3: #112240;
+  --surf: #0F1E35;
+  --border: rgba(30,136,229,0.18);
+  --text: #E8EDF5;
+  --muted: #7B8FA8;
+  --dim: #4A6080;
+  --green: #00C853;
+  --red: #FF1744;
+  --r: 8px;
+  --rl: 14px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(30,136,229,0.035) 1px,transparent 1px),linear-gradient(90deg,rgba(30,136,229,0.035) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
+.shell{display:flex;min-height:100vh;position:relative;z-index:1}
+/* SIDEBAR */
+.sidebar{width:240px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.logo{padding:22px 20px 18px;border-bottom:1px solid var(--border)}
+.logo-mark{font-family:'Rajdhani',sans-serif;font-size:26px;font-weight:700;letter-spacing:1px}
+.logo-mark span{color:var(--orange)}
+.logo-sub{font-size:10px;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-top:2px}
+.nav{flex:1;padding:16px 0;overflow-y:auto}
+.nav-sec{font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--dim);padding:12px 20px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;transition:all .2s;border-left:2px solid transparent;font-size:13px;color:var(--muted);font-weight:500;user-select:none}
+.nav-item:hover{background:rgba(30,136,229,0.07);color:var(--text)}
+.nav-item.active{background:rgba(30,136,229,0.12);color:var(--blue-l);border-left-color:var(--orange)}
+.sb-foot{padding:16px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--dim)}
+/* MAIN */
+.main{margin-left:240px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+/* TOPBAR */
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 28px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:90}
+.topbar-title{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:600;letter-spacing:.5px}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.url-bar{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:6px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)}
+.url-bar input{background:transparent;border:none;outline:none;color:var(--orange-l);font-family:inherit;font-size:inherit;width:210px}
+.api-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
+.api-dot.off{background:var(--red)}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r);font-size:12px;font-weight:600;cursor:pointer;border:none;transition:all .2s;font-family:'Inter',sans-serif}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-l);box-shadow:0 0 14px var(--blue-glow)}
+.btn-orange{background:var(--orange);color:#fff}
+.btn-orange:hover{background:var(--orange-l);box-shadow:0 0 14px var(--orange-glow)}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-outline:hover{border-color:var(--blue-l);color:var(--blue-l)}
+.btn-danger{background:var(--red);color:#fff;font-size:11px;padding:5px 10px}
+.btn-sm{padding:5px 12px;font-size:11px}
+/* CONTENT */
+.content{padding:28px;flex:1}
+.page{display:none;animation:fadeIn .3s ease}
+.page.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:28px}
+.stat-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--rl);padding:20px;position:relative;overflow:hidden;transition:border-color .2s}
+.stat-card:hover{border-color:var(--blue-l)}
+.stat-card::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--blue),var(--orange))}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.stat-value{font-family:'Rajdhani',sans-serif;font-size:36px;font-weight:700;line-height:1}
+.c-orange{color:var(--orange-l)}
+.c-blue{color:var(--blue-l)}
+.c-green{color:var(--green)}
+.c-red{color:var(--red)}
+.stat-sub{font-size:11px;color:var(--dim);margin-top:6px}
+/* SECTION */
+.sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.sec-title{font-family:'Rajdhani',sans-serif;font-size:20px;font-weight:600}
+.sec-title span{color:var(--orange)}
+/* TABLE */
+.tbl-wrap{background:var(--surf);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden}
+table{width:100%;border-collapse:collapse}
+thead{background:var(--bg3)}
+th{padding:12px 16px;font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);text-align:left;border-bottom:1px solid var(--border)}
+td{padding:13px 16px;font-size:13px;border-bottom:1px solid rgba(30,136,229,0.07);vertical-align:middle}
+tbody tr:hover{background:rgba(30,136,229,0.04)}
+tbody tr:last-child td{border-bottom:none}
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.b-green{background:rgba(0,200,83,0.15);color:var(--green);border:1px solid rgba(0,200,83,0.3)}
+.b-orange{background:rgba(245,124,0,0.15);color:var(--orange-l);border:1px solid rgba(245,124,0,0.3)}
+.b-red{background:rgba(255,23,68,0.15);color:var(--red);border:1px solid rgba(255,23,68,0.3)}
+.b-blue{background:rgba(30,136,229,0.15);color:var(--blue-l);border:1px solid rgba(30,136,229,0.3)}
+.b-gray{background:rgba(123,143,168,0.12);color:var(--muted);border:1px solid rgba(123,143,168,0.2)}
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(6,13,26,0.85);z-index:500;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.overlay.open{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);width:520px;max-width:95vw;max-height:90vh;overflow-y:auto;animation:mIn .25s ease}
+@keyframes mIn{from{opacity:0;transform:scale(.95)}to{opacity:1;transform:scale(1)}}
+.modal-head{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-family:'Rajdhani',sans-serif;font-size:18px;font-weight:600}
+.modal-x{width:28px;height:28px;border-radius:50%;border:none;background:var(--bg3);color:var(--muted);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .2s;line-height:1}
+.modal-x:hover{background:var(--red);color:#fff}
+.modal-body{padding:24px}
+.modal-foot{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+/* FORMS */
+.fg{margin-bottom:16px}
+.fl{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px}
+.fi,.fs,.ft{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;color:var(--text);font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--blue-l);box-shadow:0 0 0 3px var(--blue-glow)}
+.fs{cursor:pointer}
+.ft{resize:vertical;min-height:80px}
+.fg2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+/* FILTERS */
+.filters{display:flex;gap:10px;align-items:center;margin-bottom:18px;flex-wrap:wrap}
+.f-in{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:8px 14px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;outline:none;flex:1;min-width:180px}
+.f-in:focus{border-color:var(--blue-l)}
+.f-sel{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:8px 14px;color:var(--text);font-size:12px;font-family:'Inter',sans-serif;outline:none;cursor:pointer}
+/* TOAST */
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:12px 18px;font-size:13px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.5);animation:tIn .3s ease;min-width:280px}
+@keyframes tIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+/* AUTH */
+#auth-gate{position:fixed;inset:0;background:var(--bg);z-index:1000;display:flex;align-items:center;justify-content:center}
+.auth-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--rl);width:400px;padding:36px;position:relative;overflow:hidden}
+.auth-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),var(--orange))}
+.auth-logo{font-family:'Rajdhani',sans-serif;font-size:32px;font-weight:700;text-align:center;margin-bottom:6px}
+.auth-logo span{color:var(--orange)}
+.auth-sub{text-align:center;font-size:12px;color:var(--dim);margin-bottom:28px;letter-spacing:1.5px;text-transform:uppercase}
+.auth-tabs{display:flex;margin-bottom:24px;border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.auth-tab{flex:1;padding:9px;text-align:center;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .2s;border:none;background:transparent;font-family:'Inter',sans-serif}
+.auth-tab.active{background:var(--blue);color:#fff}
+/* SENSOR CARDS */
+.sensor-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:16px;margin-bottom:24px}
+.sensor-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--rl);padding:18px;position:relative;overflow:hidden;transition:border-color .2s,transform .2s}
+.sensor-card:hover{border-color:var(--orange);transform:translateY(-2px)}
+.s-type{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.s-val{font-family:'Rajdhani',sans-serif;font-size:32px;font-weight:700;color:var(--orange-l)}
+.s-unit{font-size:13px;color:var(--muted);margin-left:3px}
+.s-name{font-size:12px;color:var(--muted);margin-top:6px}
+.pulse-dot{position:absolute;top:14px;right:14px;width:8px;height:8px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,200,83,.4)}50%{box-shadow:0 0 0 6px rgba(0,200,83,0)}}
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{background:var(--surf);border:1px solid var(--border);border-radius:var(--rl);padding:22px}
+.kpi-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px}
+.kpi-num{font-family:'Rajdhani',sans-serif;font-size:40px;font-weight:700;line-height:1}
+.kpi-unit{font-size:14px;color:var(--muted);margin-left:4px}
+.kpi-bar{height:4px;border-radius:2px;background:var(--bg3);margin-top:14px;overflow:hidden}
+.kpi-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--blue),var(--orange));transition:width 1s ease}
+.kpi-leg{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);margin-top:5px}
+/* ALERTS */
+.alert-list{display:flex;flex-direction:column;gap:10px}
+.alert-item{background:var(--surf);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;gap:14px}
+.alert-item.crit{border-left:3px solid var(--red)}
+.alert-item.warn{border-left:3px solid var(--orange)}
+.alert-item.info{border-left:3px solid var(--blue-l)}
+.alert-ico{font-size:18px;font-weight:bold}
+.alert-txt{flex:1}
+.alert-ttl{font-size:13px;font-weight:600}
+.alert-dsc{font-size:11px;color:var(--muted);margin-top:2px}
+.alert-time{font-size:11px;color:var(--dim);font-family:'JetBrains Mono',monospace}
+/* MISC */
+.loading{display:flex;align-items:center;justify-content:center;padding:40px;gap:12px;color:var(--muted);font-size:13px}
+.spin{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--blue-l);animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.empty{padding:48px;text-align:center;color:var(--dim)}
+.row-acts{display:flex;gap:6px}
+code{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg3);padding:2px 6px;border-radius:4px;color:var(--orange-l)}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
+select option{background:var(--bg2);color:var(--text)}
 </style>
 </head>
 <body>
 
-<!-- ══════ AUTH GATE ══════ -->
+<!-- AUTH GATE -->
 <div id="auth-gate">
   <div class="auth-card">
     <div class="auth-logo">Nana<span>Smart</span></div>
-    <div class="auth-subtitle">Manutenção Industrial Preditiva</div>
-
+    <div class="auth-sub">Manutencao Industrial Preditiva</div>
     <div class="auth-tabs">
-      <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
-      <button class="auth-tab" onclick="switchAuthTab('register')">Registrar</button>
+      <button class="auth-tab active" id="tab-btn-login" onclick="switchTab('login')">Login</button>
+      <button class="auth-tab" id="tab-btn-reg" onclick="switchTab('reg')">Registrar</button>
     </div>
-
-    <!-- Login -->
+    <!-- Login form -->
     <div id="tab-login">
-      <div class="form-group">
-        <label class="form-label">Usuário</label>
-        <input class="form-input" id="login-user" type="text" placeholder="seu_usuario" autocomplete="username">
+      <div class="fg">
+        <label class="fl">Usuario</label>
+        <input class="fi" id="l-user" type="text" placeholder="seu_usuario" autocomplete="username">
       </div>
-      <div class="form-group">
-        <label class="form-label">Senha</label>
-        <input class="form-input" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password">
+      <div class="fg">
+        <label class="fl">Senha</label>
+        <input class="fi" id="l-pass" type="password" placeholder="senha" autocomplete="current-password">
       </div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="doLogin()">Entrar</button>
-      <div style="text-align:center;margin-top:14px;font-size:11px;color:var(--text-dim)">
-        <span id="auth-msg-login"></span>
-      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">Entrar</button>
+      <div id="l-msg" style="text-align:center;margin-top:12px;font-size:11px;color:var(--dim)"></div>
     </div>
-
-    <!-- Register -->
-    <div id="tab-register" style="display:none">
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Usuário</label>
-          <input class="form-input" id="reg-user" type="text" placeholder="usuario">
+    <!-- Register form -->
+    <div id="tab-reg" style="display:none">
+      <div class="fg2">
+        <div class="fg">
+          <label class="fl">Usuario</label>
+          <input class="fi" id="r-user" type="text" placeholder="usuario">
         </div>
-        <div class="form-group">
-          <label class="form-label">E-mail</label>
-          <input class="form-input" id="reg-email" type="email" placeholder="email@empresa.com">
+        <div class="fg">
+          <label class="fl">Email</label>
+          <input class="fi" id="r-email" type="email" placeholder="email@emp.com">
         </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Senha</label>
-        <input class="form-input" id="reg-pass" type="password" placeholder="••••••••">
+      <div class="fg">
+        <label class="fl">Senha</label>
+        <input class="fi" id="r-pass" type="password" placeholder="senha">
       </div>
-      <button class="btn btn-orange" style="width:100%;justify-content:center;margin-top:4px" onclick="doRegister()">Criar Conta</button>
-      <div style="text-align:center;margin-top:14px;font-size:11px;color:var(--text-dim)">
-        <span id="auth-msg-register"></span>
-      </div>
+      <button class="btn btn-orange" style="width:100%;justify-content:center" onclick="doRegister()">Criar Conta</button>
+      <div id="r-msg" style="text-align:center;margin-top:12px;font-size:11px;color:var(--dim)"></div>
     </div>
   </div>
 </div>
 
-<!-- ══════ MAIN APP ══════ -->
+<!-- MAIN APP -->
 <div class="shell">
   <!-- Sidebar -->
   <nav class="sidebar">
@@ -630,1196 +234,1136 @@
       <div class="logo-mark">Nana<span>Smart</span></div>
       <div class="logo-sub">Industrial Platform</div>
     </div>
-
     <div class="nav">
-      <div class="nav-section">Visão Geral</div>
-      <div class="nav-item active" onclick="goto('dashboard')">
-        <span class="icon">📊</span> Dashboard
-      </div>
-
-      <div class="nav-section">Gestão</div>
-      <div class="nav-item" onclick="goto('ativos')">
-        <span class="icon">🏗️</span> Ativos
-      </div>
-      <div class="nav-item" onclick="goto('manutencao')">
-        <span class="icon">🔧</span> Manutenção
-      </div>
-      <div class="nav-item" onclick="goto('historico')">
-        <span class="icon">📋</span> Histórico
-      </div>
-
-      <div class="nav-section">Monitoramento</div>
-      <div class="nav-item" onclick="goto('sensores')">
-        <span class="icon">📡</span> Sensores
-      </div>
-      <div class="nav-item" onclick="goto('telemetria')">
-        <span class="icon">📈</span> Telemetria
-      </div>
-      <div class="nav-item" onclick="goto('alertas')">
-        <span class="icon">🚨</span> Alertas
-      </div>
-
-      <div class="nav-section">Infraestrutura</div>
-      <div class="nav-item" onclick="goto('localizacao')">
-        <span class="icon">📍</span> Localização
-      </div>
-
-      <div class="nav-section">Admin</div>
-      <div class="nav-item" onclick="goto('conta')">
-        <span class="icon">👤</span> Minha Conta
-      </div>
+      <div class="nav-sec">Visao Geral</div>
+      <div class="nav-item active" onclick="goto('dashboard')">[ ] Dashboard</div>
+      <div class="nav-sec">Gestao</div>
+      <div class="nav-item" onclick="goto('ativos')">[A] Ativos</div>
+      <div class="nav-item" onclick="goto('manutencao')">[M] Manutencao</div>
+      <div class="nav-item" onclick="goto('historico')">[H] Historico</div>
+      <div class="nav-sec">Monitoramento</div>
+      <div class="nav-item" onclick="goto('sensores')">[S] Sensores</div>
+      <div class="nav-item" onclick="goto('telemetria')">[T] Telemetria</div>
+      <div class="nav-item" onclick="goto('alertas')">[!] Alertas</div>
+      <div class="nav-sec">Infra</div>
+      <div class="nav-item" onclick="goto('localizacao')">[L] Localizacao</div>
+      <div class="nav-sec">Admin</div>
+      <div class="nav-item" onclick="goto('conta')">[U] Minha Conta</div>
     </div>
-
-    <div class="sidebar-footer">
-      <div id="sidebar-user" style="margin-bottom:8px;color:var(--text-muted);font-size:12px">—</div>
-      <button class="btn btn-outline btn-sm" onclick="doLogout()">🚪 Sair</button>
+    <div class="sb-foot">
+      <div id="sb-user" style="margin-bottom:8px;color:var(--muted);font-size:12px">--</div>
+      <button class="btn btn-outline btn-sm" onclick="doLogout()">Sair</button>
     </div>
   </nav>
 
-  <!-- Main -->
+  <!-- Main area -->
   <main class="main">
-    <!-- Topbar -->
     <div class="topbar">
       <div class="topbar-title" id="page-title">Dashboard</div>
       <div class="topbar-right">
-        <div class="api-url-bar">
+        <div class="url-bar">
           <div class="api-dot" id="api-dot"></div>
-          <input id="api-base-url" value="http://localhost:8000" placeholder="http://localhost:8000" onchange="updateBase()">
-          <span style="color:var(--text-dim)">/api/</span>
+          <input id="api-url" value="http://localhost:8000" onchange="BASE=this.value.replace(/\/$/,'')">
+          <span style="color:var(--dim)">/api/</span>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="testConnection()">🔌 Testar</button>
-        <button class="btn btn-primary btn-sm" onclick="refreshCurrentPage()">↻ Atualizar</button>
+        <button class="btn btn-outline btn-sm" onclick="testConn()">Testar</button>
+        <button class="btn btn-primary btn-sm" onclick="refresh()">Atualizar</button>
       </div>
     </div>
 
-    <!-- Pages -->
     <div class="content">
 
-      <!-- ─── DASHBOARD ─── -->
+      <!-- DASHBOARD PAGE -->
       <div class="page active" id="page-dashboard">
-        <div class="stats-grid" id="dash-stats">
-          <div class="stat-card"><div class="stat-label">Ativos Totais</div><div class="stat-value blue" id="ds-ativos">—</div><div class="stat-sub">equipamentos cadastrados</div></div>
-          <div class="stat-card"><div class="stat-label">Manutenções Abertas</div><div class="stat-value orange" id="ds-manut">—</div><div class="stat-sub">ordens ativas</div></div>
-          <div class="stat-card"><div class="stat-label">Alertas Ativos</div><div class="stat-value red" id="ds-alertas">—</div><div class="stat-sub">requerem atenção</div></div>
-          <div class="stat-card"><div class="stat-label">Sensores Online</div><div class="stat-value green" id="ds-sensores">—</div><div class="stat-sub">transmitindo</div></div>
-        </div>
-
-        <div class="kpi-grid" id="dash-kpis">
-          <div class="kpi-card">
-            <div class="kpi-title">MTBF — Tempo Médio Entre Falhas</div>
-            <div><span class="kpi-main" id="kpi-mtbf">—</span><span class="kpi-unit">h</span></div>
-            <div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-mtbf-bar" style="width:0%"></div></div>
-            <div class="kpi-legend"><span>0h</span><span>500h</span></div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Ativos Totais</div>
+            <div class="stat-value c-blue" id="ds-ativos">--</div>
+            <div class="stat-sub">equipamentos</div>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-title">MTTR — Tempo Médio para Reparo</div>
-            <div><span class="kpi-main" id="kpi-mttr">—</span><span class="kpi-unit">h</span></div>
-            <div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-mttr-bar" style="width:0%"></div></div>
-            <div class="kpi-legend"><span>0h</span><span>72h</span></div>
+          <div class="stat-card">
+            <div class="stat-label">Manutencoes Abertas</div>
+            <div class="stat-value c-orange" id="ds-manut">--</div>
+            <div class="stat-sub">ordens ativas</div>
           </div>
-          <div class="kpi-card">
-            <div class="kpi-title">Disponibilidade</div>
-            <div><span class="kpi-main" id="kpi-disp">—</span><span class="kpi-unit">%</span></div>
-            <div class="kpi-bar"><div class="kpi-bar-fill" id="kpi-disp-bar" style="width:0%"></div></div>
-            <div class="kpi-legend"><span>0%</span><span>100%</span></div>
+          <div class="stat-card">
+            <div class="stat-label">Alertas</div>
+            <div class="stat-value c-red" id="ds-alertas">--</div>
+            <div class="stat-sub">requerem atencao</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Sensores</div>
+            <div class="stat-value c-green" id="ds-sens">--</div>
+            <div class="stat-sub">cadastrados</div>
           </div>
         </div>
-
-        <div class="section-header"><div class="section-title">Ativos Recentes</div></div>
-        <div class="table-wrap">
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-lbl">MTBF - Tempo Medio Entre Falhas</div>
+            <div><span class="kpi-num" id="k-mtbf">--</span><span class="kpi-unit">h</span></div>
+            <div class="kpi-bar"><div class="kpi-fill" id="k-mtbf-b" style="width:0%"></div></div>
+            <div class="kpi-leg"><span>0h</span><span>500h</span></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-lbl">MTTR - Tempo Medio para Reparo</div>
+            <div><span class="kpi-num" id="k-mttr">--</span><span class="kpi-unit">h</span></div>
+            <div class="kpi-bar"><div class="kpi-fill" id="k-mttr-b" style="width:0%"></div></div>
+            <div class="kpi-leg"><span>0h</span><span>72h</span></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-lbl">Disponibilidade</div>
+            <div><span class="kpi-num" id="k-disp">--</span><span class="kpi-unit">%</span></div>
+            <div class="kpi-bar"><div class="kpi-fill" id="k-disp-b" style="width:0%"></div></div>
+            <div class="kpi-leg"><span>0%</span><span>100%</span></div>
+          </div>
+        </div>
+        <div class="sec-head"><div class="sec-title">Ativos <span>Recentes</span></div></div>
+        <div class="tbl-wrap">
           <table>
-            <thead><tr><th>Nome</th><th>Nº Série</th><th>Status</th><th>Criado em</th></tr></thead>
-            <tbody id="dash-ativos-tb"><tr><td colspan="4"><div class="loading"><div class="spinner"></div>Carregando...</div></td></tr></tbody>
+            <thead><tr><th>Nome</th><th>N Serie</th><th>Status</th><th>Criado</th></tr></thead>
+            <tbody id="dash-tb"><tr><td colspan="4"><div class="loading"><div class="spin"></div>Aguardando login...</div></td></tr></tbody>
           </table>
         </div>
       </div>
 
-      <!-- ─── ATIVOS ─── -->
+      <!-- ATIVOS PAGE -->
       <div class="page" id="page-ativos">
-        <div class="section-header">
-          <div class="section-title">Ativos <span>Industriais</span></div>
-          <button class="btn btn-orange" onclick="openModal('modal-ativo')">＋ Novo Ativo</button>
+        <div class="sec-head">
+          <div class="sec-title">Ativos <span>Industriais</span></div>
+          <button class="btn btn-orange" onclick="resetAtivoForm();openM('m-ativo')">+ Novo Ativo</button>
         </div>
         <div class="filters">
-          <input class="filter-input" id="f-ativo-search" placeholder="🔍 Buscar ativo…" oninput="loadAtivos()">
-          <select class="filter-select" id="f-ativo-status" onchange="loadAtivos()">
+          <input class="f-in" id="fa-search" placeholder="Buscar ativo..." oninput="loadAtivos()">
+          <select class="f-sel" id="fa-status" onchange="loadAtivos()">
             <option value="">Todos os status</option>
             <option value="ativo">Ativo</option>
             <option value="inativo">Inativo</option>
-            <option value="em_manutencao">Em Manutenção</option>
+            <option value="em_manutencao">Em Manutencao</option>
           </select>
         </div>
-        <div class="table-wrap">
+        <div class="tbl-wrap">
           <table>
-            <thead><tr><th>Nome</th><th>Nº Série</th><th>Modelo</th><th>Status</th><th>Criado</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Nome</th><th>N Serie</th><th>Modelo</th><th>Status</th><th>Criado</th><th>Acoes</th></tr></thead>
             <tbody id="ativos-tb"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- ─── MANUTENÇÃO ─── -->
+      <!-- MANUTENCAO PAGE -->
       <div class="page" id="page-manutencao">
-        <div class="section-header">
-          <div class="section-title">Ordens de <span>Manutenção</span></div>
-          <button class="btn btn-orange" onclick="openModal('modal-manut')">＋ Nova Ordem</button>
+        <div class="sec-head">
+          <div class="sec-title">Ordens de <span>Manutencao</span></div>
+          <button class="btn btn-orange" onclick="resetManutForm();openM('m-manut')">+ Nova Ordem</button>
         </div>
         <div class="filters">
-          <input class="filter-input" id="f-manut-search" placeholder="🔍 Buscar ordens…" oninput="loadManutencao()">
-          <select class="filter-select" id="f-manut-status" onchange="loadManutencao()">
+          <input class="f-in" id="fm-search" placeholder="Buscar ordens..." oninput="loadManut()">
+          <select class="f-sel" id="fm-status" onchange="loadManut()">
             <option value="">Todos</option>
             <option value="aberta">Aberta</option>
             <option value="em_andamento">Em Andamento</option>
-            <option value="concluida">Concluída</option>
+            <option value="concluida">Concluida</option>
             <option value="cancelada">Cancelada</option>
           </select>
         </div>
-        <div class="table-wrap">
+        <div class="tbl-wrap">
           <table>
-            <thead><tr><th>Título</th><th>Ativo</th><th>Tipo</th><th>Prioridade</th><th>Status</th><th>Responsável</th><th>Ações</th></tr></thead>
-            <tbody id="manutencao-tb"></tbody>
+            <thead><tr><th>Titulo</th><th>Ativo</th><th>Tipo</th><th>Prioridade</th><th>Status</th><th>Responsavel</th><th>Acoes</th></tr></thead>
+            <tbody id="manut-tb"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- ─── HISTÓRICO ─── -->
+      <!-- HISTORICO PAGE -->
       <div class="page" id="page-historico">
-        <div class="section-header">
-          <div class="section-title">Histórico de <span>Manutenção</span></div>
-        </div>
-        <div class="table-wrap">
+        <div class="sec-head"><div class="sec-title">Historico de <span>Manutencao</span></div></div>
+        <div class="tbl-wrap">
           <table>
-            <thead><tr><th>Data</th><th>Ativo</th><th>Descrição</th><th>Técnico</th><th>Custo</th><th>Duração</th></tr></thead>
-            <tbody id="historico-tb"></tbody>
+            <thead><tr><th>Data</th><th>Ativo</th><th>Descricao</th><th>Tecnico</th><th>Custo</th><th>Duracao</th></tr></thead>
+            <tbody id="hist-tb"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- ─── SENSORES ─── -->
+      <!-- SENSORES PAGE -->
       <div class="page" id="page-sensores">
-        <div class="section-header">
-          <div class="section-title"><span class="live-dot"></span>Sensores</div>
-          <button class="btn btn-orange" onclick="openModal('modal-sensor')">＋ Novo Sensor</button>
+        <div class="sec-head">
+          <div class="sec-title">Sensores <span>IoT</span></div>
+          <button class="btn btn-orange" onclick="resetSensorForm();openM('m-sensor')">+ Novo Sensor</button>
         </div>
-        <div class="sensor-grid" id="sensores-grid"></div>
-        <div class="table-wrap">
+        <div class="sensor-grid" id="sensor-grid"></div>
+        <div class="tbl-wrap">
           <table>
-            <thead><tr><th>Nome</th><th>Tipo</th><th>Ativo</th><th>Limite Min</th><th>Limite Max</th><th>Unidade</th><th>Ações</th></tr></thead>
-            <tbody id="sensores-tb"></tbody>
+            <thead><tr><th>Nome</th><th>Tipo</th><th>Ativo</th><th>Min</th><th>Max</th><th>Unidade</th><th>Acoes</th></tr></thead>
+            <tbody id="sensor-tb"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- ─── TELEMETRIA ─── -->
+      <!-- TELEMETRIA PAGE -->
       <div class="page" id="page-telemetria">
-        <div class="section-header">
-          <div class="section-title">Leituras de <span>Telemetria</span></div>
-          <button class="btn btn-orange" onclick="openModal('modal-leitura')">＋ Enviar Leitura</button>
+        <div class="sec-head">
+          <div class="sec-title">Leituras de <span>Telemetria</span></div>
+          <button class="btn btn-orange" onclick="openM('m-leit')">+ Enviar Leitura</button>
         </div>
-        <div class="table-wrap">
+        <div class="tbl-wrap">
           <table>
             <thead><tr><th>Data/Hora</th><th>Sensor</th><th>Ativo</th><th>Tipo</th><th>Valor</th><th>Unidade</th></tr></thead>
-            <tbody id="telemetria-tb"></tbody>
+            <tbody id="tele-tb"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- ─── ALERTAS ─── -->
+      <!-- ALERTAS PAGE -->
       <div class="page" id="page-alertas">
-        <div class="section-header">
-          <div class="section-title">🚨 Alertas <span>Automáticos</span></div>
-        </div>
-        <div class="alert-list" id="alertas-list"></div>
+        <div class="sec-head"><div class="sec-title">Alertas <span>Automaticos</span></div></div>
+        <div class="alert-list" id="alertas-list"><div class="loading"><div class="spin"></div>Aguardando...</div></div>
       </div>
 
-      <!-- ─── LOCALIZAÇÃO ─── -->
+      <!-- LOCALIZACAO PAGE -->
       <div class="page" id="page-localizacao">
-        <div class="section-header">
-          <div class="section-title">📍 Localização <span>Industrial</span></div>
-          <button class="btn btn-orange" onclick="openModal('modal-local')">＋ Nova Localização</button>
+        <div class="sec-head">
+          <div class="sec-title">Localizacao <span>Industrial</span></div>
+          <button class="btn btn-orange" onclick="resetLocalForm();openM('m-local')">+ Nova Localizacao</button>
         </div>
-        <div class="table-wrap">
+        <div class="tbl-wrap">
           <table>
-            <thead><tr><th>Planta</th><th>Setor</th><th>Ativo</th><th>Coordenadas</th><th>Ações</th></tr></thead>
-            <tbody id="localizacao-tb"></tbody>
+            <thead><tr><th>Planta</th><th>Setor</th><th>Ativo</th><th>Coordenadas</th><th>Acoes</th></tr></thead>
+            <tbody id="local-tb"></tbody>
           </table>
         </div>
       </div>
 
-      <!-- ─── CONTA ─── -->
+      <!-- CONTA PAGE -->
       <div class="page" id="page-conta">
-        <div class="section-header"><div class="section-title">Minha <span>Conta</span></div></div>
+        <div class="sec-head"><div class="sec-title">Minha <span>Conta</span></div></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:700px">
           <div class="stat-card" style="grid-column:1/-1">
-            <div class="stat-label">Dados do Usuário</div>
-            <div id="me-data" style="margin-top:10px;font-size:13px;color:var(--text-muted);font-family:'JetBrains Mono',monospace;white-space:pre-wrap"></div>
+            <div class="stat-label">Dados do Usuario</div>
+            <pre id="me-data" style="margin-top:10px;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-all"></pre>
           </div>
-          <div>
-            <div class="section-title" style="font-size:16px;margin-bottom:16px">Token de Acesso</div>
-            <div class="form-group">
-              <label class="form-label">Token atual</label>
-              <input class="form-input" id="token-display" readonly style="font-family:'JetBrains Mono',monospace;font-size:10px">
-            </div>
-            <button class="btn btn-outline btn-sm" onclick="copyToken()">📋 Copiar Token</button>
+          <div class="stat-card">
+            <div class="stat-label">Token de Acesso</div>
+            <input class="fi" id="token-show" readonly style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10px">
+            <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="copyTok()">Copiar Token</button>
           </div>
-          <div>
-            <div class="section-title" style="font-size:16px;margin-bottom:16px">Logout</div>
-            <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px">Encerre a sessão atual e invalide o token.</p>
-            <button class="btn btn-danger" onclick="doLogout()">🚪 Sair da Conta</button>
+          <div class="stat-card">
+            <div class="stat-label">Sessao</div>
+            <p style="font-size:12px;color:var(--muted);margin:10px 0 14px">Encerre a sessao atual e invalide o token.</p>
+            <button class="btn btn-danger" onclick="doLogout()">Sair da Conta</button>
           </div>
         </div>
       </div>
 
-    </div><!-- /content -->
+    </div>
   </main>
 </div>
 
-<!-- ══════ MODALS ══════ -->
-
-<!-- Modal Ativo -->
-<div class="modal-overlay" id="modal-ativo">
+<!-- MODAL: Ativo -->
+<div class="overlay" id="m-ativo">
   <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title" id="ativo-modal-title">Novo Ativo</div>
-      <button class="modal-close" onclick="closeModal('modal-ativo')">✕</button>
+    <div class="modal-head">
+      <div class="modal-title" id="ativo-modal-ttl">Novo Ativo</div>
+      <button class="modal-x" onclick="closeM('m-ativo')">X</button>
     </div>
     <div class="modal-body">
-      <input type="hidden" id="ativo-id">
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Nome *</label>
-          <input class="form-input" id="ativo-nome" placeholder="Bomba Centrífuga B-01">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Nº de Série *</label>
-          <input class="form-input" id="ativo-serie" placeholder="BC-2024-001">
-        </div>
+      <input type="hidden" id="a-id">
+      <div class="fg2">
+        <div class="fg"><label class="fl">Nome *</label><input class="fi" id="a-nome" placeholder="Bomba Centrifuga B-01"></div>
+        <div class="fg"><label class="fl">N Serie *</label><input class="fi" id="a-serie" placeholder="BC-2024-001"></div>
       </div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Modelo</label>
-          <input class="form-input" id="ativo-modelo" placeholder="Modelo XYZ">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Fabricante</label>
-          <input class="form-input" id="ativo-fabricante" placeholder="Fabricante">
-        </div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Modelo</label><input class="fi" id="a-modelo" placeholder="Modelo XYZ"></div>
+        <div class="fg"><label class="fl">Fabricante</label><input class="fi" id="a-fab" placeholder="Fabricante"></div>
       </div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Status</label>
-          <select class="form-select" id="ativo-status">
+      <div class="fg2">
+        <div class="fg">
+          <label class="fl">Status</label>
+          <select class="fs" id="a-status">
             <option value="ativo">Ativo</option>
             <option value="inativo">Inativo</option>
-            <option value="em_manutencao">Em Manutenção</option>
+            <option value="em_manutencao">Em Manutencao</option>
           </select>
         </div>
-        <div class="form-group">
-          <label class="form-label">Data de Aquisição</label>
-          <input class="form-input" id="ativo-data" type="date">
-        </div>
+        <div class="fg"><label class="fl">Data Aquisicao</label><input class="fi" id="a-data" type="date"></div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Descrição</label>
-        <textarea class="form-textarea" id="ativo-desc" placeholder="Descrição do ativo…"></textarea>
-      </div>
+      <div class="fg"><label class="fl">Descricao</label><textarea class="ft" id="a-desc" placeholder="Descricao..."></textarea></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-ativo')">Cancelar</button>
-      <button class="btn btn-orange" onclick="saveAtivo()">💾 Salvar</button>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeM('m-ativo')">Cancelar</button>
+      <button class="btn btn-orange" onclick="saveAtivo()">Salvar</button>
     </div>
   </div>
 </div>
 
-<!-- Modal Manutenção -->
-<div class="modal-overlay" id="modal-manut">
+<!-- MODAL: Manutencao -->
+<div class="overlay" id="m-manut">
   <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title" id="manut-modal-title">Nova Ordem de Manutenção</div>
-      <button class="modal-close" onclick="closeModal('modal-manut')">✕</button>
+    <div class="modal-head">
+      <div class="modal-title" id="manut-modal-ttl">Nova Ordem</div>
+      <button class="modal-x" onclick="closeM('m-manut')">X</button>
     </div>
     <div class="modal-body">
-      <input type="hidden" id="manut-id">
-      <div class="form-group">
-        <label class="form-label">Título *</label>
-        <input class="form-input" id="manut-titulo" placeholder="Substituição de rolamento">
-      </div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Ativo *</label>
-          <select class="form-select" id="manut-ativo"></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Tipo</label>
-          <select class="form-select" id="manut-tipo">
+      <input type="hidden" id="m-id">
+      <div class="fg"><label class="fl">Titulo *</label><input class="fi" id="m-titulo" placeholder="Substituicao de rolamento"></div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Ativo *</label><select class="fs" id="m-ativo"></select></div>
+        <div class="fg">
+          <label class="fl">Tipo</label>
+          <select class="fs" id="m-tipo">
             <option value="preventiva">Preventiva</option>
             <option value="corretiva">Corretiva</option>
             <option value="preditiva">Preditiva</option>
           </select>
         </div>
       </div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Prioridade</label>
-          <select class="form-select" id="manut-prioridade">
+      <div class="fg2">
+        <div class="fg">
+          <label class="fl">Prioridade</label>
+          <select class="fs" id="m-prior">
             <option value="baixa">Baixa</option>
-            <option value="media">Média</option>
+            <option value="media">Media</option>
             <option value="alta">Alta</option>
-            <option value="critica">Crítica</option>
+            <option value="critica">Critica</option>
           </select>
         </div>
-        <div class="form-group">
-          <label class="form-label">Status</label>
-          <select class="form-select" id="manut-status">
+        <div class="fg">
+          <label class="fl">Status</label>
+          <select class="fs" id="m-status">
             <option value="aberta">Aberta</option>
             <option value="em_andamento">Em Andamento</option>
-            <option value="concluida">Concluída</option>
+            <option value="concluida">Concluida</option>
             <option value="cancelada">Cancelada</option>
           </select>
         </div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Responsável</label>
-        <input class="form-input" id="manut-responsavel" placeholder="Nome do técnico">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Descrição</label>
-        <textarea class="form-textarea" id="manut-desc" placeholder="Descreva o problema ou tarefa…"></textarea>
-      </div>
+      <div class="fg"><label class="fl">Responsavel</label><input class="fi" id="m-resp" placeholder="Nome do tecnico"></div>
+      <div class="fg"><label class="fl">Descricao</label><textarea class="ft" id="m-desc" placeholder="Descreva o problema..."></textarea></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-manut')">Cancelar</button>
-      <button class="btn btn-orange" onclick="saveManutencao()">💾 Salvar</button>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeM('m-manut')">Cancelar</button>
+      <button class="btn btn-orange" onclick="saveManut()">Salvar</button>
     </div>
   </div>
 </div>
 
-<!-- Modal Sensor -->
-<div class="modal-overlay" id="modal-sensor">
+<!-- MODAL: Sensor -->
+<div class="overlay" id="m-sensor">
   <div class="modal">
-    <div class="modal-header">
+    <div class="modal-head">
       <div class="modal-title">Novo Sensor</div>
-      <button class="modal-close" onclick="closeModal('modal-sensor')">✕</button>
+      <button class="modal-x" onclick="closeM('m-sensor')">X</button>
     </div>
     <div class="modal-body">
-      <input type="hidden" id="sensor-id">
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Nome *</label>
-          <input class="form-input" id="sensor-nome" placeholder="Sensor-T01">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Ativo *</label>
-          <select class="form-select" id="sensor-ativo"></select>
-        </div>
+      <input type="hidden" id="s-id">
+      <div class="fg2">
+        <div class="fg"><label class="fl">Nome *</label><input class="fi" id="s-nome" placeholder="Sensor-T01"></div>
+        <div class="fg"><label class="fl">Ativo *</label><select class="fs" id="s-ativo"></select></div>
       </div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Tipo</label>
-          <select class="form-select" id="sensor-tipo">
+      <div class="fg2">
+        <div class="fg">
+          <label class="fl">Tipo</label>
+          <select class="fs" id="s-tipo">
             <option value="temperatura">Temperatura</option>
-            <option value="vibracao">Vibração</option>
-            <option value="pressao">Pressão</option>
+            <option value="vibracao">Vibracao</option>
+            <option value="pressao">Pressao</option>
             <option value="corrente">Corrente</option>
             <option value="umidade">Umidade</option>
           </select>
         </div>
-        <div class="form-group">
-          <label class="form-label">Unidade</label>
-          <input class="form-input" id="sensor-unidade" placeholder="°C, Hz, Bar…">
-        </div>
+        <div class="fg"><label class="fl">Unidade</label><input class="fi" id="s-unit" placeholder="oC, Hz, Bar..."></div>
       </div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Limite Mínimo</label>
-          <input class="form-input" id="sensor-min" type="number" placeholder="0">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Limite Máximo</label>
-          <input class="form-input" id="sensor-max" type="number" placeholder="100">
-        </div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Limite Minimo</label><input class="fi" id="s-min" type="number" placeholder="0"></div>
+        <div class="fg"><label class="fl">Limite Maximo</label><input class="fi" id="s-max" type="number" placeholder="100"></div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-sensor')">Cancelar</button>
-      <button class="btn btn-orange" onclick="saveSensor()">💾 Salvar</button>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeM('m-sensor')">Cancelar</button>
+      <button class="btn btn-orange" onclick="saveSensor()">Salvar</button>
     </div>
   </div>
 </div>
 
-<!-- Modal Leitura -->
-<div class="modal-overlay" id="modal-leitura">
+<!-- MODAL: Leitura -->
+<div class="overlay" id="m-leit">
   <div class="modal">
-    <div class="modal-header">
+    <div class="modal-head">
       <div class="modal-title">Enviar Leitura de Telemetria</div>
-      <button class="modal-close" onclick="closeModal('modal-leitura')">✕</button>
+      <button class="modal-x" onclick="closeM('m-leit')">X</button>
     </div>
     <div class="modal-body">
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Ativo *</label>
-          <select class="form-select" id="leit-ativo"></select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Sensor (opcional)</label>
-          <select class="form-select" id="leit-sensor">
-            <option value="">— Sem sensor —</option>
-          </select>
-        </div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Ativo *</label><select class="fs" id="lt-ativo"></select></div>
+        <div class="fg"><label class="fl">Sensor (opcional)</label><select class="fs" id="lt-sensor"><option value="">-- Nenhum --</option></select></div>
       </div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Tipo *</label>
-          <select class="form-select" id="leit-tipo">
+      <div class="fg2">
+        <div class="fg">
+          <label class="fl">Tipo *</label>
+          <select class="fs" id="lt-tipo">
             <option value="temperatura">Temperatura</option>
-            <option value="vibracao">Vibração</option>
-            <option value="pressao">Pressão</option>
+            <option value="vibracao">Vibracao</option>
+            <option value="pressao">Pressao</option>
             <option value="corrente">Corrente</option>
             <option value="umidade">Umidade</option>
           </select>
         </div>
-        <div class="form-group">
-          <label class="form-label">Valor *</label>
-          <input class="form-input" id="leit-valor" type="number" step="0.01" placeholder="78.5">
-        </div>
+        <div class="fg"><label class="fl">Valor *</label><input class="fi" id="lt-valor" type="number" step="0.01" placeholder="78.5"></div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Unidade</label>
-        <input class="form-input" id="leit-unidade" placeholder="°C">
-      </div>
+      <div class="fg"><label class="fl">Unidade</label><input class="fi" id="lt-unit" placeholder="oC"></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-leitura')">Cancelar</button>
-      <button class="btn btn-orange" onclick="saveLeitura()">📡 Enviar</button>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeM('m-leit')">Cancelar</button>
+      <button class="btn btn-orange" onclick="saveLeitura()">Enviar</button>
     </div>
   </div>
 </div>
 
-<!-- Modal Localização -->
-<div class="modal-overlay" id="modal-local">
+<!-- MODAL: Localizacao -->
+<div class="overlay" id="m-local">
   <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">Nova Localização</div>
-      <button class="modal-close" onclick="closeModal('modal-local')">✕</button>
+    <div class="modal-head">
+      <div class="modal-title">Nova Localizacao</div>
+      <button class="modal-x" onclick="closeM('m-local')">X</button>
     </div>
     <div class="modal-body">
-      <input type="hidden" id="local-id">
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Planta *</label>
-          <input class="form-input" id="local-planta" placeholder="Planta A">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Setor *</label>
-          <input class="form-input" id="local-setor" placeholder="Linha de Produção 1">
-        </div>
+      <input type="hidden" id="loc-id">
+      <div class="fg2">
+        <div class="fg"><label class="fl">Planta *</label><input class="fi" id="loc-planta" placeholder="Planta A"></div>
+        <div class="fg"><label class="fl">Setor *</label><input class="fi" id="loc-setor" placeholder="Linha de Producao 1"></div>
       </div>
-      <div class="form-group">
-        <label class="form-label">Ativo *</label>
-        <select class="form-select" id="local-ativo"></select>
-      </div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label class="form-label">Latitude</label>
-          <input class="form-input" id="local-lat" type="number" step="any" placeholder="-8.0476">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Longitude</label>
-          <input class="form-input" id="local-lng" type="number" step="any" placeholder="-34.877">
-        </div>
+      <div class="fg"><label class="fl">Ativo *</label><select class="fs" id="loc-ativo"></select></div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Latitude</label><input class="fi" id="loc-lat" type="number" step="any" placeholder="-8.0476"></div>
+        <div class="fg"><label class="fl">Longitude</label><input class="fi" id="loc-lng" type="number" step="any" placeholder="-34.877"></div>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="closeModal('modal-local')">Cancelar</button>
-      <button class="btn btn-orange" onclick="saveLocalizacao()">💾 Salvar</button>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeM('m-local')">Cancelar</button>
+      <button class="btn btn-orange" onclick="saveLocal()">Salvar</button>
     </div>
   </div>
 </div>
 
 <!-- Toast container -->
-<div class="toast-wrap" id="toast-wrap"></div>
+<div class="toast-wrap" id="toasts"></div>
 
 <script>
-// ════════════════════════════════════════════════
-//  STATE
-// ════════════════════════════════════════════════
-let BASE_URL = 'http://localhost:8000';
-let TOKEN = localStorage.getItem('ns_token') || '';
-let currentPage = 'dashboard';
+var BASE = 'http://localhost:8000';
+var TOKEN = localStorage.getItem('ns_tok') || '';
+var CUR = 'dashboard';
 
-function api(path) { return `${BASE_URL}/api${path}`; }
+var PAGE_TITLES = {
+  dashboard: 'Dashboard',
+  ativos: 'Ativos Industriais',
+  manutencao: 'Ordens de Manutencao',
+  historico: 'Historico de Manutencao',
+  sensores: 'Sensores IoT',
+  telemetria: 'Telemetria',
+  alertas: 'Alertas Automaticos',
+  localizacao: 'Localizacao Industrial',
+  conta: 'Minha Conta'
+};
 
-function headers(extra={}) {
-  const h = { 'Content-Type': 'application/json', ...extra };
-  if (TOKEN) h['Authorization'] = `Token ${TOKEN}`;
+function api(path) {
+  return BASE + '/api' + path;
+}
+
+function hdrs() {
+  var h = { 'Content-Type': 'application/json' };
+  if (TOKEN) h['Authorization'] = 'Token ' + TOKEN;
   return h;
 }
 
-// ════════════════════════════════════════════════
-//  UTILS
-// ════════════════════════════════════════════════
-function updateBase() {
-  BASE_URL = document.getElementById('api-base-url').value.replace(/\/$/, '');
-}
-
-async function testConnection() {
-  try {
-    const r = await fetch(api('/ativos/'), { headers: headers() });
-    const dot = document.getElementById('api-dot');
-    if (r.ok || r.status === 401) {
-      dot.className = 'api-dot';
-      toast('Conexão com a API estabelecida!', 'success');
-    } else {
-      dot.className = 'api-dot off';
-      toast('API respondeu com ' + r.status, 'error');
-    }
-  } catch(e) {
-    document.getElementById('api-dot').className = 'api-dot off';
-    toast('Não foi possível conectar: ' + e.message, 'error');
-  }
-}
-
-function toast(msg, type='info') {
-  const icons = { success:'✅', error:'❌', info:'ℹ️' };
-  const wrap = document.getElementById('toast-wrap');
-  const el = document.createElement('div');
-  el.className = `toast ${type}`;
-  el.innerHTML = `<span class="ti">${icons[type]||'ℹ️'}</span><span>${msg}</span>`;
-  wrap.appendChild(el);
-  setTimeout(()=>el.remove(), 4000);
-}
-
 function fmt(d) {
-  if(!d) return '—';
-  return new Date(d).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  if (!d) return '--';
+  try { return new Date(d).toLocaleString('pt-BR'); } catch(e) { return String(d); }
 }
 
-function statusBadge(s) {
-  const map = {
-    ativo:'green', inativo:'gray', em_manutencao:'orange',
-    aberta:'blue', em_andamento:'orange', concluida:'green', cancelada:'gray',
-    critica:'red', alta:'orange', media:'blue', baixa:'gray'
+function badge(s) {
+  if (!s) return '<span class="badge b-gray">--</span>';
+  var map = {
+    ativo:'b-green', inativo:'b-gray', em_manutencao:'b-orange',
+    aberta:'b-blue', em_andamento:'b-orange', concluida:'b-green', cancelada:'b-gray',
+    critica:'b-red', alta:'b-orange', media:'b-blue', baixa:'b-gray',
+    preventiva:'b-blue', corretiva:'b-red', preditiva:'b-orange',
+    temperatura:'b-orange', vibracao:'b-blue', pressao:'b-green', corrente:'b-red', umidade:'b-blue'
   };
-  const cls = map[s] || 'gray';
-  return `<span class="badge badge-${cls}">${(s||'—').replace(/_/g,' ')}</span>`;
+  var cls = map[s] || 'b-gray';
+  return '<span class="badge ' + cls + '">' + String(s).replace(/_/g,' ') + '</span>';
 }
 
-function openModal(id) {
+function showToast(msg, type) {
+  var colors = { success: '#00C853', error: '#FF1744', info: '#1E88E5' };
+  var wrap = document.getElementById('toasts');
+  var el = document.createElement('div');
+  el.className = 'toast';
+  var color = type === 'success' ? '#00C853' : (type === 'error' ? '#FF1744' : '#1E88E5');
+  el.innerHTML = '<span style="color:' + color + ';font-weight:700;font-size:11px">[' + String(type).toUpperCase() + ']</span><span>' + String(msg) + '</span>';
+  wrap.appendChild(el);
+  setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 4000);
+}
+
+function loadingRow(cols) {
+  cols = cols || 6;
+  return '<tr><td colspan="' + cols + '"><div class="loading"><div class="spin"></div>Carregando...</div></td></tr>';
+}
+
+function emptyRow(msg, cols) {
+  cols = cols || 6;
+  return '<tr><td colspan="' + cols + '"><div class="empty">' + String(msg) + '</div></td></tr>';
+}
+
+function getList(data) {
+  if (!data) return [];
+  return Array.isArray(data) ? data : (data.results || []);
+}
+
+// MODALS
+function openM(id) {
   document.getElementById(id).classList.add('open');
-  // populate dropdowns
-  if(id==='modal-manut') loadAtivosSelect('manut-ativo');
-  if(id==='modal-sensor') loadAtivosSelect('sensor-ativo');
-  if(id==='modal-leitura') {
-    loadAtivosSelect('leit-ativo');
-    loadSensoresSelect('leit-sensor');
+  if (id === 'm-manut') fillSel('m-ativo', '/ativos/', false);
+  if (id === 'm-sensor') fillSel('s-ativo', '/ativos/', false);
+  if (id === 'm-leit') {
+    fillSel('lt-ativo', '/ativos/', false);
+    fillSel('lt-sensor', '/telemetria/sensores/', true);
   }
-  if(id==='modal-local') loadAtivosSelect('local-ativo');
+  if (id === 'm-local') fillSel('loc-ativo', '/ativos/', false);
 }
 
-function closeModal(id) {
+function closeM(id) {
   document.getElementById(id).classList.remove('open');
 }
 
-// Close on overlay click
-document.querySelectorAll('.modal-overlay').forEach(o=>{
-  o.addEventListener('click', e=>{ if(e.target===o) o.classList.remove('open'); });
+document.querySelectorAll('.overlay').forEach(function(o) {
+  o.addEventListener('click', function(e) {
+    if (e.target === o) o.classList.remove('open');
+  });
 });
 
-async function loadAtivosSelect(selectId) {
+async function fillSel(selId, path, optional) {
   try {
-    const r = await fetch(api('/ativos/'), { headers: headers() });
-    if(!r.ok) return;
-    const data = await r.json();
-    const items = Array.isArray(data) ? data : (data.results || []);
-    const sel = document.getElementById(selectId);
-    const cur = sel.value;
-    sel.innerHTML = items.map(a=>`<option value="${a.id}">${a.nome}</option>`).join('');
-    if(cur) sel.value=cur;
-  } catch(e){}
+    var r = await fetch(api(path), { headers: hdrs() });
+    if (!r.ok) return;
+    var data = await r.json();
+    var items = getList(data);
+    var sel = document.getElementById(selId);
+    var cur = sel.value;
+    var html = optional ? '<option value="">-- Nenhum --</option>' : '';
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      html += '<option value="' + it.id + '">' + (it.nome || it.name || String(it.id)) + '</option>';
+    }
+    sel.innerHTML = html;
+    if (cur) sel.value = cur;
+  } catch(e) {}
 }
 
-async function loadSensoresSelect(selectId) {
-  try {
-    const r = await fetch(api('/telemetria/sensores/'), { headers: headers() });
-    if(!r.ok) return;
-    const data = await r.json();
-    const items = Array.isArray(data) ? data : (data.results || []);
-    const sel = document.getElementById(selectId);
-    sel.innerHTML = `<option value="">— Sem sensor —</option>` + items.map(s=>`<option value="${s.id}">${s.nome}</option>`).join('');
-  } catch(e){}
-}
-
-// ════════════════════════════════════════════════
-//  NAVIGATION
-// ════════════════════════════════════════════════
-const pageTitles = {
-  dashboard:'Dashboard', ativos:'Ativos Industriais', manutencao:'Ordens de Manutenção',
-  historico:'Histórico de Manutenção', sensores:'Sensores IoT', telemetria:'Telemetria',
-  alertas:'Alertas Automáticos', localizacao:'Localização Industrial', conta:'Minha Conta'
-};
-
-function goto(page) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('page-'+page).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n=>{
-    if(n.getAttribute('onclick')?.includes(`'${page}'`)) n.classList.add('active');
-  });
-  document.getElementById('page-title').textContent = pageTitles[page]||page;
-  currentPage = page;
-  loadPage(page);
-}
-
-function refreshCurrentPage() { loadPage(currentPage); }
-
-function loadPage(page) {
-  switch(page) {
-    case 'dashboard': loadDashboard(); break;
-    case 'ativos': loadAtivos(); break;
-    case 'manutencao': loadManutencao(); break;
-    case 'historico': loadHistorico(); break;
-    case 'sensores': loadSensores(); break;
-    case 'telemetria': loadTelemetria(); break;
-    case 'alertas': loadAlertas(); break;
-    case 'localizacao': loadLocalizacao(); break;
-    case 'conta': loadConta(); break;
-  }
-}
-
-// ════════════════════════════════════════════════
-//  AUTH
-// ════════════════════════════════════════════════
-function switchAuthTab(tab) {
-  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.auth-tab').forEach(t=>{ if(t.getAttribute('onclick')?.includes(tab)) t.classList.add('active'); });
-  document.getElementById('tab-login').style.display = tab==='login' ? '' : 'none';
-  document.getElementById('tab-register').style.display = tab==='register' ? '' : 'none';
+// AUTH
+function switchTab(t) {
+  document.getElementById('tab-login').style.display = (t === 'login') ? '' : 'none';
+  document.getElementById('tab-reg').style.display = (t === 'reg') ? '' : 'none';
+  document.getElementById('tab-btn-login').className = 'auth-tab' + ((t === 'login') ? ' active' : '');
+  document.getElementById('tab-btn-reg').className = 'auth-tab' + ((t === 'reg') ? ' active' : '');
 }
 
 async function doLogin() {
-  const username = document.getElementById('login-user').value.trim();
-  const password = document.getElementById('login-pass').value;
-  const msg = document.getElementById('auth-msg-login');
-  if(!username||!password) { msg.textContent='Preencha todos os campos.'; return; }
+  var user = document.getElementById('l-user').value.trim();
+  var pass = document.getElementById('l-pass').value;
+  var msg = document.getElementById('l-msg');
+  if (!user || !pass) { msg.textContent = 'Preencha usuario e senha.'; return; }
   try {
-    const r = await fetch(api('/accounts/login/'), {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({username,password})
+    var r = await fetch(api('/accounts/login/'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, password: pass })
     });
-    const data = await r.json();
-    if(r.ok && data.token) {
+    var data = await r.json();
+    if (r.ok && data.token) {
       TOKEN = data.token;
-      localStorage.setItem('ns_token', TOKEN);
-      document.getElementById('auth-gate').style.display='none';
-      document.getElementById('sidebar-user').textContent = '👤 ' + (data.username || username);
-      loadPage('dashboard');
-      toast('Login realizado com sucesso!', 'success');
+      localStorage.setItem('ns_tok', TOKEN);
+      document.getElementById('auth-gate').style.display = 'none';
+      document.getElementById('sb-user').textContent = data.username || user;
+      loadDash();
+      showToast('Login realizado!', 'success');
     } else {
-      msg.textContent = data.detail || data.non_field_errors?.[0] || 'Credenciais inválidas.';
+      var err = data.detail || (data.non_field_errors && data.non_field_errors[0]) || 'Credenciais invalidas.';
+      msg.textContent = String(err);
     }
-  } catch(e) {
-    msg.textContent = 'Erro de conexão: ' + e.message;
-  }
+  } catch(e) { msg.textContent = 'Erro de conexao: ' + e.message; }
 }
 
 async function doRegister() {
-  const username = document.getElementById('reg-user').value.trim();
-  const email = document.getElementById('reg-email').value.trim();
-  const password = document.getElementById('reg-pass').value;
-  const msg = document.getElementById('auth-msg-register');
-  if(!username||!password) { msg.textContent='Preencha usuário e senha.'; return; }
+  var user = document.getElementById('r-user').value.trim();
+  var email = document.getElementById('r-email').value.trim();
+  var pass = document.getElementById('r-pass').value;
+  var msg = document.getElementById('r-msg');
+  if (!user || !pass) { msg.textContent = 'Preencha usuario e senha.'; return; }
   try {
-    const r = await fetch(api('/accounts/register/'), {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({username,email,password})
+    var r = await fetch(api('/accounts/register/'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: user, email: email, password: pass })
     });
-    const data = await r.json();
-    if(r.ok) {
-      msg.textContent = '✅ Conta criada! Faça login.';
-      switchAuthTab('login');
+    if (r.ok) {
+      msg.textContent = 'Conta criada! Faca login.';
+      switchTab('login');
     } else {
-      msg.textContent = JSON.stringify(data).replace(/[{}"]/g,'');
+      var data = await r.json();
+      msg.textContent = JSON.stringify(data).replace(/[{}"]/g, '');
     }
   } catch(e) { msg.textContent = 'Erro: ' + e.message; }
 }
 
 async function doLogout() {
-  try {
-    await fetch(api('/accounts/logout/'), { method:'POST', headers: headers() });
-  } catch(e){}
-  TOKEN='';
-  localStorage.removeItem('ns_token');
+  try { await fetch(api('/accounts/logout/'), { method: 'POST', headers: hdrs() }); } catch(e) {}
+  TOKEN = '';
+  localStorage.removeItem('ns_tok');
   location.reload();
 }
 
-function copyToken() {
-  navigator.clipboard.writeText(TOKEN).then(()=>toast('Token copiado!','success'));
+function copyTok() {
+  navigator.clipboard.writeText(TOKEN).then(function() { showToast('Token copiado!', 'success'); });
 }
 
-// ════════════════════════════════════════════════
-//  DASHBOARD
-// ════════════════════════════════════════════════
-async function loadDashboard() {
-  const [ativos, manut, alertas, sensores, kpis] = await Promise.allSettled([
-    fetch(api('/ativos/'), { headers:headers() }).then(r=>r.json()),
-    fetch(api('/manutencao/'), { headers:headers() }).then(r=>r.json()),
-    fetch(api('/alertas/'), { headers:headers() }).then(r=>r.json()),
-    fetch(api('/telemetria/sensores/'), { headers:headers() }).then(r=>r.json()),
-    fetch(api('/dashboards/kpis/'), { headers:headers() }).then(r=>r.json()),
-  ]);
-
-  const ativosData = ativos.status==='fulfilled' ? (Array.isArray(ativos.value)?ativos.value:ativos.value.results||[]) : [];
-  const manutData  = manut.status==='fulfilled'  ? (Array.isArray(manut.value)?manut.value:manut.value.results||[])   : [];
-  const alertasData= alertas.status==='fulfilled'? (Array.isArray(alertas.value)?alertas.value:alertas.value.results||[]) : [];
-  const sensData   = sensores.status==='fulfilled'?(Array.isArray(sensores.value)?sensores.value:sensores.value.results||[]) : [];
-
-  document.getElementById('ds-ativos').textContent = ativosData.length;
-  document.getElementById('ds-manut').textContent  = manutData.filter(m=>m.status==='aberta'||m.status==='em_andamento').length;
-  document.getElementById('ds-alertas').textContent= alertasData.length;
-  document.getElementById('ds-sensores').textContent= sensData.length;
-
-  // KPIs
-  if(kpis.status==='fulfilled') {
-    const k = kpis.value;
-    const mtbf = k.mtbf_horas ?? k.mtbf ?? 0;
-    const mttr = k.mttr_horas ?? k.mttr ?? 0;
-    const disp = k.disponibilidade ?? k.disponibilidade_percent ?? 0;
-    document.getElementById('kpi-mtbf').textContent = (+mtbf).toFixed(1);
-    document.getElementById('kpi-mttr').textContent = (+mttr).toFixed(1);
-    document.getElementById('kpi-disp').textContent = (+disp).toFixed(1);
-    document.getElementById('kpi-mtbf-bar').style.width = Math.min((+mtbf)/500*100,100)+'%';
-    document.getElementById('kpi-mttr-bar').style.width = Math.min((+mttr)/72*100,100)+'%';
-    document.getElementById('kpi-disp-bar').style.width = Math.min(+disp,100)+'%';
+// NAVIGATION
+function goto(pg) {
+  var pages = document.querySelectorAll('.page');
+  for (var i = 0; i < pages.length; i++) pages[i].classList.remove('active');
+  var navItems = document.querySelectorAll('.nav-item');
+  for (var j = 0; j < navItems.length; j++) navItems[j].classList.remove('active');
+  document.getElementById('page-' + pg).classList.add('active');
+  for (var k = 0; k < navItems.length; k++) {
+    var oc = navItems[k].getAttribute('onclick');
+    if (oc && oc.indexOf("'" + pg + "'") >= 0) navItems[k].classList.add('active');
   }
-
-  // Recent ativos table
-  const tb = document.getElementById('dash-ativos-tb');
-  if(!ativosData.length) { tb.innerHTML=`<tr><td colspan="4"><div class="empty"><div class="empty-icon">🏗️</div><div class="empty-text">Nenhum ativo cadastrado</div></div></td></tr>`; return; }
-  tb.innerHTML = ativosData.slice(0,8).map(a=>`
-    <tr>
-      <td><strong>${a.nome||'—'}</strong></td>
-      <td><code>${a.numero_serie||a.numero_serie||'—'}</code></td>
-      <td>${statusBadge(a.status)}</td>
-      <td>${fmt(a.criado_em||a.created_at)}</td>
-    </tr>`).join('');
+  document.getElementById('page-title').textContent = PAGE_TITLES[pg] || pg;
+  CUR = pg;
+  loadPage(pg);
 }
 
-// ════════════════════════════════════════════════
-//  ATIVOS
-// ════════════════════════════════════════════════
-async function loadAtivos() {
-  const tb = document.getElementById('ativos-tb');
-  tb.innerHTML = `<tr><td colspan="6"><div class="loading"><div class="spinner"></div>Carregando…</div></td></tr>`;
-  let url = api('/ativos/?');
-  const s = document.getElementById('f-ativo-search')?.value;
-  const st = document.getElementById('f-ativo-status')?.value;
-  if(s) url += `search=${encodeURIComponent(s)}&`;
-  if(st) url += `status=${st}&`;
+function refresh() { loadPage(CUR); }
+
+function loadPage(pg) {
+  var fns = {
+    dashboard: loadDash,
+    ativos: loadAtivos,
+    manutencao: loadManut,
+    historico: loadHist,
+    sensores: loadSensores,
+    telemetria: loadTele,
+    alertas: loadAlertas,
+    localizacao: loadLocal,
+    conta: loadConta
+  };
+  if (fns[pg]) fns[pg]();
+}
+
+async function testConn() {
+  BASE = document.getElementById('api-url').value.replace(/\/$/, '');
+  var dot = document.getElementById('api-dot');
   try {
-    const r = await fetch(url, { headers:headers() });
-    if(!r.ok) { tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Erro ${r.status}</div></div></td></tr>`; return; }
-    const data = await r.json();
-    const items = Array.isArray(data) ? data : (data.results||[]);
-    if(!items.length) { tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">🏗️</div><div class="empty-text">Nenhum ativo encontrado</div></div></td></tr>`; return; }
-    tb.innerHTML = items.map(a=>`<tr>
-      <td><strong>${a.nome||'—'}</strong></td>
-      <td><code>${a.numero_serie||'—'}</code></td>
-      <td>${a.modelo||'—'}</td>
-      <td>${statusBadge(a.status)}</td>
-      <td>${fmt(a.criado_em||a.created_at)}</td>
-      <td><div class="row-actions">
-        <button class="btn btn-outline btn-sm" onclick="editAtivo(${a.id})">✏️</button>
-        <button class="btn btn-danger" onclick="deleteAtivo(${a.id})">🗑</button>
-      </div></td>
-    </tr>`).join('');
-  } catch(e) { tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">❌</div><div class="empty-text">${e.message}</div></div></td></tr>`; }
+    var r = await fetch(api('/ativos/'), { headers: hdrs() });
+    if (r.ok || r.status === 401 || r.status === 403) {
+      dot.className = 'api-dot';
+      showToast('API conectada! Status: ' + r.status, 'success');
+    } else {
+      dot.className = 'api-dot off';
+      showToast('API retornou status ' + r.status, 'error');
+    }
+  } catch(e) {
+    dot.className = 'api-dot off';
+    showToast('Sem conexao: ' + e.message, 'error');
+  }
+}
+
+// DASHBOARD
+async function loadDash() {
+  var results = await Promise.allSettled([
+    fetch(api('/ativos/'), { headers: hdrs() }).then(function(r) { return r.json(); }),
+    fetch(api('/manutencao/'), { headers: hdrs() }).then(function(r) { return r.json(); }),
+    fetch(api('/alertas/'), { headers: hdrs() }).then(function(r) { return r.json(); }),
+    fetch(api('/telemetria/sensores/'), { headers: hdrs() }).then(function(r) { return r.json(); }),
+    fetch(api('/dashboards/kpis/'), { headers: hdrs() }).then(function(r) { return r.json(); })
+  ]);
+  var ativos = (results[0].status === 'fulfilled') ? getList(results[0].value) : [];
+  var manut = (results[1].status === 'fulfilled') ? getList(results[1].value) : [];
+  var alertas = (results[2].status === 'fulfilled') ? getList(results[2].value) : [];
+  var sens = (results[3].status === 'fulfilled') ? getList(results[3].value) : [];
+  document.getElementById('ds-ativos').textContent = ativos.length;
+  var openManut = 0;
+  for (var i = 0; i < manut.length; i++) {
+    if (manut[i].status === 'aberta' || manut[i].status === 'em_andamento') openManut++;
+  }
+  document.getElementById('ds-manut').textContent = openManut;
+  document.getElementById('ds-alertas').textContent = alertas.length;
+  document.getElementById('ds-sens').textContent = sens.length;
+  if (results[4].status === 'fulfilled') {
+    var k = results[4].value;
+    var mtbf = parseFloat(k.mtbf_horas || k.mtbf || 0);
+    var mttr = parseFloat(k.mttr_horas || k.mttr || 0);
+    var disp = parseFloat(k.disponibilidade || k.disponibilidade_percent || 0);
+    document.getElementById('k-mtbf').textContent = mtbf.toFixed(1);
+    document.getElementById('k-mttr').textContent = mttr.toFixed(1);
+    document.getElementById('k-disp').textContent = disp.toFixed(1);
+    document.getElementById('k-mtbf-b').style.width = Math.min(mtbf / 5, 100) + '%';
+    document.getElementById('k-mttr-b').style.width = Math.min(mttr / 0.72, 100) + '%';
+    document.getElementById('k-disp-b').style.width = Math.min(disp, 100) + '%';
+  }
+  var tb = document.getElementById('dash-tb');
+  if (!ativos.length) { tb.innerHTML = emptyRow('Nenhum ativo cadastrado', 4); return; }
+  var rows = '';
+  var limit = Math.min(ativos.length, 8);
+  for (var j = 0; j < limit; j++) {
+    var a = ativos[j];
+    rows += '<tr><td><strong>' + (a.nome || '--') + '</strong></td>' +
+      '<td><code>' + (a.numero_serie || '--') + '</code></td>' +
+      '<td>' + badge(a.status) + '</td>' +
+      '<td>' + fmt(a.criado_em || a.created_at) + '</td></tr>';
+  }
+  tb.innerHTML = rows;
+}
+
+// ATIVOS
+async function loadAtivos() {
+  var tb = document.getElementById('ativos-tb');
+  tb.innerHTML = loadingRow(6);
+  var url = api('/ativos/?');
+  var sEl = document.getElementById('fa-search');
+  var stEl = document.getElementById('fa-status');
+  if (sEl && sEl.value) url += 'search=' + encodeURIComponent(sEl.value) + '&';
+  if (stEl && stEl.value) url += 'status=' + stEl.value + '&';
+  try {
+    var r = await fetch(url, { headers: hdrs() });
+    if (!r.ok) { tb.innerHTML = emptyRow('Erro ' + r.status, 6); return; }
+    var data = await r.json();
+    var items = getList(data);
+    if (!items.length) { tb.innerHTML = emptyRow('Nenhum ativo encontrado', 6); return; }
+    var rows = '';
+    for (var i = 0; i < items.length; i++) {
+      var a = items[i];
+      rows += '<tr><td><strong>' + (a.nome || '--') + '</strong></td>' +
+        '<td><code>' + (a.numero_serie || '--') + '</code></td>' +
+        '<td>' + (a.modelo || '--') + '</td>' +
+        '<td>' + badge(a.status) + '</td>' +
+        '<td>' + fmt(a.criado_em || a.created_at) + '</td>' +
+        '<td><div class="row-acts">' +
+          '<button class="btn btn-outline btn-sm" onclick="editAtivo(' + a.id + ')">Editar</button>' +
+          '<button class="btn btn-danger" onclick="delAtivo(' + a.id + ')">Del</button>' +
+        '</div></td></tr>';
+    }
+    tb.innerHTML = rows;
+  } catch(e) { tb.innerHTML = emptyRow(e.message, 6); }
+}
+
+function resetAtivoForm() {
+  ['a-id','a-nome','a-serie','a-modelo','a-fab','a-data','a-desc'].forEach(function(id) {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('a-status').value = 'ativo';
+  document.getElementById('ativo-modal-ttl').textContent = 'Novo Ativo';
 }
 
 async function editAtivo(id) {
   try {
-    const r = await fetch(api(`/ativos/${id}/`), { headers:headers() });
-    const a = await r.json();
-    document.getElementById('ativo-id').value = id;
-    document.getElementById('ativo-nome').value = a.nome||'';
-    document.getElementById('ativo-serie').value = a.numero_serie||'';
-    document.getElementById('ativo-modelo').value = a.modelo||'';
-    document.getElementById('ativo-fabricante').value = a.fabricante||'';
-    document.getElementById('ativo-status').value = a.status||'ativo';
-    document.getElementById('ativo-data').value = a.data_aquisicao||'';
-    document.getElementById('ativo-desc').value = a.descricao||'';
-    document.getElementById('ativo-modal-title').textContent = 'Editar Ativo';
-    openModal('modal-ativo');
-  } catch(e) { toast('Erro ao carregar ativo','error'); }
+    var r = await fetch(api('/ativos/' + id + '/'), { headers: hdrs() });
+    var a = await r.json();
+    document.getElementById('a-id').value = id;
+    document.getElementById('a-nome').value = a.nome || '';
+    document.getElementById('a-serie').value = a.numero_serie || '';
+    document.getElementById('a-modelo').value = a.modelo || '';
+    document.getElementById('a-fab').value = a.fabricante || '';
+    document.getElementById('a-status').value = a.status || 'ativo';
+    document.getElementById('a-data').value = a.data_aquisicao || '';
+    document.getElementById('a-desc').value = a.descricao || '';
+    document.getElementById('ativo-modal-ttl').textContent = 'Editar Ativo';
+    openM('m-ativo');
+  } catch(e) { showToast('Erro ao carregar ativo', 'error'); }
 }
 
 async function saveAtivo() {
-  const id = document.getElementById('ativo-id').value;
-  const body = {
-    nome: document.getElementById('ativo-nome').value,
-    numero_serie: document.getElementById('ativo-serie').value,
-    modelo: document.getElementById('ativo-modelo').value,
-    fabricante: document.getElementById('ativo-fabricante').value,
-    status: document.getElementById('ativo-status').value,
-    data_aquisicao: document.getElementById('ativo-data').value || null,
-    descricao: document.getElementById('ativo-desc').value,
+  var id = document.getElementById('a-id').value;
+  var nome = document.getElementById('a-nome').value;
+  var serie = document.getElementById('a-serie').value;
+  if (!nome || !serie) { showToast('Nome e N Serie sao obrigatorios', 'error'); return; }
+  var body = {
+    nome: nome,
+    numero_serie: serie,
+    modelo: document.getElementById('a-modelo').value,
+    fabricante: document.getElementById('a-fab').value,
+    status: document.getElementById('a-status').value,
+    data_aquisicao: document.getElementById('a-data').value || null,
+    descricao: document.getElementById('a-desc').value
   };
-  if(!body.nome||!body.numero_serie) { toast('Nome e Nº Série são obrigatórios','error'); return; }
   try {
-    const r = await fetch(id ? api(`/ativos/${id}/`) : api('/ativos/'), {
-      method: id ? 'PUT' : 'POST',
-      headers: headers(),
-      body: JSON.stringify(body)
-    });
-    if(r.ok) {
-      toast(id?'Ativo atualizado!':'Ativo criado!','success');
-      closeModal('modal-ativo');
-      // reset
-      document.getElementById('ativo-id').value='';
-      document.getElementById('ativo-modal-title').textContent='Novo Ativo';
+    var url = id ? api('/ativos/' + id + '/') : api('/ativos/');
+    var r = await fetch(url, { method: id ? 'PUT' : 'POST', headers: hdrs(), body: JSON.stringify(body) });
+    if (r.ok) {
+      showToast(id ? 'Ativo atualizado!' : 'Ativo criado!', 'success');
+      closeM('m-ativo');
       loadAtivos();
     } else {
-      const e = await r.json();
-      toast('Erro: ' + JSON.stringify(e), 'error');
+      var e = await r.json();
+      showToast('Erro: ' + JSON.stringify(e), 'error');
     }
-  } catch(e) { toast('Erro de rede: '+e.message,'error'); }
+  } catch(e) { showToast('Erro: ' + e.message, 'error'); }
 }
 
-async function deleteAtivo(id) {
-  if(!confirm('Confirma exclusão do ativo?')) return;
+async function delAtivo(id) {
+  if (!confirm('Excluir este ativo?')) return;
   try {
-    const r = await fetch(api(`/ativos/${id}/`), { method:'DELETE', headers:headers() });
-    if(r.ok||r.status===204) { toast('Ativo excluído','success'); loadAtivos(); }
-    else toast('Erro ao excluir','error');
-  } catch(e) { toast('Erro: '+e.message,'error'); }
+    var r = await fetch(api('/ativos/' + id + '/'), { method: 'DELETE', headers: hdrs() });
+    if (r.ok || r.status === 204) { showToast('Ativo excluido', 'success'); loadAtivos(); }
+    else showToast('Erro ao excluir', 'error');
+  } catch(e) { showToast(e.message, 'error'); }
 }
 
-// ════════════════════════════════════════════════
-//  MANUTENÇÃO
-// ════════════════════════════════════════════════
-async function loadManutencao() {
-  const tb = document.getElementById('manutencao-tb');
-  tb.innerHTML = `<tr><td colspan="7"><div class="loading"><div class="spinner"></div>Carregando…</div></td></tr>`;
-  let url = api('/manutencao/?');
-  const s = document.getElementById('f-manut-search')?.value;
-  const st = document.getElementById('f-manut-status')?.value;
-  if(s) url += `search=${encodeURIComponent(s)}&`;
-  if(st) url += `status=${st}&`;
+// MANUTENCAO
+async function loadManut() {
+  var tb = document.getElementById('manut-tb');
+  tb.innerHTML = loadingRow(7);
+  var url = api('/manutencao/?');
+  var sEl = document.getElementById('fm-search');
+  var stEl = document.getElementById('fm-status');
+  if (sEl && sEl.value) url += 'search=' + encodeURIComponent(sEl.value) + '&';
+  if (stEl && stEl.value) url += 'status=' + stEl.value + '&';
   try {
-    const r = await fetch(url, { headers:headers() });
-    if(!r.ok) { tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Erro ${r.status}</div></div></td></tr>`; return; }
-    const data = await r.json();
-    const items = Array.isArray(data) ? data : (data.results||[]);
-    if(!items.length) { tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-icon">🔧</div><div class="empty-text">Nenhuma ordem encontrada</div></div></td></tr>`; return; }
-    tb.innerHTML = items.map(m=>`<tr>
-      <td><strong>${m.titulo||m.descricao||'—'}</strong></td>
-      <td>${m.ativo_nome||m.ativo||'—'}</td>
-      <td>${statusBadge(m.tipo)}</td>
-      <td>${statusBadge(m.prioridade)}</td>
-      <td>${statusBadge(m.status)}</td>
-      <td>${m.responsavel||'—'}</td>
-      <td><div class="row-actions">
-        <button class="btn btn-outline btn-sm" onclick="editManutencao(${m.id})">✏️</button>
-        <button class="btn btn-danger" onclick="deleteManutencao(${m.id})">🗑</button>
-      </div></td>
-    </tr>`).join('');
-  } catch(e) { tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-icon">❌</div><div class="empty-text">${e.message}</div></div></td></tr>`; }
+    var r = await fetch(url, { headers: hdrs() });
+    if (!r.ok) { tb.innerHTML = emptyRow('Erro ' + r.status, 7); return; }
+    var data = await r.json();
+    var items = getList(data);
+    if (!items.length) { tb.innerHTML = emptyRow('Nenhuma ordem encontrada', 7); return; }
+    var rows = '';
+    for (var i = 0; i < items.length; i++) {
+      var m = items[i];
+      rows += '<tr><td><strong>' + (m.titulo || m.descricao || '--') + '</strong></td>' +
+        '<td>' + (m.ativo_nome || m.ativo || '--') + '</td>' +
+        '<td>' + badge(m.tipo) + '</td>' +
+        '<td>' + badge(m.prioridade) + '</td>' +
+        '<td>' + badge(m.status) + '</td>' +
+        '<td>' + (m.responsavel || '--') + '</td>' +
+        '<td><div class="row-acts">' +
+          '<button class="btn btn-outline btn-sm" onclick="editManut(' + m.id + ')">Editar</button>' +
+          '<button class="btn btn-danger" onclick="delManut(' + m.id + ')">Del</button>' +
+        '</div></td></tr>';
+    }
+    tb.innerHTML = rows;
+  } catch(e) { tb.innerHTML = emptyRow(e.message, 7); }
 }
 
-async function editManutencao(id) {
+function resetManutForm() {
+  ['m-id','m-titulo','m-resp','m-desc'].forEach(function(id) { document.getElementById(id).value = ''; });
+  document.getElementById('m-tipo').value = 'preventiva';
+  document.getElementById('m-prior').value = 'media';
+  document.getElementById('m-status').value = 'aberta';
+  document.getElementById('manut-modal-ttl').textContent = 'Nova Ordem';
+}
+
+async function editManut(id) {
   try {
-    const r = await fetch(api(`/manutencao/${id}/`), { headers:headers() });
-    const m = await r.json();
-    document.getElementById('manut-id').value = id;
-    document.getElementById('manut-titulo').value = m.titulo||'';
-    document.getElementById('manut-tipo').value = m.tipo||'preventiva';
-    document.getElementById('manut-prioridade').value = m.prioridade||'media';
-    document.getElementById('manut-status').value = m.status||'aberta';
-    document.getElementById('manut-responsavel').value = m.responsavel||'';
-    document.getElementById('manut-desc').value = m.descricao||'';
-    document.getElementById('manut-modal-title').textContent = 'Editar Ordem';
-    openModal('modal-manut');
-    setTimeout(()=>{ document.getElementById('manut-ativo').value=m.ativo; },300);
-  } catch(e) { toast('Erro ao carregar','error'); }
+    var r = await fetch(api('/manutencao/' + id + '/'), { headers: hdrs() });
+    var m = await r.json();
+    document.getElementById('m-id').value = id;
+    document.getElementById('m-titulo').value = m.titulo || '';
+    document.getElementById('m-tipo').value = m.tipo || 'preventiva';
+    document.getElementById('m-prior').value = m.prioridade || 'media';
+    document.getElementById('m-status').value = m.status || 'aberta';
+    document.getElementById('m-resp').value = m.responsavel || '';
+    document.getElementById('m-desc').value = m.descricao || '';
+    document.getElementById('manut-modal-ttl').textContent = 'Editar Ordem';
+    openM('m-manut');
+    var ativoId = m.ativo;
+    setTimeout(function() { if (ativoId) document.getElementById('m-ativo').value = ativoId; }, 400);
+  } catch(e) { showToast('Erro ao carregar', 'error'); }
 }
 
-async function saveManutencao() {
-  const id = document.getElementById('manut-id').value;
-  const body = {
-    titulo: document.getElementById('manut-titulo').value,
-    ativo: +document.getElementById('manut-ativo').value,
-    tipo: document.getElementById('manut-tipo').value,
-    prioridade: document.getElementById('manut-prioridade').value,
-    status: document.getElementById('manut-status').value,
-    responsavel: document.getElementById('manut-responsavel').value,
-    descricao: document.getElementById('manut-desc').value,
+async function saveManut() {
+  var id = document.getElementById('m-id').value;
+  var titulo = document.getElementById('m-titulo').value;
+  var ativo = parseInt(document.getElementById('m-ativo').value);
+  if (!titulo || !ativo) { showToast('Titulo e Ativo sao obrigatorios', 'error'); return; }
+  var body = {
+    titulo: titulo,
+    ativo: ativo,
+    tipo: document.getElementById('m-tipo').value,
+    prioridade: document.getElementById('m-prior').value,
+    status: document.getElementById('m-status').value,
+    responsavel: document.getElementById('m-resp').value,
+    descricao: document.getElementById('m-desc').value
   };
-  if(!body.titulo||!body.ativo) { toast('Título e Ativo são obrigatórios','error'); return; }
   try {
-    const r = await fetch(id ? api(`/manutencao/${id}/`) : api('/manutencao/'), {
-      method: id ? 'PUT' : 'POST',
-      headers: headers(),
-      body: JSON.stringify(body)
-    });
-    if(r.ok) {
-      toast(id?'Ordem atualizada!':'Ordem criada!','success');
-      closeModal('modal-manut');
-      document.getElementById('manut-id').value='';
-      document.getElementById('manut-modal-title').textContent='Nova Ordem de Manutenção';
-      loadManutencao();
+    var url = id ? api('/manutencao/' + id + '/') : api('/manutencao/');
+    var r = await fetch(url, { method: id ? 'PUT' : 'POST', headers: hdrs(), body: JSON.stringify(body) });
+    if (r.ok) {
+      showToast(id ? 'Ordem atualizada!' : 'Ordem criada!', 'success');
+      closeM('m-manut');
+      loadManut();
     } else {
-      const e = await r.json(); toast('Erro: '+JSON.stringify(e),'error');
+      var e = await r.json();
+      showToast('Erro: ' + JSON.stringify(e), 'error');
     }
-  } catch(e) { toast('Erro: '+e.message,'error'); }
+  } catch(e) { showToast('Erro: ' + e.message, 'error'); }
 }
 
-async function deleteManutencao(id) {
-  if(!confirm('Excluir esta ordem?')) return;
+async function delManut(id) {
+  if (!confirm('Excluir esta ordem?')) return;
   try {
-    const r = await fetch(api(`/manutencao/${id}/`), { method:'DELETE', headers:headers() });
-    if(r.ok||r.status===204) { toast('Ordem excluída','success'); loadManutencao(); }
-    else toast('Erro ao excluir','error');
-  } catch(e) { toast(e.message,'error'); }
+    var r = await fetch(api('/manutencao/' + id + '/'), { method: 'DELETE', headers: hdrs() });
+    if (r.ok || r.status === 204) { showToast('Ordem excluida', 'success'); loadManut(); }
+    else showToast('Erro ao excluir', 'error');
+  } catch(e) { showToast(e.message, 'error'); }
 }
 
-// ════════════════════════════════════════════════
-//  HISTÓRICO
-// ════════════════════════════════════════════════
-async function loadHistorico() {
-  const tb = document.getElementById('historico-tb');
-  tb.innerHTML = `<tr><td colspan="6"><div class="loading"><div class="spinner"></div>Carregando…</div></td></tr>`;
+// HISTORICO
+async function loadHist() {
+  var tb = document.getElementById('hist-tb');
+  tb.innerHTML = loadingRow(6);
   try {
-    const r = await fetch(api('/manutencao/historico/'), { headers:headers() });
-    if(!r.ok) { tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Endpoint: /api/manutencao/historico/ — ${r.status}</div></div></td></tr>`; return; }
-    const data = await r.json();
-    const items = Array.isArray(data) ? data : (data.results||[]);
-    if(!items.length) { tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">📋</div><div class="empty-text">Nenhum histórico</div></div></td></tr>`; return; }
-    tb.innerHTML = items.map(h=>`<tr>
-      <td>${fmt(h.data||h.created_at)}</td>
-      <td>${h.ativo_nome||h.ativo||'—'}</td>
-      <td>${h.descricao||'—'}</td>
-      <td>${h.tecnico||h.responsavel||'—'}</td>
-      <td>${h.custo!=null?'R$ '+parseFloat(h.custo).toFixed(2):'—'}</td>
-      <td>${h.duracao_horas!=null?h.duracao_horas+'h':'—'}</td>
-    </tr>`).join('');
-  } catch(e) { tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">❌</div><div class="empty-text">${e.message}</div></div></td></tr>`; }
+    var r = await fetch(api('/manutencao/historico/'), { headers: hdrs() });
+    if (!r.ok) { tb.innerHTML = emptyRow('Endpoint /manutencao/historico/ retornou ' + r.status, 6); return; }
+    var data = await r.json();
+    var items = getList(data);
+    if (!items.length) { tb.innerHTML = emptyRow('Nenhum historico registrado', 6); return; }
+    var rows = '';
+    for (var i = 0; i < items.length; i++) {
+      var h = items[i];
+      rows += '<tr><td><code>' + fmt(h.data || h.created_at) + '</code></td>' +
+        '<td>' + (h.ativo_nome || h.ativo || '--') + '</td>' +
+        '<td>' + (h.descricao || '--') + '</td>' +
+        '<td>' + (h.tecnico || h.responsavel || '--') + '</td>' +
+        '<td>' + (h.custo != null ? 'R$ ' + parseFloat(h.custo).toFixed(2) : '--') + '</td>' +
+        '<td>' + (h.duracao_horas != null ? h.duracao_horas + 'h' : '--') + '</td></tr>';
+    }
+    tb.innerHTML = rows;
+  } catch(e) { tb.innerHTML = emptyRow(e.message, 6); }
 }
 
-// ════════════════════════════════════════════════
-//  SENSORES
-// ════════════════════════════════════════════════
+// SENSORES
 async function loadSensores() {
-  const grid = document.getElementById('sensores-grid');
-  const tb = document.getElementById('sensores-tb');
-  grid.innerHTML = `<div class="loading"><div class="spinner"></div>Carregando…</div>`;
-  tb.innerHTML = `<tr><td colspan="7"><div class="loading"><div class="spinner"></div></div></td></tr>`;
+  var grid = document.getElementById('sensor-grid');
+  var tb = document.getElementById('sensor-tb');
+  grid.innerHTML = '<div class="loading"><div class="spin"></div>Carregando...</div>';
+  tb.innerHTML = loadingRow(7);
   try {
-    const r = await fetch(api('/telemetria/sensores/'), { headers:headers() });
-    if(!r.ok) {
-      grid.innerHTML=''; tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Erro ${r.status}</div></div></td></tr>`; return;
+    var r = await fetch(api('/telemetria/sensores/'), { headers: hdrs() });
+    if (!r.ok) { grid.innerHTML = ''; tb.innerHTML = emptyRow('Erro ' + r.status, 7); return; }
+    var data = await r.json();
+    var items = getList(data);
+    if (!items.length) {
+      grid.innerHTML = '<div class="empty">Nenhum sensor cadastrado</div>';
+      tb.innerHTML = emptyRow('Nenhum sensor', 7);
+      return;
     }
-    const data = await r.json();
-    const items = Array.isArray(data) ? data : (data.results||[]);
-    const tipoIcon = { temperatura:'🌡️', vibracao:'📳', pressao:'⏲️', corrente:'⚡', umidade:'💧' };
-    grid.innerHTML = items.length ? items.map(s=>`
-      <div class="sensor-card">
-        <div class="pulse"></div>
-        <div class="sensor-type">${tipoIcon[s.tipo]||'📡'} ${s.tipo||'—'}</div>
-        <div class="sensor-val">—<span class="sensor-unit">${s.unidade||''}</span></div>
-        <div class="sensor-name">${s.nome||'—'}</div>
-      </div>`).join('') : `<div class="empty"><div class="empty-icon">📡</div><div class="empty-text">Nenhum sensor</div></div>`;
-    tb.innerHTML = items.length ? items.map(s=>`<tr>
-      <td><strong>${s.nome||'—'}</strong></td>
-      <td>${statusBadge(s.tipo)}</td>
-      <td>${s.ativo_nome||s.ativo||'—'}</td>
-      <td>${s.limite_minimo??'—'}</td>
-      <td>${s.limite_maximo??'—'}</td>
-      <td>${s.unidade||'—'}</td>
-      <td><div class="row-actions">
-        <button class="btn btn-danger" onclick="deleteSensor(${s.id})">🗑</button>
-      </div></td>
-    </tr>`).join('') : `<tr><td colspan="7"><div class="empty"><div class="empty-icon">📡</div><div class="empty-text">Nenhum sensor</div></div></td></tr>`;
-  } catch(e) { grid.innerHTML=''; tb.innerHTML=`<tr><td colspan="7"><div class="empty"><div class="empty-icon">❌</div><div class="empty-text">${e.message}</div></div></td></tr>`; }
+    var cards = '';
+    var rows = '';
+    for (var i = 0; i < items.length; i++) {
+      var s = items[i];
+      cards += '<div class="sensor-card"><div class="pulse-dot"></div>' +
+        '<div class="s-type">' + (s.tipo || '--') + '</div>' +
+        '<div class="s-val">--<span class="s-unit">' + (s.unidade || '') + '</span></div>' +
+        '<div class="s-name">' + (s.nome || '--') + '</div></div>';
+      rows += '<tr><td><strong>' + (s.nome || '--') + '</strong></td>' +
+        '<td>' + badge(s.tipo) + '</td>' +
+        '<td>' + (s.ativo_nome || s.ativo || '--') + '</td>' +
+        '<td>' + (s.limite_minimo != null ? s.limite_minimo : '--') + '</td>' +
+        '<td>' + (s.limite_maximo != null ? s.limite_maximo : '--') + '</td>' +
+        '<td>' + (s.unidade || '--') + '</td>' +
+        '<td><button class="btn btn-danger" onclick="delSensor(' + s.id + ')">Del</button></td></tr>';
+    }
+    grid.innerHTML = cards;
+    tb.innerHTML = rows;
+  } catch(e) { grid.innerHTML = ''; tb.innerHTML = emptyRow(e.message, 7); }
+}
+
+function resetSensorForm() {
+  ['s-id','s-nome','s-unit','s-min','s-max'].forEach(function(id) { document.getElementById(id).value = ''; });
+  document.getElementById('s-tipo').value = 'temperatura';
 }
 
 async function saveSensor() {
-  const id = document.getElementById('sensor-id').value;
-  const body = {
-    nome: document.getElementById('sensor-nome').value,
-    ativo: +document.getElementById('sensor-ativo').value,
-    tipo: document.getElementById('sensor-tipo').value,
-    unidade: document.getElementById('sensor-unidade').value,
-    limite_minimo: document.getElementById('sensor-min').value||null,
-    limite_maximo: document.getElementById('sensor-max').value||null,
+  var id = document.getElementById('s-id').value;
+  var nome = document.getElementById('s-nome').value;
+  var ativo = parseInt(document.getElementById('s-ativo').value);
+  if (!nome || !ativo) { showToast('Nome e Ativo sao obrigatorios', 'error'); return; }
+  var body = {
+    nome: nome,
+    ativo: ativo,
+    tipo: document.getElementById('s-tipo').value,
+    unidade: document.getElementById('s-unit').value,
+    limite_minimo: document.getElementById('s-min').value || null,
+    limite_maximo: document.getElementById('s-max').value || null
   };
-  if(!body.nome||!body.ativo) { toast('Nome e Ativo obrigatórios','error'); return; }
   try {
-    const r = await fetch(id ? api(`/telemetria/sensores/${id}/`) : api('/telemetria/sensores/'), {
-      method: id?'PUT':'POST', headers:headers(), body:JSON.stringify(body)
-    });
-    if(r.ok) { toast('Sensor salvo!','success'); closeModal('modal-sensor'); document.getElementById('sensor-id').value=''; loadSensores(); }
-    else { const e=await r.json(); toast('Erro: '+JSON.stringify(e),'error'); }
-  } catch(e) { toast(e.message,'error'); }
+    var url = id ? api('/telemetria/sensores/' + id + '/') : api('/telemetria/sensores/');
+    var r = await fetch(url, { method: id ? 'PUT' : 'POST', headers: hdrs(), body: JSON.stringify(body) });
+    if (r.ok) { showToast('Sensor salvo!', 'success'); closeM('m-sensor'); loadSensores(); }
+    else { var e = await r.json(); showToast('Erro: ' + JSON.stringify(e), 'error'); }
+  } catch(e) { showToast(e.message, 'error'); }
 }
 
-async function deleteSensor(id) {
-  if(!confirm('Excluir sensor?')) return;
+async function delSensor(id) {
+  if (!confirm('Excluir sensor?')) return;
   try {
-    const r = await fetch(api(`/telemetria/sensores/${id}/`), { method:'DELETE', headers:headers() });
-    if(r.ok||r.status===204) { toast('Sensor excluído','success'); loadSensores(); }
-    else toast('Erro ao excluir','error');
-  } catch(e) { toast(e.message,'error'); }
+    var r = await fetch(api('/telemetria/sensores/' + id + '/'), { method: 'DELETE', headers: hdrs() });
+    if (r.ok || r.status === 204) { showToast('Sensor excluido', 'success'); loadSensores(); }
+    else showToast('Erro ao excluir', 'error');
+  } catch(e) { showToast(e.message, 'error'); }
 }
 
-// ════════════════════════════════════════════════
-//  TELEMETRIA
-// ════════════════════════════════════════════════
-async function loadTelemetria() {
-  const tb = document.getElementById('telemetria-tb');
-  tb.innerHTML = `<tr><td colspan="6"><div class="loading"><div class="spinner"></div>Carregando…</div></td></tr>`;
+// TELEMETRIA
+async function loadTele() {
+  var tb = document.getElementById('tele-tb');
+  tb.innerHTML = loadingRow(6);
   try {
-    const r = await fetch(api('/telemetria/leituras/'), { headers:headers() });
-    if(!r.ok) { tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Erro ${r.status}</div></div></td></tr>`; return; }
-    const data = await r.json();
-    const items = Array.isArray(data) ? data : (data.results||[]);
-    if(!items.length) { tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">📈</div><div class="empty-text">Nenhuma leitura</div></div></td></tr>`; return; }
-    tb.innerHTML = items.map(l=>`<tr>
-      <td><code>${fmt(l.timestamp||l.criado_em||l.created_at)}</code></td>
-      <td>${l.sensor_nome||l.sensor||'—'}</td>
-      <td>${l.ativo_nome||l.ativo||'—'}</td>
-      <td>${statusBadge(l.tipo)}</td>
-      <td><strong style="color:var(--orange-light)">${l.valor??'—'}</strong></td>
-      <td>${l.unidade||'—'}</td>
-    </tr>`).join('');
-  } catch(e) { tb.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">❌</div><div class="empty-text">${e.message}</div></div></td></tr>`; }
+    var r = await fetch(api('/telemetria/leituras/'), { headers: hdrs() });
+    if (!r.ok) { tb.innerHTML = emptyRow('Erro ' + r.status, 6); return; }
+    var data = await r.json();
+    var items = getList(data);
+    if (!items.length) { tb.innerHTML = emptyRow('Nenhuma leitura registrada', 6); return; }
+    var rows = '';
+    for (var i = 0; i < items.length; i++) {
+      var l = items[i];
+      rows += '<tr><td><code>' + fmt(l.timestamp || l.criado_em || l.created_at) + '</code></td>' +
+        '<td>' + (l.sensor_nome || l.sensor || '--') + '</td>' +
+        '<td>' + (l.ativo_nome || l.ativo || '--') + '</td>' +
+        '<td>' + badge(l.tipo) + '</td>' +
+        '<td><strong style="color:var(--orange-l)">' + (l.valor != null ? l.valor : '--') + '</strong></td>' +
+        '<td>' + (l.unidade || '--') + '</td></tr>';
+    }
+    tb.innerHTML = rows;
+  } catch(e) { tb.innerHTML = emptyRow(e.message, 6); }
 }
 
 async function saveLeitura() {
-  const body = {
-    ativo: +document.getElementById('leit-ativo').value,
-    tipo: document.getElementById('leit-tipo').value,
-    valor: parseFloat(document.getElementById('leit-valor').value),
-    unidade: document.getElementById('leit-unidade').value,
+  var ativo = parseInt(document.getElementById('lt-ativo').value);
+  var valorStr = document.getElementById('lt-valor').value;
+  var valor = parseFloat(valorStr);
+  if (!ativo || isNaN(valor)) { showToast('Ativo e Valor sao obrigatorios', 'error'); return; }
+  var body = {
+    ativo: ativo,
+    tipo: document.getElementById('lt-tipo').value,
+    valor: valor,
+    unidade: document.getElementById('lt-unit').value
   };
-  const sensorId = document.getElementById('leit-sensor').value;
-  if(sensorId) body.sensor = +sensorId;
-  if(!body.ativo||isNaN(body.valor)) { toast('Ativo e Valor obrigatórios','error'); return; }
+  var sensor = document.getElementById('lt-sensor').value;
+  if (sensor) body.sensor = parseInt(sensor);
   try {
-    const r = await fetch(api('/telemetria/leituras/'), {
-      method:'POST', headers:headers(), body:JSON.stringify(body)
-    });
-    if(r.ok) { toast('Leitura enviada! Alertas automáticos verificados.','success'); closeModal('modal-leitura'); loadTelemetria(); }
-    else { const e=await r.json(); toast('Erro: '+JSON.stringify(e),'error'); }
-  } catch(e) { toast(e.message,'error'); }
+    var r = await fetch(api('/telemetria/leituras/'), { method: 'POST', headers: hdrs(), body: JSON.stringify(body) });
+    if (r.ok) { showToast('Leitura enviada! Alertas verificados.', 'success'); closeM('m-leit'); loadTele(); }
+    else { var e = await r.json(); showToast('Erro: ' + JSON.stringify(e), 'error'); }
+  } catch(e) { showToast(e.message, 'error'); }
 }
 
-// ════════════════════════════════════════════════
-//  ALERTAS
-// ════════════════════════════════════════════════
+// ALERTAS
 async function loadAlertas() {
-  const list = document.getElementById('alertas-list');
-  list.innerHTML = `<div class="loading"><div class="spinner"></div>Carregando…</div>`;
+  var list = document.getElementById('alertas-list');
+  list.innerHTML = '<div class="loading"><div class="spin"></div>Carregando...</div>';
   try {
-    const r = await fetch(api('/alertas/'), { headers:headers() });
-    if(!r.ok) { list.innerHTML=`<div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Erro ${r.status}</div></div>`; return; }
-    const data = await r.json();
-    const items = Array.isArray(data) ? data : (data.results||[]);
-    if(!items.length) { list.innerHTML=`<div class="empty"><div class="empty-icon">✅</div><div class="empty-text">Nenhum alerta ativo</div></div>`; return; }
-    const sevClass = { critico:'critical', alto:'critical', medio:'warning', baixo:'info' };
-    const sevIcon  = { critico:'🔴', alto:'🟠', medio:'🟡', baixo:'🔵' };
-    list.innerHTML = items.map(a=>{
-      const sev = (a.severidade||a.nivel||'info').toLowerCase();
-      return `<div class="alert-item ${sevClass[sev]||'info'}">
-        <div class="alert-icon">${sevIcon[sev]||'⚠️'}</div>
-        <div class="alert-text">
-          <div class="alert-title">${a.titulo||a.mensagem||'Alerta'}</div>
-          <div class="alert-desc">${a.descricao||a.detalhe||''} — Ativo: ${a.ativo_nome||a.ativo||'—'}</div>
-        </div>
-        <div class="alert-time">${fmt(a.criado_em||a.created_at)}</div>
-      </div>`;
-    }).join('');
-  } catch(e) { list.innerHTML=`<div class="empty"><div class="empty-icon">❌</div><div class="empty-text">${e.message}</div></div>`; }
-}
-
-// ════════════════════════════════════════════════
-//  LOCALIZAÇÃO
-// ════════════════════════════════════════════════
-async function loadLocalizacao() {
-  const tb = document.getElementById('localizacao-tb');
-  tb.innerHTML = `<tr><td colspan="5"><div class="loading"><div class="spinner"></div>Carregando…</div></td></tr>`;
-  try {
-    const r = await fetch(api('/localizacao/'), { headers:headers() });
-    if(!r.ok) { tb.innerHTML=`<tr><td colspan="5"><div class="empty"><div class="empty-icon">⚠️</div><div class="empty-text">Erro ${r.status}</div></div></td></tr>`; return; }
-    const data = await r.json();
-    const items = Array.isArray(data) ? data : (data.results||[]);
-    if(!items.length) { tb.innerHTML=`<tr><td colspan="5"><div class="empty"><div class="empty-icon">📍</div><div class="empty-text">Nenhuma localização</div></div></td></tr>`; return; }
-    tb.innerHTML = items.map(l=>`<tr>
-      <td><strong>${l.planta||'—'}</strong></td>
-      <td>${l.setor||'—'}</td>
-      <td>${l.ativo_nome||l.ativo||'—'}</td>
-      <td><code>${l.latitude!=null?l.latitude:''} ${l.longitude!=null?', '+l.longitude:''}</code></td>
-      <td><div class="row-actions">
-        <button class="btn btn-danger" onclick="deleteLocalizacao(${l.id})">🗑</button>
-      </div></td>
-    </tr>`).join('');
-  } catch(e) { tb.innerHTML=`<tr><td colspan="5"><div class="empty"><div class="empty-icon">❌</div><div class="empty-text">${e.message}</div></div></td></tr>`; }
-}
-
-async function saveLocalizacao() {
-  const id = document.getElementById('local-id').value;
-  const body = {
-    planta: document.getElementById('local-planta').value,
-    setor: document.getElementById('local-setor').value,
-    ativo: +document.getElementById('local-ativo').value,
-    latitude: document.getElementById('local-lat').value||null,
-    longitude: document.getElementById('local-lng').value||null,
-  };
-  if(!body.planta||!body.setor||!body.ativo) { toast('Planta, Setor e Ativo obrigatórios','error'); return; }
-  try {
-    const r = await fetch(id ? api(`/localizacao/${id}/`) : api('/localizacao/'), {
-      method: id?'PUT':'POST', headers:headers(), body:JSON.stringify(body)
-    });
-    if(r.ok) { toast('Localização salva!','success'); closeModal('modal-local'); document.getElementById('local-id').value=''; loadLocalizacao(); }
-    else { const e=await r.json(); toast('Erro: '+JSON.stringify(e),'error'); }
-  } catch(e) { toast(e.message,'error'); }
-}
-
-async function deleteLocalizacao(id) {
-  if(!confirm('Excluir localização?')) return;
-  try {
-    const r = await fetch(api(`/localizacao/${id}/`), { method:'DELETE', headers:headers() });
-    if(r.ok||r.status===204) { toast('Excluído','success'); loadLocalizacao(); }
-    else toast('Erro ao excluir','error');
-  } catch(e) { toast(e.message,'error'); }
-}
-
-// ════════════════════════════════════════════════
-//  CONTA
-// ════════════════════════════════════════════════
-async function loadConta() {
-  document.getElementById('token-display').value = TOKEN;
-  try {
-    const r = await fetch(api('/accounts/me/'), { headers:headers() });
-    if(r.ok) {
-      const d = await r.json();
-      document.getElementById('me-data').textContent = JSON.stringify(d, null, 2);
-      document.getElementById('sidebar-user').textContent = '👤 ' + (d.username||d.user||'—');
-    } else {
-      document.getElementById('me-data').textContent = 'Endpoint /api/accounts/me/ retornou '+r.status;
+    var r = await fetch(api('/alertas/'), { headers: hdrs() });
+    if (!r.ok) { list.innerHTML = '<div class="empty">Erro ' + r.status + '</div>'; return; }
+    var data = await r.json();
+    var items = getList(data);
+    if (!items.length) { list.innerHTML = '<div class="empty">Nenhum alerta ativo</div>'; return; }
+    var clsMap = { critico:'crit', alto:'crit', medio:'warn', baixo:'info' };
+    var html = '';
+    for (var i = 0; i < items.length; i++) {
+      var a = items[i];
+      var sev = String(a.severidade || a.nivel || 'info').toLowerCase();
+      var cls = clsMap[sev] || 'info';
+      html += '<div class="alert-item ' + cls + '">' +
+        '<div class="alert-ico">[!]</div>' +
+        '<div class="alert-txt">' +
+          '<div class="alert-ttl">' + (a.titulo || a.mensagem || 'Alerta') + '</div>' +
+          '<div class="alert-dsc">' + (a.descricao || a.detalhe || '') + ' - Ativo: ' + (a.ativo_nome || a.ativo || '--') + '</div>' +
+        '</div>' +
+        '<div class="alert-time">' + fmt(a.criado_em || a.created_at) + '</div>' +
+        '</div>';
     }
-  } catch(e) { document.getElementById('me-data').textContent = 'Erro: '+e.message; }
+    list.innerHTML = html;
+  } catch(e) { list.innerHTML = '<div class="empty">' + e.message + '</div>'; }
 }
 
-// ════════════════════════════════════════════════
-//  INIT
-// ════════════════════════════════════════════════
-if(TOKEN) {
-  document.getElementById('auth-gate').style.display='none';
-  loadDashboard();
+// LOCALIZACAO
+async function loadLocal() {
+  var tb = document.getElementById('local-tb');
+  tb.innerHTML = loadingRow(5);
+  try {
+    var r = await fetch(api('/localizacao/'), { headers: hdrs() });
+    if (!r.ok) { tb.innerHTML = emptyRow('Erro ' + r.status, 5); return; }
+    var data = await r.json();
+    var items = getList(data);
+    if (!items.length) { tb.innerHTML = emptyRow('Nenhuma localizacao', 5); return; }
+    var rows = '';
+    for (var i = 0; i < items.length; i++) {
+      var l = items[i];
+      var coords = (l.latitude != null && l.longitude != null) ? l.latitude + ', ' + l.longitude : '--';
+      rows += '<tr><td><strong>' + (l.planta || '--') + '</strong></td>' +
+        '<td>' + (l.setor || '--') + '</td>' +
+        '<td>' + (l.ativo_nome || l.ativo || '--') + '</td>' +
+        '<td><code>' + coords + '</code></td>' +
+        '<td><button class="btn btn-danger" onclick="delLocal(' + l.id + ')">Del</button></td></tr>';
+    }
+    tb.innerHTML = rows;
+  } catch(e) { tb.innerHTML = emptyRow(e.message, 5); }
 }
 
-// Enter key on login
-document.getElementById('login-pass').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+function resetLocalForm() {
+  ['loc-id','loc-planta','loc-setor','loc-lat','loc-lng'].forEach(function(id) { document.getElementById(id).value = ''; });
+}
+
+async function saveLocal() {
+  var id = document.getElementById('loc-id').value;
+  var planta = document.getElementById('loc-planta').value;
+  var setor = document.getElementById('loc-setor').value;
+  var ativo = parseInt(document.getElementById('loc-ativo').value);
+  if (!planta || !setor || !ativo) { showToast('Planta, Setor e Ativo sao obrigatorios', 'error'); return; }
+  var body = {
+    planta: planta,
+    setor: setor,
+    ativo: ativo,
+    latitude: document.getElementById('loc-lat').value || null,
+    longitude: document.getElementById('loc-lng').value || null
+  };
+  try {
+    var url = id ? api('/localizacao/' + id + '/') : api('/localizacao/');
+    var r = await fetch(url, { method: id ? 'PUT' : 'POST', headers: hdrs(), body: JSON.stringify(body) });
+    if (r.ok) { showToast('Localizacao salva!', 'success'); closeM('m-local'); loadLocal(); }
+    else { var e = await r.json(); showToast('Erro: ' + JSON.stringify(e), 'error'); }
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+async function delLocal(id) {
+  if (!confirm('Excluir localizacao?')) return;
+  try {
+    var r = await fetch(api('/localizacao/' + id + '/'), { method: 'DELETE', headers: hdrs() });
+    if (r.ok || r.status === 204) { showToast('Excluido', 'success'); loadLocal(); }
+    else showToast('Erro ao excluir', 'error');
+  } catch(e) { showToast(e.message, 'error'); }
+}
+
+// CONTA
+async function loadConta() {
+  document.getElementById('token-show').value = TOKEN;
+  try {
+    var r = await fetch(api('/accounts/me/'), { headers: hdrs() });
+    if (r.ok) {
+      var d = await r.json();
+      document.getElementById('me-data').textContent = JSON.stringify(d, null, 2);
+      document.getElementById('sb-user').textContent = d.username || d.user || '--';
+    } else {
+      document.getElementById('me-data').textContent = '/api/accounts/me/ retornou ' + r.status;
+    }
+  } catch(e) { document.getElementById('me-data').textContent = 'Erro: ' + e.message; }
+}
+
+// INIT
+if (TOKEN) {
+  document.getElementById('auth-gate').style.display = 'none';
+  loadDash();
+}
+
+document.getElementById('l-pass').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doLogin();
+});
 </script>
 </body>
 </html>
