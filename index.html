@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NanaSmart - Plataforma Industrial</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- AUTH GATE -->
+<div id="auth-gate">
+  <div class="auth-card">
+    <div class="auth-logo">Nana<span>Smart</span></div>
+    <div class="auth-sub">Manutencao Industrial Preditiva</div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tab-btn-login" onclick="switchTab('login')">Login</button>
+      <button class="auth-tab" id="tab-btn-reg" onclick="switchTab('reg')">Registrar</button>
+    </div>
+
+    <!-- Login form -->
+    <div id="tab-login">
+      <div class="fg">
+        <label class="fl">Usuario</label>
+        <input class="fi" id="l-user" type="text" placeholder="seu_usuario" autocomplete="username">
+      </div>
+      <div class="fg">
+        <label class="fl">Senha</label>
+        <input class="fi" id="l-pass" type="password" placeholder="senha" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">Entrar</button>
+      <div id="l-msg" style="text-align:center;margin-top:12px;font-size:11px;color:var(--dim)"></div>
+
+      <!-- Login de teste -->
+      <div class="demo-hint">
+        Login de teste: <strong>admin</strong> / <strong>admin123</strong>
+        &nbsp;|&nbsp;
+        <button onclick="fillDemo()">Preencher automaticamente</button>
+      </div>
+    </div>
+
+    <!-- Register form -->
+    <div id="tab-reg" style="display:none">
+      <div class="fg2">
+        <div class="fg">
+          <label class="fl">Usuario</label>
+          <input class="fi" id="r-user" type="text" placeholder="usuario">
+        </div>
+        <div class="fg">
+          <label class="fl">Email</label>
+          <input class="fi" id="r-email" type="email" placeholder="email@emp.com">
+        </div>
+      </div>
+      <div class="fg">
+        <label class="fl">Senha (min. 6 caracteres)</label>
+        <input class="fi" id="r-pass" type="password" placeholder="senha">
+      </div>
+      <button class="btn btn-orange" style="width:100%;justify-content:center" onclick="doRegister()">Criar Conta</button>
+      <div id="r-msg" style="text-align:center;margin-top:12px;font-size:11px;color:var(--dim)"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div class="shell">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">Nana<span>Smart</span></div>
+      <div class="logo-sub">Industrial Platform</div>
+    </div>
+    <div class="nav">
+      <div class="nav-sec">Visao Geral</div>
+      <div class="nav-item active" onclick="goto('dashboard')">[ ] Dashboard</div>
+      <div class="nav-sec">Gestao</div>
+      <div class="nav-item" onclick="goto('ativos')">[A] Ativos</div>
+      <div class="nav-item" onclick="goto('manutencao')">[M] Manutencao</div>
+      <div class="nav-item" onclick="goto('historico')">[H] Historico</div>
+      <div class="nav-sec">Monitoramento</div>
+      <div class="nav-item" onclick="goto('sensores')">[S] Sensores</div>
+      <div class="nav-item" onclick="goto('telemetria')">[T] Telemetria</div>
+      <div class="nav-item" onclick="goto('alertas')">[!] Alertas</div>
+      <div class="nav-sec">Infra</div>
+      <div class="nav-item" onclick="goto('localizacao')">[L] Localizacao</div>
+      <div class="nav-sec">Admin</div>
+      <div class="nav-item" onclick="goto('conta')">[U] Minha Conta</div>
+    </div>
+    <div class="sb-foot">
+      <div id="sb-user" style="margin-bottom:8px;color:var(--muted);font-size:12px">--</div>
+      <button class="btn btn-outline btn-sm" onclick="doLogout()">Sair</button>
+    </div>
+  </nav>
+
+  <!-- Main area -->
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="page-title">Dashboard</div>
+      <div class="topbar-right">
+        <div class="url-bar">
+          <div class="api-dot" id="api-dot"></div>
+          <input id="api-url" value="http://localhost:8000" onchange="BASE=this.value.replace(/\/$/,'');localStorage.setItem('ns_base',BASE)">
+          <span style="color:var(--dim)">/api/</span>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="testConn()">Testar</button>
+        <button class="btn btn-primary btn-sm" onclick="refresh()">Atualizar</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD PAGE -->
+      <div class="page active" id="page-dashboard">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Ativos Totais</div>
+            <div class="stat-value c-blue" id="ds-ativos">--</div>
+            <div class="stat-sub">equipamentos</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Manutencoes Abertas</div>
+            <div class="stat-value c-orange" id="ds-manut">--</div>
+            <div class="stat-sub">ordens ativas</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Alertas</div>
+            <div class="stat-value c-red" id="ds-alertas">--</div>
+            <div class="stat-sub">requerem atencao</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Sensores</div>
+            <div class="stat-value c-green" id="ds-sens">--</div>
+            <div class="stat-sub">cadastrados</div>
+          </div>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-lbl">MTBF - Tempo Medio Entre Falhas</div>
+            <div><span class="kpi-num" id="k-mtbf">--</span><span class="kpi-unit">h</span></div>
+            <div class="kpi-bar"><div class="kpi-fill" id="k-mtbf-b" style="width:0%"></div></div>
+            <div class="kpi-leg"><span>0h</span><span>500h</span></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-lbl">MTTR - Tempo Medio para Reparo</div>
+            <div><span class="kpi-num" id="k-mttr">--</span><span class="kpi-unit">h</span></div>
+            <div class="kpi-bar"><div class="kpi-fill" id="k-mttr-b" style="width:0%"></div></div>
+            <div class="kpi-leg"><span>0h</span><span>72h</span></div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-lbl">Disponibilidade</div>
+            <div><span class="kpi-num" id="k-disp">--</span><span class="kpi-unit">%</span></div>
+            <div class="kpi-bar"><div class="kpi-fill" id="k-disp-b" style="width:0%"></div></div>
+            <div class="kpi-leg"><span>0%</span><span>100%</span></div>
+          </div>
+        </div>
+        <div class="sec-head"><div class="sec-title">Ativos <span>Recentes</span></div></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Nome</th><th>N Serie</th><th>Status</th><th>Criado</th></tr></thead>
+            <tbody id="dash-tb"><tr><td colspan="4"><div class="loading"><div class="spin"></div>Aguardando login...</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ATIVOS PAGE -->
+      <div class="page" id="page-ativos">
+        <div class="sec-head">
+          <div class="sec-title">Ativos <span>Industriais</span></div>
+          <button class="btn btn-orange" onclick="resetAtivoForm();openM('m-ativo')">+ Novo Ativo</button>
+        </div>
+        <div class="filters">
+          <input class="f-in" id="fa-search" placeholder="Buscar ativo..." oninput="loadAtivos()">
+          <select class="f-sel" id="fa-status" onchange="loadAtivos()">
+            <option value="">Todos os status</option>
+            <option value="ativo">Ativo</option>
+            <option value="inativo">Inativo</option>
+            <option value="em_manutencao">Em Manutencao</option>
+          </select>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Nome</th><th>N Serie</th><th>Modelo</th><th>Status</th><th>Criado</th><th>Acoes</th></tr></thead>
+            <tbody id="ativos-tb"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- MANUTENCAO PAGE -->
+      <div class="page" id="page-manutencao">
+        <div class="sec-head">
+          <div class="sec-title">Ordens de <span>Manutencao</span></div>
+          <button class="btn btn-orange" onclick="resetManutForm();openM('m-manut')">+ Nova Ordem</button>
+        </div>
+        <div class="filters">
+          <input class="f-in" id="fm-search" placeholder="Buscar ordens..." oninput="loadManut()">
+          <select class="f-sel" id="fm-status" onchange="loadManut()">
+            <option value="">Todos</option>
+            <option value="aberta">Aberta</option>
+            <option value="em_andamento">Em Andamento</option>
+            <option value="concluida">Concluida</option>
+            <option value="cancelada">Cancelada</option>
+          </select>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Titulo</th><th>Ativo</th><th>Tipo</th><th>Prioridade</th><th>Status</th><th>Responsavel</th><th>Acoes</th></tr></thead>
+            <tbody id="manut-tb"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- HISTORICO PAGE -->
+      <div class="page" id="page-historico">
+        <div class="sec-head"><div class="sec-title">Historico de <span>Manutencao</span></div></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Ativo</th><th>Descricao</th><th>Tecnico</th><th>Custo</th><th>Duracao</th></tr></thead>
+            <tbody id="hist-tb"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SENSORES PAGE -->
+      <div class="page" id="page-sensores">
+        <div class="sec-head">
+          <div class="sec-title">Sensores <span>IoT</span></div>
+          <button class="btn btn-orange" onclick="resetSensorForm();openM('m-sensor')">+ Novo Sensor</button>
+        </div>
+        <div class="sensor-grid" id="sensor-grid"></div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Nome</th><th>Tipo</th><th>Ativo</th><th>Min</th><th>Max</th><th>Unidade</th><th>Acoes</th></tr></thead>
+            <tbody id="sensor-tb"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TELEMETRIA PAGE -->
+      <div class="page" id="page-telemetria">
+        <div class="sec-head">
+          <div class="sec-title">Leituras de <span>Telemetria</span></div>
+          <button class="btn btn-orange" onclick="openM('m-leit')">+ Enviar Leitura</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Data/Hora</th><th>Sensor</th><th>Ativo</th><th>Tipo</th><th>Valor</th><th>Unidade</th></tr></thead>
+            <tbody id="tele-tb"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ALERTAS PAGE -->
+      <div class="page" id="page-alertas">
+        <div class="sec-head"><div class="sec-title">Alertas <span>Automaticos</span></div></div>
+        <div class="alert-list" id="alertas-list"><div class="loading"><div class="spin"></div>Aguardando...</div></div>
+      </div>
+
+      <!-- LOCALIZACAO PAGE -->
+      <div class="page" id="page-localizacao">
+        <div class="sec-head">
+          <div class="sec-title">Localizacao <span>Industrial</span></div>
+          <button class="btn btn-orange" onclick="resetLocalForm();openM('m-local')">+ Nova Localizacao</button>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Planta</th><th>Setor</th><th>Ativo</th><th>Coordenadas</th><th>Acoes</th></tr></thead>
+            <tbody id="local-tb"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CONTA PAGE -->
+      <div class="page" id="page-conta">
+        <div class="sec-head"><div class="sec-title">Minha <span>Conta</span></div></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:700px">
+          <div class="stat-card" style="grid-column:1/-1">
+            <div class="stat-label">Dados do Usuario</div>
+            <pre id="me-data" style="margin-top:10px;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-all"></pre>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Token de Acesso</div>
+            <input class="fi" id="token-show" readonly style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10px">
+            <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="copyTok()">Copiar Token</button>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Sessao</div>
+            <p style="font-size:12px;color:var(--muted);margin:10px 0 14px">Encerre a sessao atual e invalide o token.</p>
+            <button class="btn btn-danger" onclick="doLogout()">Sair da Conta</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- MODAL: Ativo -->
+<div class="overlay" id="m-ativo">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="ativo-modal-ttl">Novo Ativo</div>
+      <button class="modal-x" onclick="closeM('m-ativo')">X</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="a-id">
+      <div class="fg2">
+        <div class="fg"><label class="fl">Nome *</label><input class="fi" id="a-nome" placeholder="Bomba Centrifuga B-01"></div>
+        <div class="fg"><label class="fl">N Serie *</label><input class="fi" id="a-serie" placeholder="BC-2024-001"></div>
+      </div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Modelo</label><input class="fi" id="a-modelo" placeholder="Modelo XYZ"></div>
+        <div class="fg"><label class="fl">Fabricante</label><input class="fi" id="a-fab" placeholder="Fabricante"></div>
+      </div>
+      <div class="fg2">
+        <div class="fg">
+          <label class="fl">Status</label>
+          <select class="fs" id="a-status">
+            <option value="ativo">Ativo</option>
+            <option value="inativo">Inativo</option>
+            <option value="em_manutencao">Em Manutencao</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Data Aquisicao</label><input class="fi" id="a-data" type="date"></div>
+      </div>
+      <div class="fg"><label class="fl">Descricao</label><textarea class="ft" id="a-desc" placeholder="Descricao..."></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeM('m-ativo')">Cancelar</button>
+      <button class="btn btn-orange" onclick="saveAtivo()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Manutencao -->
+<div class="overlay" id="m-manut">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title" id="manut-modal-ttl">Nova Ordem</div>
+      <button class="modal-x" onclick="closeM('m-manut')">X</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="m-id">
+      <div class="fg"><label class="fl">Titulo *</label><input class="fi" id="m-titulo" placeholder="Substituicao de rolamento"></div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Ativo *</label><select class="fs" id="m-ativo"></select></div>
+        <div class="fg">
+          <label class="fl">Tipo</label>
+          <select class="fs" id="m-tipo">
+            <option value="preventiva">Preventiva</option>
+            <option value="corretiva">Corretiva</option>
+            <option value="preditiva">Preditiva</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg2">
+        <div class="fg">
+          <label class="fl">Prioridade</label>
+          <select class="fs" id="m-prior">
+            <option value="baixa">Baixa</option>
+            <option value="media">Media</option>
+            <option value="alta">Alta</option>
+            <option value="critica">Critica</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">Status</label>
+          <select class="fs" id="m-status">
+            <option value="aberta">Aberta</option>
+            <option value="em_andamento">Em Andamento</option>
+            <option value="concluida">Concluida</option>
+            <option value="cancelada">Cancelada</option>
+          </select>
+        </div>
+      </div>
+      <div class="fg"><label class="fl">Responsavel</label><input class="fi" id="m-resp" placeholder="Nome do tecnico"></div>
+      <div class="fg"><label class="fl">Descricao</label><textarea class="ft" id="m-desc" placeholder="Descreva o problema..."></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeM('m-manut')">Cancelar</button>
+      <button class="btn btn-orange" onclick="saveManut()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Sensor -->
+<div class="overlay" id="m-sensor">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Novo Sensor</div>
+      <button class="modal-x" onclick="closeM('m-sensor')">X</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="s-id">
+      <div class="fg2">
+        <div class="fg"><label class="fl">Nome *</label><input class="fi" id="s-nome" placeholder="Sensor-T01"></div>
+        <div class="fg"><label class="fl">Ativo *</label><select class="fs" id="s-ativo"></select></div>
+      </div>
+      <div class="fg2">
+        <div class="fg">
+          <label class="fl">Tipo</label>
+          <select class="fs" id="s-tipo">
+            <option value="temperatura">Temperatura</option>
+            <option value="vibracao">Vibracao</option>
+            <option value="pressao">Pressao</option>
+            <option value="corrente">Corrente</option>
+            <option value="umidade">Umidade</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Unidade</label><input class="fi" id="s-unit" placeholder="oC, Hz, Bar..."></div>
+      </div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Limite Minimo</label><input class="fi" id="s-min" type="number" placeholder="0"></div>
+        <div class="fg"><label class="fl">Limite Maximo</label><input class="fi" id="s-max" type="number" placeholder="100"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeM('m-sensor')">Cancelar</button>
+      <button class="btn btn-orange" onclick="saveSensor()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Leitura -->
+<div class="overlay" id="m-leit">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Enviar Leitura de Telemetria</div>
+      <button class="modal-x" onclick="closeM('m-leit')">X</button>
+    </div>
+    <div class="modal-body">
+      <div class="fg2">
+        <div class="fg"><label class="fl">Ativo *</label><select class="fs" id="lt-ativo"></select></div>
+        <div class="fg"><label class="fl">Sensor (opcional)</label><select class="fs" id="lt-sensor"><option value="">-- Nenhum --</option></select></div>
+      </div>
+      <div class="fg2">
+        <div class="fg">
+          <label class="fl">Tipo *</label>
+          <select class="fs" id="lt-tipo">
+            <option value="temperatura">Temperatura</option>
+            <option value="vibracao">Vibracao</option>
+            <option value="pressao">Pressao</option>
+            <option value="corrente">Corrente</option>
+            <option value="umidade">Umidade</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Valor *</label><input class="fi" id="lt-valor" type="number" step="0.01" placeholder="78.5"></div>
+      </div>
+      <div class="fg"><label class="fl">Unidade</label><input class="fi" id="lt-unit" placeholder="oC"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeM('m-leit')">Cancelar</button>
+      <button class="btn btn-orange" onclick="saveLeitura()">Enviar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Localizacao -->
+<div class="overlay" id="m-local">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Nova Localizacao</div>
+      <button class="modal-x" onclick="closeM('m-local')">X</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="loc-id">
+      <div class="fg2">
+        <div class="fg"><label class="fl">Planta *</label><input class="fi" id="loc-planta" placeholder="Planta A"></div>
+        <div class="fg"><label class="fl">Setor *</label><input class="fi" id="loc-setor" placeholder="Linha de Producao 1"></div>
+      </div>
+      <div class="fg"><label class="fl">Ativo *</label><select class="fs" id="loc-ativo"></select></div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Latitude</label><input class="fi" id="loc-lat" type="number" step="any" placeholder="-8.0476"></div>
+        <div class="fg"><label class="fl">Longitude</label><input class="fi" id="loc-lng" type="number" step="any" placeholder="-34.877"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline" onclick="closeM('m-local')">Cancelar</button>
+      <button class="btn btn-orange" onclick="saveLocal()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-wrap" id="toasts"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
