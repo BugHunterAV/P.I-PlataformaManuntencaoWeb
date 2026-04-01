@@ -3,486 +3,660 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>NanaSmart - Plataforma Industrial</title>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<title>InfraSmart · Plataforma Industrial</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- AUTH GATE -->
-<div id="auth-gate">
-  <div class="auth-card">
-    <div class="auth-logo">Nana<span>Smart</span></div>
-    <div class="auth-sub">Manutencao Industrial Preditiva</div>
+<!-- ═══════════════ LOGIN / CADASTRO ══════════════════════════ -->
+<div id="login-screen">
+  <div class="login-bg">
+    <div class="login-grid"></div>
+    <div class="login-orb login-orb-1"></div>
+    <div class="login-orb login-orb-2"></div>
+    <div class="login-orb login-orb-3"></div>
+  </div>
+  <div class="login-card">
+    <div class="login-logo">
+      <img src="Infra_S__nome.png" alt="InfraSmart" class="login-logo-img">
+      <div class="login-logo-name"><span class="blue">Infra</span><span class="orange">Smart</span></div>
+      <div class="login-logo-badge">Plataforma de Infraestrutura Inteligente</div>
+    </div>
+
+    <!-- Tabs -->
     <div class="auth-tabs">
-      <button class="auth-tab active" id="tab-btn-login" onclick="switchTab('login')">Login</button>
-      <button class="auth-tab" id="tab-btn-reg" onclick="switchTab('reg')">Registrar</button>
+      <div class="auth-tab active" id="tab-login"    onclick="switchTab('login')">Entrar</div>
+      <div class="auth-tab"        id="tab-register" onclick="switchTab('register')">Criar Conta</div>
     </div>
 
-    <!-- Login form -->
-    <div id="tab-login">
-      <div class="fg">
-        <label class="fl">Usuario</label>
-        <input class="fi" id="l-user" type="text" placeholder="seu_usuario" autocomplete="username">
+    <!-- Painel Login -->
+    <div class="auth-panel active" id="panel-login">
+      <div class="login-error" id="login-error" style="display:none">
+        ⚠️ <span id="login-error-msg">Credenciais inválidas.</span>
       </div>
-      <div class="fg">
-        <label class="fl">Senha</label>
-        <input class="fi" id="l-pass" type="password" placeholder="senha" autocomplete="current-password">
+      <div class="form-group">
+        <label class="form-label">E-mail</label>
+        <input class="form-input" type="email" id="login-email" placeholder="seu@email.com" autocomplete="email">
       </div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="doLogin()">Entrar</button>
-      <div id="l-msg" style="text-align:center;margin-top:12px;font-size:11px;color:var(--dim)"></div>
-
-      <!-- Login de teste -->
-      <div class="demo-hint">
-        Login de teste: <strong>admin</strong> / <strong>admin123</strong>
-        &nbsp;|&nbsp;
-        <button onclick="fillDemo()">Preencher automaticamente</button>
+      <div class="form-group">
+        <label class="form-label">Senha</label>
+        <div class="password-wrap">
+          <input class="form-input" type="password" id="login-senha" placeholder="••••••••" autocomplete="current-password">
+          <button class="btn-toggle-pw" type="button" onclick="togglePw('login-senha','eye-login')">
+            <span id="eye-login">👁️</span>
+          </button>
+        </div>
+      </div>
+      <button class="btn-login" id="btn-login" onclick="doLogin()">
+        <span id="login-btn-text">Acessar o sistema</span>
+      </button>
+      <div class="login-hint">
+        Não tem uma conta? <span class="link" onclick="switchTab('register')">Crie uma gratuitamente</span>.
       </div>
     </div>
 
-    <!-- Register form -->
-    <div id="tab-reg" style="display:none">
-      <div class="fg2">
-        <div class="fg">
-          <label class="fl">Usuario</label>
-          <input class="fi" id="r-user" type="text" placeholder="usuario">
+    <!-- Painel Cadastro -->
+    <div class="auth-panel" id="panel-register">
+      <div class="login-error"   id="register-error"   style="display:none">⚠️ <span id="register-error-msg"></span></div>
+      <div class="login-success" id="register-success" style="display:none">✅ Conta criada! Faça login.</div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label">Nome *</label>
+          <input class="form-input" type="text" id="reg-nome" placeholder="Nome">
         </div>
-        <div class="fg">
-          <label class="fl">Email</label>
-          <input class="fi" id="r-email" type="email" placeholder="email@emp.com">
+        <div class="form-group">
+          <label class="form-label">Sobrenome *</label>
+          <input class="form-input" type="text" id="reg-sobrenome" placeholder="Sobrenome">
         </div>
       </div>
-      <div class="fg">
-        <label class="fl">Senha (min. 6 caracteres)</label>
-        <input class="fi" id="r-pass" type="password" placeholder="senha">
+      <div class="form-group">
+        <label class="form-label">E-mail *</label>
+        <input class="form-input" type="email" id="reg-email" placeholder="seu@email.com">
       </div>
-      <button class="btn btn-orange" style="width:100%;justify-content:center" onclick="doRegister()">Criar Conta</button>
-      <div id="r-msg" style="text-align:center;margin-top:12px;font-size:11px;color:var(--dim)"></div>
+      <div class="form-group">
+        <label class="form-label">Senha *</label>
+        <div class="password-wrap">
+          <input class="form-input" type="password" id="reg-senha" placeholder="Mínimo 6 caracteres" oninput="checkPwStrength()">
+          <button class="btn-toggle-pw" type="button" onclick="togglePw('reg-senha','eye-reg')">
+            <span id="eye-reg">👁️</span>
+          </button>
+        </div>
+        <div class="pw-strength" id="pw-strength-bars">
+          <div class="pw-strength-bar" id="bar1"></div>
+          <div class="pw-strength-bar" id="bar2"></div>
+          <div class="pw-strength-bar" id="bar3"></div>
+          <span class="pw-strength-label" id="pw-strength-label">—</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirmar Senha *</label>
+        <div class="password-wrap">
+          <input class="form-input" type="password" id="reg-confirm" placeholder="Repita a senha">
+          <button class="btn-toggle-pw" type="button" onclick="togglePw('reg-confirm','eye-reg2')">
+            <span id="eye-reg2">👁️</span>
+          </button>
+        </div>
+      </div>
+      <button class="btn-login btn-register" id="btn-register" onclick="doRegister()">
+        <span id="register-btn-text">Criar Conta</span>
+      </button>
+      <div class="login-hint">Sua conta aguardará aprovação de um administrador.</div>
     </div>
   </div>
 </div>
 
-<!-- MAIN APP -->
-<div class="shell">
-  <!-- Sidebar -->
-  <nav class="sidebar">
-    <div class="logo">
-      <div class="logo-mark">Nana<span>Smart</span></div>
-      <div class="logo-sub">Industrial Platform</div>
+<!-- ═══════════════════════ APP ════════════════════════════════ -->
+<div id="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <img src="Infra_S__nome.png" alt="InfraSmart" class="sidebar-logo-img">
+      <div class="logo-name"><span class="blue">Infra</span><span class="orange">Smart</span></div>
     </div>
-    <div class="nav">
-      <div class="nav-sec">Visao Geral</div>
-      <div class="nav-item active" onclick="goto('dashboard')">[ ] Dashboard</div>
-      <div class="nav-sec">Gestao</div>
-      <div class="nav-item" onclick="goto('ativos')">[A] Ativos</div>
-      <div class="nav-item" onclick="goto('manutencao')">[M] Manutencao</div>
-      <div class="nav-item" onclick="goto('historico')">[H] Historico</div>
-      <div class="nav-sec">Monitoramento</div>
-      <div class="nav-item" onclick="goto('sensores')">[S] Sensores</div>
-      <div class="nav-item" onclick="goto('telemetria')">[T] Telemetria</div>
-      <div class="nav-item" onclick="goto('alertas')">[!] Alertas</div>
-      <div class="nav-sec">Infra</div>
-      <div class="nav-item" onclick="goto('localizacao')">[L] Localizacao</div>
-      <div class="nav-sec">Admin</div>
-      <div class="nav-item" onclick="goto('conta')">[U] Minha Conta</div>
-    </div>
-    <div class="sb-foot">
-      <div id="sb-user" style="margin-bottom:8px;color:var(--muted);font-size:12px">--</div>
-      <button class="btn btn-outline btn-sm" onclick="doLogout()">Sair</button>
-    </div>
-  </nav>
 
-  <!-- Main area -->
-  <main class="main">
-    <div class="topbar">
-      <div class="topbar-title" id="page-title">Dashboard</div>
+    <div class="sidebar-section-label">Visão Geral</div>
+    <div class="nav-item active" data-page="dashboard" onclick="goTo('dashboard')">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+
+    <div class="sidebar-section-label">Operações</div>
+    <div class="nav-item" data-page="equipamentos" onclick="goTo('equipamentos')">
+      <span class="nav-icon">⚙️</span> Equipamentos
+    </div>
+    <div class="nav-item" data-page="sensores" onclick="goTo('sensores')">
+      <span class="nav-icon">📡</span> Sensores &amp; Telemetria
+    </div>
+    <div class="nav-item" data-page="alertas" onclick="goTo('alertas')">
+      <span class="nav-icon">🔔</span> Alertas
+      <span class="nav-badge" id="alert-badge">2</span>
+    </div>
+
+    <div class="sidebar-section-label">Manutenção</div>
+    <div class="nav-item" data-page="manutencao" onclick="goTo('manutencao')">
+      <span class="nav-icon">🔧</span> Manutenções
+    </div>
+    <div class="nav-item" data-page="ordens" onclick="goTo('ordens')">
+      <span class="nav-icon">📋</span> Ordens de Serviço
+    </div>
+    <div class="nav-item" data-page="historico" onclick="goTo('historico')">
+      <span class="nav-icon">🗂️</span> Histórico
+    </div>
+
+    <div class="sidebar-section-label">Equipe</div>
+    <div class="nav-item" data-page="tecnicos" onclick="goTo('tecnicos')">
+      <span class="nav-icon">👷</span> Técnicos
+    </div>
+
+    <div class="sidebar-section-label admin-only">Administração</div>
+    <div class="nav-item admin-only" data-page="usuarios" onclick="goTo('usuarios')">
+      <span class="nav-icon">👥</span> Usuários
+    </div>
+    <div class="nav-item admin-only" data-page="logs" onclick="goTo('logs')">
+      <span class="nav-icon">📜</span> Logs do Sistema
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="user-card">
+        <div class="user-avatar" id="user-avatar">A</div>
+        <div class="user-info">
+          <div class="user-name" id="user-name">Admin</div>
+          <span class="user-role-badge admin" id="user-role-badge">Admin</span>
+        </div>
+        <button class="btn-logout" onclick="doLogout()">Sair</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main-wrap">
+    <header class="topbar">
+      <div class="page-title" id="page-title">Dashboard</div>
       <div class="topbar-right">
-        <div class="url-bar">
-          <div class="api-dot" id="api-dot"></div>
-          <input id="api-url" value="http://localhost:8000" onchange="BASE=this.value.replace(/\/$/,'');localStorage.setItem('ns_base',BASE)">
-          <span style="color:var(--dim)">/api/</span>
+        <div class="status-pill">
+          <div class="status-dot"></div>
+          <div class="status-text">Online</div>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="testConn()">Testar</button>
-        <button class="btn btn-primary btn-sm" onclick="refresh()">Atualizar</button>
+        <div class="time-display" id="clock">--:--:--</div>
+        <div class="topbar-notif" onclick="toggleNotifPanel()" title="Notificações">
+          🔔
+          <div class="topbar-notif-count" id="notif-count" style="display:none">0</div>
+        </div>
+        <div class="topbar-user" onclick="openMyProfile()">
+          <div class="topbar-user-avatar" id="topbar-avatar">A</div>
+          <div class="topbar-user-name" id="topbar-name">Admin</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Painel Notificações -->
+    <div class="notif-panel" id="notif-panel">
+      <div class="notif-header">
+        <div class="notif-title">🔔 Notificações</div>
+        <button class="btn btn-ghost btn-xs" onclick="markAllRead()">Marcar lidas</button>
+      </div>
+      <div id="notif-list"></div>
+    </div>
+
+    <!-- ══════════ DASHBOARD ══════════ -->
+    <div class="page active" id="page-dashboard">
+      <div class="grid-kpi" id="kpi-grid"></div>
+      <div class="grid-2 mb-20">
+        <div class="card">
+          <div class="card-header"><div class="card-title">📈 Temperatura — 24h</div></div>
+          <div class="card-body"><div class="chart-container"><canvas id="chart-temp"></canvas></div></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">⚡ Energia — 24h</div></div>
+          <div class="card-body"><div class="chart-container"><canvas id="chart-energy"></canvas></div></div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">🔔 Alertas Recentes</div>
+            <button class="btn btn-ghost btn-sm" onclick="goTo('alertas')">Ver todos</button>
+          </div>
+          <div class="card-body" id="dash-alertas"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><div class="card-title">📊 Indicadores de Desempenho</div></div>
+          <div class="card-body" id="dash-kpis"></div>
+        </div>
       </div>
     </div>
 
-    <div class="content">
-
-      <!-- DASHBOARD PAGE -->
-      <div class="page active" id="page-dashboard">
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-label">Ativos Totais</div>
-            <div class="stat-value c-blue" id="ds-ativos">--</div>
-            <div class="stat-sub">equipamentos</div>
+    <!-- ══════════ EQUIPAMENTOS ══════════ -->
+    <div class="page" id="page-equipamentos">
+      <div class="section-header">
+        <div><div class="section-title">Equipamentos</div><div class="section-sub">Gestão e monitoramento de ativos industriais</div></div>
+        <div style="display:flex;gap:10px;align-items:center">
+          <div class="search-bar" style="width:240px">
+            <input type="text" placeholder="Buscar equipamento..." id="eq-search" oninput="filterEquipamentos()">
           </div>
-          <div class="stat-card">
-            <div class="stat-label">Manutencoes Abertas</div>
-            <div class="stat-value c-orange" id="ds-manut">--</div>
-            <div class="stat-sub">ordens ativas</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Alertas</div>
-            <div class="stat-value c-red" id="ds-alertas">--</div>
-            <div class="stat-sub">requerem atencao</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Sensores</div>
-            <div class="stat-value c-green" id="ds-sens">--</div>
-            <div class="stat-sub">cadastrados</div>
-          </div>
-        </div>
-        <div class="kpi-grid">
-          <div class="kpi-card">
-            <div class="kpi-lbl">MTBF - Tempo Medio Entre Falhas</div>
-            <div><span class="kpi-num" id="k-mtbf">--</span><span class="kpi-unit">h</span></div>
-            <div class="kpi-bar"><div class="kpi-fill" id="k-mtbf-b" style="width:0%"></div></div>
-            <div class="kpi-leg"><span>0h</span><span>500h</span></div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-lbl">MTTR - Tempo Medio para Reparo</div>
-            <div><span class="kpi-num" id="k-mttr">--</span><span class="kpi-unit">h</span></div>
-            <div class="kpi-bar"><div class="kpi-fill" id="k-mttr-b" style="width:0%"></div></div>
-            <div class="kpi-leg"><span>0h</span><span>72h</span></div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-lbl">Disponibilidade</div>
-            <div><span class="kpi-num" id="k-disp">--</span><span class="kpi-unit">%</span></div>
-            <div class="kpi-bar"><div class="kpi-fill" id="k-disp-b" style="width:0%"></div></div>
-            <div class="kpi-leg"><span>0%</span><span>100%</span></div>
-          </div>
-        </div>
-        <div class="sec-head"><div class="sec-title">Ativos <span>Recentes</span></div></div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>Nome</th><th>N Serie</th><th>Status</th><th>Criado</th></tr></thead>
-            <tbody id="dash-tb"><tr><td colspan="4"><div class="loading"><div class="spin"></div>Aguardando login...</div></td></tr></tbody>
-          </table>
+          <button class="btn btn-orange admin-action" onclick="openModal('modal-equipamento')">+ Novo Equipamento</button>
         </div>
       </div>
-
-      <!-- ATIVOS PAGE -->
-      <div class="page" id="page-ativos">
-        <div class="sec-head">
-          <div class="sec-title">Ativos <span>Industriais</span></div>
-          <button class="btn btn-orange" onclick="resetAtivoForm();openM('m-ativo')">+ Novo Ativo</button>
-        </div>
-        <div class="filters">
-          <input class="f-in" id="fa-search" placeholder="Buscar ativo..." oninput="loadAtivos()">
-          <select class="f-sel" id="fa-status" onchange="loadAtivos()">
-            <option value="">Todos os status</option>
-            <option value="ativo">Ativo</option>
-            <option value="inativo">Inativo</option>
-            <option value="em_manutencao">Em Manutencao</option>
-          </select>
-        </div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>Nome</th><th>N Serie</th><th>Modelo</th><th>Status</th><th>Criado</th><th>Acoes</th></tr></thead>
-            <tbody id="ativos-tb"></tbody>
-          </table>
-        </div>
+      <div class="filter-bar">
+        <span class="filter-label">Status:</span>
+        <button class="filter-chip active" data-filter="eq-status" data-value="" onclick="filterChip(this,'eq-status')">Todos</button>
+        <button class="filter-chip chip-green" data-filter="eq-status" data-value="operacional" onclick="filterChip(this,'eq-status')">Operacional</button>
+        <button class="filter-chip chip-orange" data-filter="eq-status" data-value="manutencao" onclick="filterChip(this,'eq-status')">Manutenção</button>
+        <button class="filter-chip chip-red" data-filter="eq-status" data-value="alerta" onclick="filterChip(this,'eq-status')">Alerta</button>
+        <button class="filter-chip chip-gray" data-filter="eq-status" data-value="inativo" onclick="filterChip(this,'eq-status')">Inativo</button>
+        <div class="filter-sep"></div>
+        <span class="filter-label">Setor:</span>
+        <select class="filter-select" id="eq-setor-filter" onchange="filterEquipamentos()">
+          <option value="">Todos</option>
+          <option>Setor A</option><option>Setor B</option><option>Setor C</option><option>Telhado</option>
+        </select>
       </div>
-
-      <!-- MANUTENCAO PAGE -->
-      <div class="page" id="page-manutencao">
-        <div class="sec-head">
-          <div class="sec-title">Ordens de <span>Manutencao</span></div>
-          <button class="btn btn-orange" onclick="resetManutForm();openM('m-manut')">+ Nova Ordem</button>
-        </div>
-        <div class="filters">
-          <input class="f-in" id="fm-search" placeholder="Buscar ordens..." oninput="loadManut()">
-          <select class="f-sel" id="fm-status" onchange="loadManut()">
-            <option value="">Todos</option>
-            <option value="aberta">Aberta</option>
-            <option value="em_andamento">Em Andamento</option>
-            <option value="concluida">Concluida</option>
-            <option value="cancelada">Cancelada</option>
-          </select>
-        </div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>Titulo</th><th>Ativo</th><th>Tipo</th><th>Prioridade</th><th>Status</th><th>Responsavel</th><th>Acoes</th></tr></thead>
-            <tbody id="manut-tb"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- HISTORICO PAGE -->
-      <div class="page" id="page-historico">
-        <div class="sec-head"><div class="sec-title">Historico de <span>Manutencao</span></div></div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>Data</th><th>Ativo</th><th>Descricao</th><th>Tecnico</th><th>Custo</th><th>Duracao</th></tr></thead>
-            <tbody id="hist-tb"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- SENSORES PAGE -->
-      <div class="page" id="page-sensores">
-        <div class="sec-head">
-          <div class="sec-title">Sensores <span>IoT</span></div>
-          <button class="btn btn-orange" onclick="resetSensorForm();openM('m-sensor')">+ Novo Sensor</button>
-        </div>
-        <div class="sensor-grid" id="sensor-grid"></div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>Nome</th><th>Tipo</th><th>Ativo</th><th>Min</th><th>Max</th><th>Unidade</th><th>Acoes</th></tr></thead>
-            <tbody id="sensor-tb"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- TELEMETRIA PAGE -->
-      <div class="page" id="page-telemetria">
-        <div class="sec-head">
-          <div class="sec-title">Leituras de <span>Telemetria</span></div>
-          <button class="btn btn-orange" onclick="openM('m-leit')">+ Enviar Leitura</button>
-        </div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>Data/Hora</th><th>Sensor</th><th>Ativo</th><th>Tipo</th><th>Valor</th><th>Unidade</th></tr></thead>
-            <tbody id="tele-tb"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ALERTAS PAGE -->
-      <div class="page" id="page-alertas">
-        <div class="sec-head"><div class="sec-title">Alertas <span>Automaticos</span></div></div>
-        <div class="alert-list" id="alertas-list"><div class="loading"><div class="spin"></div>Aguardando...</div></div>
-      </div>
-
-      <!-- LOCALIZACAO PAGE -->
-      <div class="page" id="page-localizacao">
-        <div class="sec-head">
-          <div class="sec-title">Localizacao <span>Industrial</span></div>
-          <button class="btn btn-orange" onclick="resetLocalForm();openM('m-local')">+ Nova Localizacao</button>
-        </div>
-        <div class="tbl-wrap">
-          <table>
-            <thead><tr><th>Planta</th><th>Setor</th><th>Ativo</th><th>Coordenadas</th><th>Acoes</th></tr></thead>
-            <tbody id="local-tb"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- CONTA PAGE -->
-      <div class="page" id="page-conta">
-        <div class="sec-head"><div class="sec-title">Minha <span>Conta</span></div></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;max-width:700px">
-          <div class="stat-card" style="grid-column:1/-1">
-            <div class="stat-label">Dados do Usuario</div>
-            <pre id="me-data" style="margin-top:10px;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-all"></pre>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Token de Acesso</div>
-            <input class="fi" id="token-show" readonly style="margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10px">
-            <button class="btn btn-outline btn-sm" style="margin-top:10px" onclick="copyTok()">Copiar Token</button>
-          </div>
-          <div class="stat-card">
-            <div class="stat-label">Sessao</div>
-            <p style="font-size:12px;color:var(--muted);margin:10px 0 14px">Encerre a sessao atual e invalide o token.</p>
-            <button class="btn btn-danger" onclick="doLogout()">Sair da Conta</button>
-          </div>
-        </div>
-      </div>
-
+      <div class="card"><div class="table-wrap"><table>
+        <thead><tr><th>Nome</th><th>Tipo</th><th>Fabricante</th><th>Nº Série</th><th>Setor</th><th>Status</th><th>Sensores</th><th>Ações</th></tr></thead>
+        <tbody id="eq-table"></tbody>
+      </table></div></div>
     </div>
-  </main>
+
+    <!-- ══════════ SENSORES ══════════ -->
+    <div class="page" id="page-sensores">
+      <div class="section-header">
+        <div><div class="section-title">Sensores &amp; Telemetria</div><div class="section-sub">Dados em tempo real</div></div>
+        <select class="filter-select" id="sensor-equip-filter" onchange="loadSensores()">
+          <option value="">Todos os equipamentos</option>
+        </select>
+      </div>
+      <div class="grid-3 mb-20" id="sensor-cards"></div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">📡 Histórico de Leituras</div></div>
+        <div class="card-body"><div class="chart-container" style="height:280px"><canvas id="chart-sensor"></canvas></div></div>
+      </div>
+    </div>
+
+    <!-- ══════════ ALERTAS ══════════ -->
+    <div class="page" id="page-alertas">
+      <div class="section-header">
+        <div><div class="section-title">Central de Alertas</div><div class="section-sub">Monitoramento e gestão de ocorrências</div></div>
+        <button class="btn btn-orange admin-action" onclick="openModal('modal-alerta')">+ Novo Alerta</button>
+      </div>
+      <div class="filter-bar">
+        <span class="filter-label">Status:</span>
+        <button class="filter-chip active" data-filter="al-status" data-value="" onclick="filterChip(this,'al-status')">Todos</button>
+        <button class="filter-chip chip-red" data-filter="al-status" data-value="aberto" onclick="filterChip(this,'al-status')">Abertos</button>
+        <button class="filter-chip chip-green" data-filter="al-status" data-value="resolvido" onclick="filterChip(this,'al-status')">Resolvidos</button>
+        <div class="filter-sep"></div>
+        <span class="filter-label">Nível:</span>
+        <button class="filter-chip chip-red" data-filter="al-nivel" data-value="critico" onclick="filterChip(this,'al-nivel')">Crítico</button>
+        <button class="filter-chip chip-orange" data-filter="al-nivel" data-value="alto" onclick="filterChip(this,'al-nivel')">Alto</button>
+        <button class="filter-chip chip-yellow" data-filter="al-nivel" data-value="medio" onclick="filterChip(this,'al-nivel')">Médio</button>
+        <div class="filter-sep"></div>
+        <span class="filter-label">Ordenar:</span>
+        <select class="filter-select" id="al-ordem" onchange="renderAlertas()">
+          <option value="recente">Mais recente</option>
+          <option value="antigo">Mais antigo</option>
+        </select>
+      </div>
+      <div class="card"><div class="table-wrap"><table>
+        <thead><tr><th>Nível</th><th>Tipo</th><th>Descrição</th><th>Equipamento</th><th>Data</th><th>Status</th><th>Resolvido por</th><th>Ações</th></tr></thead>
+        <tbody id="alertas-table"></tbody>
+      </table></div></div>
+    </div>
+
+    <!-- ══════════ MANUTENÇÃO ══════════ -->
+    <div class="page" id="page-manutencao">
+      <div class="section-header">
+        <div><div class="section-title">Gestão de Manutenção</div><div class="section-sub">Planejamento e execução</div></div>
+        <button class="btn btn-orange admin-action" onclick="openModal('modal-manutencao')">+ Agendar</button>
+      </div>
+      <div class="filter-bar">
+        <span class="filter-label">Tipo:</span>
+        <button class="filter-chip active" data-filter="mn-tipo" data-value="" onclick="filterChip(this,'mn-tipo')">Todos</button>
+        <button class="filter-chip" data-filter="mn-tipo" data-value="preventiva" onclick="filterChip(this,'mn-tipo')">Preventiva</button>
+        <button class="filter-chip chip-red" data-filter="mn-tipo" data-value="corretiva" onclick="filterChip(this,'mn-tipo')">Corretiva</button>
+        <button class="filter-chip chip-yellow" data-filter="mn-tipo" data-value="preditiva" onclick="filterChip(this,'mn-tipo')">Preditiva</button>
+        <div class="filter-sep"></div>
+        <span class="filter-label">Status:</span>
+        <button class="filter-chip active" data-filter="mn-status" data-value="" onclick="filterChip(this,'mn-status')">Todos</button>
+        <button class="filter-chip" data-filter="mn-status" data-value="agendada" onclick="filterChip(this,'mn-status')">Agendada</button>
+        <button class="filter-chip chip-orange" data-filter="mn-status" data-value="em_andamento" onclick="filterChip(this,'mn-status')">Em Andamento</button>
+        <button class="filter-chip chip-green" data-filter="mn-status" data-value="concluida" onclick="filterChip(this,'mn-status')">Concluída</button>
+      </div>
+      <div class="card"><div class="table-wrap"><table>
+        <thead><tr><th>Tipo</th><th>Equipamento</th><th>Descrição</th><th>Data Programada</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="manut-table"></tbody>
+      </table></div></div>
+    </div>
+
+    <!-- ══════════ ORDENS ══════════ -->
+    <div class="page" id="page-ordens">
+      <div class="section-header">
+        <div><div class="section-title">Ordens de Serviço</div><div class="section-sub">Controle e execução</div></div>
+        <button class="btn btn-orange admin-action" onclick="openModal('modal-os')">+ Nova OS</button>
+      </div>
+      <div class="filter-bar">
+        <span class="filter-label">Status:</span>
+        <button class="filter-chip active" data-filter="os-status" data-value="" onclick="filterChip(this,'os-status')">Todos</button>
+        <button class="filter-chip chip-red" data-filter="os-status" data-value="aberta" onclick="filterChip(this,'os-status')">Aberta</button>
+        <button class="filter-chip chip-orange" data-filter="os-status" data-value="em_andamento" onclick="filterChip(this,'os-status')">Em Andamento</button>
+        <button class="filter-chip chip-green" data-filter="os-status" data-value="concluida" onclick="filterChip(this,'os-status')">Concluída</button>
+        <div class="filter-sep"></div>
+        <span class="filter-label">Prioridade:</span>
+        <button class="filter-chip chip-red" data-filter="os-prior" data-value="critica" onclick="filterChip(this,'os-prior')">Crítica</button>
+        <button class="filter-chip chip-orange" data-filter="os-prior" data-value="alta" onclick="filterChip(this,'os-prior')">Alta</button>
+      </div>
+      <div class="card"><div class="table-wrap"><table>
+        <thead><tr><th>Nº OS</th><th>Descrição</th><th>Técnico</th><th>Abertura</th><th>Prioridade</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="os-table"></tbody>
+      </table></div></div>
+    </div>
+
+    <!-- ══════════ HISTÓRICO ══════════ -->
+    <div class="page" id="page-historico">
+      <div class="section-header">
+        <div><div class="section-title">Histórico de Manutenções</div><div class="section-sub">Registro completo de serviços</div></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="filter-select" id="hist-tecnico-filter" onchange="renderHistorico()">
+            <option value="">Todos os técnicos</option>
+          </select>
+          <button class="btn btn-orange admin-action" onclick="openModal('modal-historico')">+ Registrar</button>
+        </div>
+      </div>
+      <div class="card"><div class="table-wrap"><table>
+        <thead><tr><th>OS</th><th>Técnico</th><th>Descrição</th><th>Data</th><th>Custo</th></tr></thead>
+        <tbody id="hist-table"></tbody>
+      </table></div></div>
+    </div>
+
+    <!-- ══════════ TÉCNICOS ══════════ -->
+    <div class="page" id="page-tecnicos">
+      <div class="section-header">
+        <div><div class="section-title">Equipe Técnica</div><div class="section-sub">Gestão de técnicos e especialistas</div></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="view-toggle">
+            <button class="view-btn active" id="view-grid-btn" onclick="setTecView('grid')">▦ Cards</button>
+            <button class="view-btn" id="view-table-btn" onclick="setTecView('table')">☰ Lista</button>
+          </div>
+          <button class="btn btn-orange admin-action" onclick="openModal('modal-tecnico')">+ Novo Técnico</button>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <span class="filter-label">Status:</span>
+        <button class="filter-chip active" data-filter="tc-status" data-value="" onclick="filterChip(this,'tc-status')">Todos</button>
+        <button class="filter-chip chip-green" data-filter="tc-status" data-value="ativo" onclick="filterChip(this,'tc-status')">Ativos</button>
+        <button class="filter-chip chip-gray" data-filter="tc-status" data-value="inativo" onclick="filterChip(this,'tc-status')">Inativos</button>
+        <div class="filter-sep"></div>
+        <span class="filter-label">Área:</span>
+        <select class="filter-select" id="tc-area-filter" onchange="renderTecnicos()">
+          <option value="">Todas</option>
+          <option>Mecânica</option><option>Elétrica</option><option>Automação</option>
+          <option>TI</option><option>Hidráulica</option>
+        </select>
+        <div class="filter-sep"></div>
+        <div class="search-bar" style="width:200px">
+          <input type="text" placeholder="Buscar técnico..." id="tc-search" oninput="renderTecnicos()">
+        </div>
+      </div>
+      <div id="tec-view-grid"><div class="grid-3" id="tecnicos-grid"></div></div>
+      <div id="tec-view-table" style="display:none">
+        <div class="card"><div class="table-wrap"><table>
+          <thead><tr><th>Técnico</th><th>Especialidade</th><th>Área</th><th>Contato</th><th>OS Concluídas</th><th>Status</th><th>Ações</th></tr></thead>
+          <tbody id="tecnicos-table"></tbody>
+        </table></div></div>
+      </div>
+    </div>
+
+    <!-- ══════════ USUÁRIOS (admin) ══════════ -->
+    <div class="page" id="page-usuarios">
+      <div class="section-header">
+        <div><div class="section-title">Gerenciar Usuários</div><div class="section-sub">Perfis, cargos e permissões de acesso</div></div>
+        <div style="display:flex;gap:8px">
+          <div class="search-bar" style="width:220px">
+            <input type="text" placeholder="Buscar usuário..." id="usr-search" oninput="renderUsuarios()">
+          </div>
+        </div>
+      </div>
+      <div id="usuarios-access-check"></div>
+      <div id="usuarios-content" style="display:none">
+        <!-- Solicitações pendentes -->
+        <div id="pending-section" style="margin-bottom:20px;display:none">
+          <div class="card" style="border-left:3px solid var(--orange-500)">
+            <div class="card-header">
+              <div class="card-title">⏳ Solicitações Pendentes</div>
+              <span class="badge badge-orange" id="pending-count-badge">0</span>
+            </div>
+            <div class="card-body" id="pending-list"></div>
+          </div>
+        </div>
+        <!-- Lista de usuários -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">👥 Todos os Usuários</div>
+            <span class="badge badge-blue" id="users-total-badge">0</span>
+          </div>
+          <div class="card-body" id="users-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ LOGS (admin) ══════════ -->
+    <div class="page" id="page-logs">
+      <div class="section-header">
+        <div><div class="section-title">Logs do Sistema</div><div class="section-sub">Registro de todas as ações</div></div>
+        <button class="btn btn-ghost btn-sm admin-action" onclick="clearLogs()">🗑️ Limpar logs</button>
+      </div>
+      <div id="logs-access-check"></div>
+      <div class="card" id="logs-card" style="display:none"><div class="table-wrap"><table>
+        <thead><tr><th>Data / Hora</th><th>Ação</th><th>Usuário</th><th>Nível</th></tr></thead>
+        <tbody id="logs-table"></tbody>
+      </table></div></div>
+    </div>
+
+  </div><!-- /main-wrap -->
+</div><!-- /app -->
+
+<div id="toast-container"></div>
+
+<!-- ════════════════ MODAIS ════════════════ -->
+
+<!-- Modal Equipamento -->
+<div class="modal-overlay" id="modal-equipamento">
+  <div class="modal"><div class="modal-header">
+    <div class="modal-title">⚙️ Novo Equipamento</div>
+    <button class="modal-close" onclick="closeModal('modal-equipamento')">✕</button>
+  </div><div class="modal-body">
+    <div class="form-row">
+      <div class="form-group-m"><label class="form-label-m">Nome *</label><input class="form-control" id="eq-nome" placeholder="Ex: Compressor CA-200"></div>
+      <div class="form-group-m"><label class="form-label-m">Tipo</label><input class="form-control" id="eq-tipo" placeholder="Ex: Compressor"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group-m"><label class="form-label-m">Fabricante</label><input class="form-control" id="eq-fabricante" placeholder="Ex: Atlas Copco"></div>
+      <div class="form-group-m"><label class="form-label-m">Modelo</label><input class="form-control" id="eq-modelo" placeholder="Ex: CA-200"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group-m"><label class="form-label-m">Nº de Série</label><input class="form-control" id="eq-serie" placeholder="SN-XXXXX"></div>
+      <div class="form-group-m"><label class="form-label-m">Status</label>
+        <select class="form-control" id="eq-status">
+          <option value="operacional">Operacional</option><option value="manutencao">Em Manutenção</option>
+          <option value="alerta">Em Alerta</option><option value="inativo">Inativo</option>
+        </select>
+      </div>
+    </div>
+  </div><div class="modal-footer">
+    <button class="btn btn-ghost" onclick="closeModal('modal-equipamento')">Cancelar</button>
+    <button class="btn btn-orange" onclick="saveEquipamento()">Salvar</button>
+  </div></div>
 </div>
 
-<!-- MODAL: Ativo -->
-<div class="overlay" id="m-ativo">
-  <div class="modal">
-    <div class="modal-head">
-      <div class="modal-title" id="ativo-modal-ttl">Novo Ativo</div>
-      <button class="modal-x" onclick="closeM('m-ativo')">X</button>
+<!-- Modal Alerta -->
+<div class="modal-overlay" id="modal-alerta">
+  <div class="modal"><div class="modal-header">
+    <div class="modal-title">🔔 Registrar Alerta</div>
+    <button class="modal-close" onclick="closeModal('modal-alerta')">✕</button>
+  </div><div class="modal-body">
+    <div class="form-row">
+      <div class="form-group-m"><label class="form-label-m">Tipo *</label><input class="form-control" id="al-tipo" placeholder="Ex: Temperatura Alta"></div>
+      <div class="form-group-m"><label class="form-label-m">Nível</label>
+        <select class="form-control" id="al-nivel">
+          <option value="critico">🔴 Crítico</option><option value="alto">🟠 Alto</option>
+          <option value="medio">🟡 Médio</option><option value="baixo">🔵 Baixo</option>
+        </select>
+      </div>
     </div>
-    <div class="modal-body">
-      <input type="hidden" id="a-id">
-      <div class="fg2">
-        <div class="fg"><label class="fl">Nome *</label><input class="fi" id="a-nome" placeholder="Bomba Centrifuga B-01"></div>
-        <div class="fg"><label class="fl">N Serie *</label><input class="fi" id="a-serie" placeholder="BC-2024-001"></div>
+    <div class="form-group-m"><label class="form-label-m">Equipamento</label><select class="form-control" id="al-equip"></select></div>
+    <div class="form-group-m"><label class="form-label-m">Descrição</label><textarea class="form-control" id="al-desc" rows="3" placeholder="Descreva o alerta..."></textarea></div>
+  </div><div class="modal-footer">
+    <button class="btn btn-ghost" onclick="closeModal('modal-alerta')">Cancelar</button>
+    <button class="btn btn-orange" onclick="saveAlerta()">Registrar</button>
+  </div></div>
+</div>
+
+<!-- Modal Manutenção -->
+<div class="modal-overlay" id="modal-manutencao">
+  <div class="modal"><div class="modal-header">
+    <div class="modal-title">🔧 Agendar Manutenção</div>
+    <button class="modal-close" onclick="closeModal('modal-manutencao')">✕</button>
+  </div><div class="modal-body">
+    <div class="form-row">
+      <div class="form-group-m"><label class="form-label-m">Tipo</label>
+        <select class="form-control" id="mn-tipo"><option value="preventiva">Preventiva</option><option value="corretiva">Corretiva</option><option value="preditiva">Preditiva</option></select>
       </div>
-      <div class="fg2">
-        <div class="fg"><label class="fl">Modelo</label><input class="fi" id="a-modelo" placeholder="Modelo XYZ"></div>
-        <div class="fg"><label class="fl">Fabricante</label><input class="fi" id="a-fab" placeholder="Fabricante"></div>
-      </div>
-      <div class="fg2">
-        <div class="fg">
-          <label class="fl">Status</label>
-          <select class="fs" id="a-status">
-            <option value="ativo">Ativo</option>
-            <option value="inativo">Inativo</option>
-            <option value="em_manutencao">Em Manutencao</option>
-          </select>
-        </div>
-        <div class="fg"><label class="fl">Data Aquisicao</label><input class="fi" id="a-data" type="date"></div>
-      </div>
-      <div class="fg"><label class="fl">Descricao</label><textarea class="ft" id="a-desc" placeholder="Descricao..."></textarea></div>
+      <div class="form-group-m"><label class="form-label-m">Data Programada</label><input type="date" class="form-control" id="mn-data"></div>
     </div>
-    <div class="modal-foot">
-      <button class="btn btn-outline" onclick="closeM('m-ativo')">Cancelar</button>
-      <button class="btn btn-orange" onclick="saveAtivo()">Salvar</button>
+    <div class="form-group-m"><label class="form-label-m">Equipamento</label><select class="form-control" id="mn-equip"></select></div>
+    <div class="form-group-m"><label class="form-label-m">Descrição</label><textarea class="form-control" id="mn-desc" rows="3" placeholder="Descreva a manutenção..."></textarea></div>
+  </div><div class="modal-footer">
+    <button class="btn btn-ghost" onclick="closeModal('modal-manutencao')">Cancelar</button>
+    <button class="btn btn-orange" onclick="saveManutencao()">Agendar</button>
+  </div></div>
+</div>
+
+<!-- Modal OS -->
+<div class="modal-overlay" id="modal-os">
+  <div class="modal"><div class="modal-header">
+    <div class="modal-title">📋 Nova Ordem de Serviço</div>
+    <button class="modal-close" onclick="closeModal('modal-os')">✕</button>
+  </div><div class="modal-body">
+    <div class="form-group-m"><label class="form-label-m">Descrição *</label><input class="form-control" id="os-desc" placeholder="Descrição da OS"></div>
+    <div class="form-row">
+      <div class="form-group-m"><label class="form-label-m">Prioridade</label>
+        <select class="form-control" id="os-prior"><option value="baixa">Baixa</option><option value="media">Média</option><option value="alta">Alta</option><option value="critica">Crítica</option></select>
+      </div>
+      <div class="form-group-m"><label class="form-label-m">Técnico Responsável</label><select class="form-control" id="os-tecnico"></select></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group-m"><label class="form-label-m">Manutenção Vinculada</label><select class="form-control" id="os-manut"></select></div>
+      <div class="form-group-m"><label class="form-label-m">Status</label>
+        <select class="form-control" id="os-status"><option value="aberta">Aberta</option><option value="em_andamento">Em Andamento</option><option value="concluida">Concluída</option></select>
+      </div>
+    </div>
+  </div><div class="modal-footer">
+    <button class="btn btn-ghost" onclick="closeModal('modal-os')">Cancelar</button>
+    <button class="btn btn-orange" onclick="saveOS()">Criar OS</button>
+  </div></div>
+</div>
+
+<!-- Modal Técnico -->
+<div class="modal-overlay" id="modal-tecnico">
+  <div class="modal"><div class="modal-header">
+    <div class="modal-title">👷 Cadastrar Técnico</div>
+    <button class="modal-close" onclick="closeModal('modal-tecnico')">✕</button>
+  </div><div class="modal-body">
+    <div class="form-row">
+      <div class="form-group-m"><label class="form-label-m">Nome *</label><input class="form-control" id="tc-nome" placeholder="Nome completo"></div>
+      <div class="form-group-m"><label class="form-label-m">Especialidade</label><input class="form-control" id="tc-esp" placeholder="Ex: Mecânica Industrial"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group-m"><label class="form-label-m">Telefone</label><input class="form-control" id="tc-tel" placeholder="(19) 99999-0000"></div>
+      <div class="form-group-m"><label class="form-label-m">E-mail</label><input class="form-control" id="tc-email" placeholder="tecnico@empresa.com"></div>
+    </div>
+    <div class="form-group-m"><label class="form-label-m">Área de Atuação</label>
+      <select class="form-control" id="tc-area">
+        <option>Mecânica</option><option>Elétrica</option><option>Automação</option>
+        <option value="TI">TI / Sistemas</option><option>Hidráulica</option><option>Outros</option>
+      </select>
+    </div>
+  </div><div class="modal-footer">
+    <button class="btn btn-ghost" onclick="closeModal('modal-tecnico')">Cancelar</button>
+    <button class="btn btn-orange" onclick="saveTecnico()">Cadastrar</button>
+  </div></div>
+</div>
+
+<!-- Modal Histórico -->
+<div class="modal-overlay" id="modal-historico">
+  <div class="modal"><div class="modal-header">
+    <div class="modal-title">🗂️ Registrar Execução</div>
+    <button class="modal-close" onclick="closeModal('modal-historico')">✕</button>
+  </div><div class="modal-body">
+    <div class="form-group-m"><label class="form-label-m">Ordem de Serviço</label><select class="form-control" id="hst-os"></select></div>
+    <div class="form-group-m"><label class="form-label-m">Técnico Responsável</label><select class="form-control" id="hst-tecnico"></select></div>
+    <div class="form-group-m"><label class="form-label-m">Descrição *</label><textarea class="form-control" id="hst-desc" rows="3" placeholder="Descreva o serviço..."></textarea></div>
+    <div class="form-group-m"><label class="form-label-m">Custo (R$)</label><input type="number" class="form-control" id="hst-custo" placeholder="0,00" step="0.01" min="0"></div>
+  </div><div class="modal-footer">
+    <button class="btn btn-ghost" onclick="closeModal('modal-historico')">Cancelar</button>
+    <button class="btn btn-orange" onclick="saveHistorico()">Registrar</button>
+  </div></div>
+</div>
+
+<!-- Modal Perfil do Técnico -->
+<div class="modal-overlay" id="modal-perfil-tecnico">
+  <div class="modal modal-lg">
+    <div id="modal-perfil-tecnico-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-perfil-tecnico')">Fechar</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: Manutencao -->
-<div class="overlay" id="m-manut">
-  <div class="modal">
-    <div class="modal-head">
-      <div class="modal-title" id="manut-modal-ttl">Nova Ordem</div>
-      <button class="modal-x" onclick="closeM('m-manut')">X</button>
+<!-- Modal Editar Usuário (admin) -->
+<div class="modal-overlay" id="modal-edit-user">
+  <div class="modal"><div class="modal-header">
+    <div class="modal-title">✏️ Editar Usuário</div>
+    <button class="modal-close" onclick="closeModal('modal-edit-user')">✕</button>
+  </div><div class="modal-body">
+    <input type="hidden" id="edit-user-id">
+    <div class="form-row">
+      <div class="form-group-m"><label class="form-label-m">Nome</label><input class="form-control" id="edit-user-nome"></div>
+      <div class="form-group-m"><label class="form-label-m">E-mail</label><input class="form-control" id="edit-user-email"></div>
     </div>
-    <div class="modal-body">
-      <input type="hidden" id="m-id">
-      <div class="fg"><label class="fl">Titulo *</label><input class="fi" id="m-titulo" placeholder="Substituicao de rolamento"></div>
-      <div class="fg2">
-        <div class="fg"><label class="fl">Ativo *</label><select class="fs" id="m-ativo"></select></div>
-        <div class="fg">
-          <label class="fl">Tipo</label>
-          <select class="fs" id="m-tipo">
-            <option value="preventiva">Preventiva</option>
-            <option value="corretiva">Corretiva</option>
-            <option value="preditiva">Preditiva</option>
-          </select>
-        </div>
+    <div class="form-row">
+      <div class="form-group-m"><label class="form-label-m">Cargo / Função</label><input class="form-control" id="edit-user-cargo" placeholder="Ex: Operador de Campo"></div>
+      <div class="form-group-m"><label class="form-label-m">Permissão</label>
+        <select class="form-control" id="edit-user-role">
+          <option value="admin">👑 Administrador</option>
+          <option value="user">👤 Usuário Padrão</option>
+          <option value="tecnico">🔧 Técnico</option>
+          <option value="viewer">👁️ Visualizador (somente leitura)</option>
+        </select>
       </div>
-      <div class="fg2">
-        <div class="fg">
-          <label class="fl">Prioridade</label>
-          <select class="fs" id="m-prior">
-            <option value="baixa">Baixa</option>
-            <option value="media">Media</option>
-            <option value="alta">Alta</option>
-            <option value="critica">Critica</option>
-          </select>
-        </div>
-        <div class="fg">
-          <label class="fl">Status</label>
-          <select class="fs" id="m-status">
-            <option value="aberta">Aberta</option>
-            <option value="em_andamento">Em Andamento</option>
-            <option value="concluida">Concluida</option>
-            <option value="cancelada">Cancelada</option>
-          </select>
-        </div>
-      </div>
-      <div class="fg"><label class="fl">Responsavel</label><input class="fi" id="m-resp" placeholder="Nome do tecnico"></div>
-      <div class="fg"><label class="fl">Descricao</label><textarea class="ft" id="m-desc" placeholder="Descreva o problema..."></textarea></div>
     </div>
-    <div class="modal-foot">
-      <button class="btn btn-outline" onclick="closeM('m-manut')">Cancelar</button>
-      <button class="btn btn-orange" onclick="saveManut()">Salvar</button>
+    <div class="form-group-m"><label class="form-label-m">Vincular ao Técnico (opcional)</label>
+      <select class="form-control" id="edit-user-tecnico">
+        <option value="">— Nenhum —</option>
+      </select>
     </div>
-  </div>
+    <div class="form-group-m"><label class="form-label-m">Status da Conta</label>
+      <select class="form-control" id="edit-user-status">
+        <option value="ativo">✅ Ativo</option>
+        <option value="pendente">⏳ Pendente de aprovação</option>
+        <option value="suspenso">🚫 Suspenso</option>
+      </select>
+    </div>
+  </div><div class="modal-footer">
+    <button class="btn btn-danger btn-sm" onclick="deleteUser()">🗑️ Excluir</button>
+    <button class="btn btn-ghost" onclick="closeModal('modal-edit-user')">Cancelar</button>
+    <button class="btn btn-orange" onclick="saveEditUser()">Salvar Alterações</button>
+  </div></div>
 </div>
 
-<!-- MODAL: Sensor -->
-<div class="overlay" id="m-sensor">
-  <div class="modal">
-    <div class="modal-head">
-      <div class="modal-title">Novo Sensor</div>
-      <button class="modal-x" onclick="closeM('m-sensor')">X</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="s-id">
-      <div class="fg2">
-        <div class="fg"><label class="fl">Nome *</label><input class="fi" id="s-nome" placeholder="Sensor-T01"></div>
-        <div class="fg"><label class="fl">Ativo *</label><select class="fs" id="s-ativo"></select></div>
-      </div>
-      <div class="fg2">
-        <div class="fg">
-          <label class="fl">Tipo</label>
-          <select class="fs" id="s-tipo">
-            <option value="temperatura">Temperatura</option>
-            <option value="vibracao">Vibracao</option>
-            <option value="pressao">Pressao</option>
-            <option value="corrente">Corrente</option>
-            <option value="umidade">Umidade</option>
-          </select>
-        </div>
-        <div class="fg"><label class="fl">Unidade</label><input class="fi" id="s-unit" placeholder="oC, Hz, Bar..."></div>
-      </div>
-      <div class="fg2">
-        <div class="fg"><label class="fl">Limite Minimo</label><input class="fi" id="s-min" type="number" placeholder="0"></div>
-        <div class="fg"><label class="fl">Limite Maximo</label><input class="fi" id="s-max" type="number" placeholder="100"></div>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-outline" onclick="closeM('m-sensor')">Cancelar</button>
-      <button class="btn btn-orange" onclick="saveSensor()">Salvar</button>
-    </div>
-  </div>
+<!-- Modal Meu Perfil -->
+<div class="modal-overlay" id="modal-meu-perfil">
+  <div class="modal"><div class="modal-header">
+    <div class="modal-title">👤 Meu Perfil</div>
+    <button class="modal-close" onclick="closeModal('modal-meu-perfil')">✕</button>
+  </div><div class="modal-body" id="meu-perfil-body">
+  </div><div class="modal-footer">
+    <button class="btn btn-ghost" onclick="closeModal('modal-meu-perfil')">Fechar</button>
+    <button class="btn btn-orange" onclick="saveMeuPerfil()">Salvar</button>
+  </div></div>
 </div>
 
-<!-- MODAL: Leitura -->
-<div class="overlay" id="m-leit">
-  <div class="modal">
-    <div class="modal-head">
-      <div class="modal-title">Enviar Leitura de Telemetria</div>
-      <button class="modal-x" onclick="closeM('m-leit')">X</button>
-    </div>
-    <div class="modal-body">
-      <div class="fg2">
-        <div class="fg"><label class="fl">Ativo *</label><select class="fs" id="lt-ativo"></select></div>
-        <div class="fg"><label class="fl">Sensor (opcional)</label><select class="fs" id="lt-sensor"><option value="">-- Nenhum --</option></select></div>
-      </div>
-      <div class="fg2">
-        <div class="fg">
-          <label class="fl">Tipo *</label>
-          <select class="fs" id="lt-tipo">
-            <option value="temperatura">Temperatura</option>
-            <option value="vibracao">Vibracao</option>
-            <option value="pressao">Pressao</option>
-            <option value="corrente">Corrente</option>
-            <option value="umidade">Umidade</option>
-          </select>
-        </div>
-        <div class="fg"><label class="fl">Valor *</label><input class="fi" id="lt-valor" type="number" step="0.01" placeholder="78.5"></div>
-      </div>
-      <div class="fg"><label class="fl">Unidade</label><input class="fi" id="lt-unit" placeholder="oC"></div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-outline" onclick="closeM('m-leit')">Cancelar</button>
-      <button class="btn btn-orange" onclick="saveLeitura()">Enviar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: Localizacao -->
-<div class="overlay" id="m-local">
-  <div class="modal">
-    <div class="modal-head">
-      <div class="modal-title">Nova Localizacao</div>
-      <button class="modal-x" onclick="closeM('m-local')">X</button>
-    </div>
-    <div class="modal-body">
-      <input type="hidden" id="loc-id">
-      <div class="fg2">
-        <div class="fg"><label class="fl">Planta *</label><input class="fi" id="loc-planta" placeholder="Planta A"></div>
-        <div class="fg"><label class="fl">Setor *</label><input class="fi" id="loc-setor" placeholder="Linha de Producao 1"></div>
-      </div>
-      <div class="fg"><label class="fl">Ativo *</label><select class="fs" id="loc-ativo"></select></div>
-      <div class="fg2">
-        <div class="fg"><label class="fl">Latitude</label><input class="fi" id="loc-lat" type="number" step="any" placeholder="-8.0476"></div>
-        <div class="fg"><label class="fl">Longitude</label><input class="fi" id="loc-lng" type="number" step="any" placeholder="-34.877"></div>
-      </div>
-    </div>
-    <div class="modal-foot">
-      <button class="btn btn-outline" onclick="closeM('m-local')">Cancelar</button>
-      <button class="btn btn-orange" onclick="saveLocal()">Salvar</button>
-    </div>
-  </div>
-</div>
-
-<!-- Toast container -->
-<div class="toast-wrap" id="toasts"></div>
-
-<script src="app.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
