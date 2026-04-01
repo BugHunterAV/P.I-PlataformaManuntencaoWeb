@@ -4,6 +4,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import EmpresaViewSet, UsuarioViewSet, MeView
 from rest_framework.authtoken import views as auth_views
 path('api/accounts/login/', auth_views.obtain_auth_token, name='login'),
+
 router = DefaultRouter()
 router.register(r'empresas', EmpresaViewSet)
 router.register(r'usuarios', UsuarioViewSet)

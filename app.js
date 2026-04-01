@@ -4,7 +4,8 @@
 // ============================================================
 
 var BASE = localStorage.getItem('ns_base') || 'http://localhost:8000';
-var TOKEN = localStorage.getItem('ns_tok') || '';
+var TOKEN         = localStorage.getItem('ns_tok') || '';       // access token JWT
+var REFRESH_TOKEN = localStorage.getItem('ns_ref') || '';       // refresh token JWT
 var CUR = 'dashboard';
 
 var PAGE_TITLES = {
@@ -27,8 +28,42 @@ function api(path) {
 
 function hdrs() {
   var h = { 'Content-Type': 'application/json' };
-  if (TOKEN) h['Authorization'] = 'Token ' + TOKEN;
+  if (TOKEN) h['Authorization'] = 'Bearer ' + TOKEN;  // JWT usa Bearer
   return h;
+}
+
+// Tenta renovar o access token usando o refresh token
+async function refreshAccessToken() {
+  if (!REFRESH_TOKEN) return false;
+  try {
+    var r = await fetch(BASE + '/api/auth/refresh/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh: REFRESH_TOKEN })
+    });
+    if (r.ok) {
+      var d = await r.json();
+      TOKEN = d.access;
+      localStorage.setItem('ns_tok', TOKEN);
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+// Wrapper de fetch que renova token automaticamente em caso de 401
+async function apiFetch(url, opts) {
+  opts = opts || {};
+  opts.headers = hdrs();
+  var r = await fetch(url, opts);
+  if (r.status === 401 && REFRESH_TOKEN) {
+    var ok = await refreshAccessToken();
+    if (ok) {
+      opts.headers = hdrs();
+      r = await fetch(url, opts);
+    }
+  }
+  return r;
 }
 
 function fmt(d) {
@@ -99,7 +134,7 @@ document.querySelectorAll('.overlay').forEach(function(o) {
 
 async function fillSel(selId, path, optional) {
   try {
-    var r = await fetch(api(path), { headers: hdrs() });
+    var r = await apiFetch(api(path));
     if (!r.ok) return;
     var data = await r.json();
     var items = getList(data);
@@ -140,17 +175,18 @@ async function doLogin() {
   var pass = document.getElementById('l-pass').value;
   var msg  = document.getElementById('l-msg');
   msg.textContent = '';
+  msg.style.color = 'var(--dim)';
 
   if (!user || !pass) { msg.textContent = 'Preencha usuario e senha.'; return; }
 
-  // Atualiza BASE com o valor atual da URL bar
   BASE = document.getElementById('api-url').value.replace(/\/$/, '');
   localStorage.setItem('ns_base', BASE);
 
   msg.textContent = 'Autenticando...';
 
   try {
-    var r = await fetch(api('/accounts/login/'), {
+    // JWT: POST /api/auth/login/ -> { access, refresh }
+    var r = await fetch(BASE + '/api/auth/login/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: user, password: pass })
@@ -159,13 +195,15 @@ async function doLogin() {
     var data;
     try { data = await r.json(); } catch(e) { data = {}; }
 
-    if (r.ok && data.token) {
-      TOKEN = data.token;
+    if (r.ok && data.access) {
+      TOKEN         = data.access;
+      REFRESH_TOKEN = data.refresh || '';
       localStorage.setItem('ns_tok', TOKEN);
+      localStorage.setItem('ns_ref', REFRESH_TOKEN);
       document.getElementById('auth-gate').style.display = 'none';
-      document.getElementById('sb-user').textContent = data.username || user;
+      document.getElementById('sb-user').textContent = user;
       loadDash();
-      showToast('Login realizado! Bem-vindo, ' + (data.username || user), 'success');
+      showToast('Login realizado! Bem-vindo, ' + user, 'success');
     } else {
       var err = data.detail
         || (data.non_field_errors && data.non_field_errors[0])
@@ -199,7 +237,7 @@ async function doRegister() {
   msg.textContent = 'Criando conta...';
 
   try {
-    var r = await fetch(api('/accounts/register/'), {
+    var r = await fetch(BASE + '/api/usuarios/', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: user, email: email, password: pass })
@@ -241,9 +279,10 @@ async function doRegister() {
 }
 
 async function doLogout() {
-  try { await fetch(api('/accounts/logout/'), { method: 'POST', headers: hdrs() }); } catch(e) {}
   TOKEN = '';
+  REFRESH_TOKEN = '';
   localStorage.removeItem('ns_tok');
+  localStorage.removeItem('ns_ref');
   location.reload();
 }
 
@@ -290,7 +329,7 @@ async function testConn() {
   localStorage.setItem('ns_base', BASE);
   var dot = document.getElementById('api-dot');
   try {
-    var r = await fetch(api('/ativos/'), { headers: hdrs() });
+    var r = await apiFetch(api('/ativos/'));
     if (r.ok || r.status === 401 || r.status === 403) {
       dot.className = 'api-dot';
       showToast('API conectada! Status: ' + r.status, 'success');
@@ -308,11 +347,11 @@ async function testConn() {
 
 async function loadDash() {
   var results = await Promise.allSettled([
-    fetch(api('/ativos/'),             { headers: hdrs() }).then(function(r) { return r.json(); }),
-    fetch(api('/manutencao/'),         { headers: hdrs() }).then(function(r) { return r.json(); }),
-    fetch(api('/alertas/'),            { headers: hdrs() }).then(function(r) { return r.json(); }),
-    fetch(api('/telemetria/sensores/'),{ headers: hdrs() }).then(function(r) { return r.json(); }),
-    fetch(api('/dashboards/kpis/'),    { headers: hdrs() }).then(function(r) { return r.json(); })
+    apiFetch(api('/ativos/')).then(function(r) { return r.json(); }),
+    apiFetch(api('/manutencao/')).then(function(r) { return r.json(); }),
+    apiFetch(api('/alertas/')).then(function(r) { return r.json(); }),
+    apiFetch(api('/telemetria/sensores/')).then(function(r) { return r.json(); }),
+    apiFetch(api('/dashboards/kpis/')).then(function(r) { return r.json(); })
   ]);
   var ativos  = (results[0].status === 'fulfilled') ? getList(results[0].value) : [];
   var manut   = (results[1].status === 'fulfilled') ? getList(results[1].value) : [];
@@ -363,7 +402,7 @@ async function loadAtivos() {
   if (sEl && sEl.value) url += 'search=' + encodeURIComponent(sEl.value) + '&';
   if (stEl && stEl.value) url += 'status=' + stEl.value + '&';
   try {
-    var r = await fetch(url, { headers: hdrs() });
+    var r = await apiFetch(url);
     if (!r.ok) { tb.innerHTML = emptyRow('Erro ' + r.status, 6); return; }
     var data = await r.json();
     var items = getList(data);
@@ -395,7 +434,7 @@ function resetAtivoForm() {
 
 async function editAtivo(id) {
   try {
-    var r = await fetch(api('/ativos/' + id + '/'), { headers: hdrs() });
+    var r = await apiFetch(api('/ativos/' + id + '/'));
     var a = await r.json();
     document.getElementById('a-id').value     = id;
     document.getElementById('a-nome').value   = a.nome || '';
@@ -426,7 +465,7 @@ async function saveAtivo() {
   };
   try {
     var url = id ? api('/ativos/' + id + '/') : api('/ativos/');
-    var r = await fetch(url, { method: id ? 'PUT' : 'POST', headers: hdrs(), body: JSON.stringify(body) });
+    var r = await apiFetch(url, { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
     if (r.ok) {
       showToast(id ? 'Ativo atualizado!' : 'Ativo criado!', 'success');
       closeM('m-ativo');
@@ -441,7 +480,7 @@ async function saveAtivo() {
 async function delAtivo(id) {
   if (!confirm('Excluir este ativo?')) return;
   try {
-    var r = await fetch(api('/ativos/' + id + '/'), { method: 'DELETE', headers: hdrs() });
+    var r = await apiFetch(api('/ativos/' + id + '/'), { method: 'DELETE' });
     if (r.ok || r.status === 204) { showToast('Ativo excluido', 'success'); loadAtivos(); }
     else showToast('Erro ao excluir', 'error');
   } catch(e) { showToast(e.message, 'error'); }
@@ -458,7 +497,7 @@ async function loadManut() {
   if (sEl && sEl.value) url += 'search=' + encodeURIComponent(sEl.value) + '&';
   if (stEl && stEl.value) url += 'status=' + stEl.value + '&';
   try {
-    var r = await fetch(url, { headers: hdrs() });
+    var r = await apiFetch(url);
     if (!r.ok) { tb.innerHTML = emptyRow('Erro ' + r.status, 7); return; }
     var data = await r.json();
     var items = getList(data);
@@ -491,7 +530,7 @@ function resetManutForm() {
 
 async function editManut(id) {
   try {
-    var r = await fetch(api('/manutencao/' + id + '/'), { headers: hdrs() });
+    var r = await apiFetch(api('/manutencao/' + id + '/'));
     var m = await r.json();
     document.getElementById('m-id').value     = id;
     document.getElementById('m-titulo').value  = m.titulo || '';
@@ -523,7 +562,7 @@ async function saveManut() {
   };
   try {
     var url = id ? api('/manutencao/' + id + '/') : api('/manutencao/');
-    var r = await fetch(url, { method: id ? 'PUT' : 'POST', headers: hdrs(), body: JSON.stringify(body) });
+    var r = await apiFetch(url, { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
     if (r.ok) {
       showToast(id ? 'Ordem atualizada!' : 'Ordem criada!', 'success');
       closeM('m-manut');
@@ -538,7 +577,7 @@ async function saveManut() {
 async function delManut(id) {
   if (!confirm('Excluir esta ordem?')) return;
   try {
-    var r = await fetch(api('/manutencao/' + id + '/'), { method: 'DELETE', headers: hdrs() });
+    var r = await apiFetch(api('/manutencao/' + id + '/'), { method: 'DELETE' });
     if (r.ok || r.status === 204) { showToast('Ordem excluida', 'success'); loadManut(); }
     else showToast('Erro ao excluir', 'error');
   } catch(e) { showToast(e.message, 'error'); }
@@ -550,7 +589,7 @@ async function loadHist() {
   var tb = document.getElementById('hist-tb');
   tb.innerHTML = loadingRow(6);
   try {
-    var r = await fetch(api('/manutencao/historico/'), { headers: hdrs() });
+    var r = await apiFetch(api('/manutencao/historico/'));
     if (!r.ok) { tb.innerHTML = emptyRow('Endpoint /manutencao/historico/ retornou ' + r.status, 6); return; }
     var data = await r.json();
     var items = getList(data);
@@ -577,7 +616,7 @@ async function loadSensores() {
   grid.innerHTML = '<div class="loading"><div class="spin"></div>Carregando...</div>';
   tb.innerHTML   = loadingRow(7);
   try {
-    var r = await fetch(api('/telemetria/sensores/'), { headers: hdrs() });
+    var r = await apiFetch(api('/telemetria/sensores/'));
     if (!r.ok) { grid.innerHTML = ''; tb.innerHTML = emptyRow('Erro ' + r.status, 7); return; }
     var data  = await r.json();
     var items = getList(data);
@@ -627,7 +666,7 @@ async function saveSensor() {
   };
   try {
     var url = id ? api('/telemetria/sensores/' + id + '/') : api('/telemetria/sensores/');
-    var r = await fetch(url, { method: id ? 'PUT' : 'POST', headers: hdrs(), body: JSON.stringify(body) });
+    var r = await apiFetch(url, { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
     if (r.ok) { showToast('Sensor salvo!', 'success'); closeM('m-sensor'); loadSensores(); }
     else { var e = await r.json(); showToast('Erro: ' + JSON.stringify(e), 'error'); }
   } catch(e) { showToast(e.message, 'error'); }
@@ -636,7 +675,7 @@ async function saveSensor() {
 async function delSensor(id) {
   if (!confirm('Excluir sensor?')) return;
   try {
-    var r = await fetch(api('/telemetria/sensores/' + id + '/'), { method: 'DELETE', headers: hdrs() });
+    var r = await apiFetch(api('/telemetria/sensores/' + id + '/'), { method: 'DELETE' });
     if (r.ok || r.status === 204) { showToast('Sensor excluido', 'success'); loadSensores(); }
     else showToast('Erro ao excluir', 'error');
   } catch(e) { showToast(e.message, 'error'); }
@@ -648,7 +687,7 @@ async function loadTele() {
   var tb = document.getElementById('tele-tb');
   tb.innerHTML = loadingRow(6);
   try {
-    var r = await fetch(api('/telemetria/leituras/'), { headers: hdrs() });
+    var r = await apiFetch(api('/telemetria/leituras/'));
     if (!r.ok) { tb.innerHTML = emptyRow('Erro ' + r.status, 6); return; }
     var data  = await r.json();
     var items = getList(data);
@@ -681,7 +720,7 @@ async function saveLeitura() {
   var sensor = document.getElementById('lt-sensor').value;
   if (sensor) body.sensor = parseInt(sensor);
   try {
-    var r = await fetch(api('/telemetria/leituras/'), { method: 'POST', headers: hdrs(), body: JSON.stringify(body) });
+    var r = await apiFetch(api('/telemetria/leituras/'), { method: 'POST', body: JSON.stringify(body) });
     if (r.ok) { showToast('Leitura enviada! Alertas verificados.', 'success'); closeM('m-leit'); loadTele(); }
     else { var e = await r.json(); showToast('Erro: ' + JSON.stringify(e), 'error'); }
   } catch(e) { showToast(e.message, 'error'); }
@@ -693,7 +732,7 @@ async function loadAlertas() {
   var list = document.getElementById('alertas-list');
   list.innerHTML = '<div class="loading"><div class="spin"></div>Carregando...</div>';
   try {
-    var r = await fetch(api('/alertas/'), { headers: hdrs() });
+    var r = await apiFetch(api('/alertas/'));
     if (!r.ok) { list.innerHTML = '<div class="empty">Erro ' + r.status + '</div>'; return; }
     var data  = await r.json();
     var items = getList(data);
@@ -723,7 +762,7 @@ async function loadLocal() {
   var tb = document.getElementById('local-tb');
   tb.innerHTML = loadingRow(5);
   try {
-    var r = await fetch(api('/localizacao/'), { headers: hdrs() });
+    var r = await apiFetch(api('/localizacao/'));
     if (!r.ok) { tb.innerHTML = emptyRow('Erro ' + r.status, 5); return; }
     var data  = await r.json();
     var items = getList(data);
@@ -761,7 +800,7 @@ async function saveLocal() {
   };
   try {
     var url = id ? api('/localizacao/' + id + '/') : api('/localizacao/');
-    var r = await fetch(url, { method: id ? 'PUT' : 'POST', headers: hdrs(), body: JSON.stringify(body) });
+    var r = await apiFetch(url, { method: id ? 'PUT' : 'POST', body: JSON.stringify(body) });
     if (r.ok) { showToast('Localizacao salva!', 'success'); closeM('m-local'); loadLocal(); }
     else { var e = await r.json(); showToast('Erro: ' + JSON.stringify(e), 'error'); }
   } catch(e) { showToast(e.message, 'error'); }
@@ -770,7 +809,7 @@ async function saveLocal() {
 async function delLocal(id) {
   if (!confirm('Excluir localizacao?')) return;
   try {
-    var r = await fetch(api('/localizacao/' + id + '/'), { method: 'DELETE', headers: hdrs() });
+    var r = await apiFetch(api('/localizacao/' + id + '/'), { method: 'DELETE' });
     if (r.ok || r.status === 204) { showToast('Excluido', 'success'); loadLocal(); }
     else showToast('Erro ao excluir', 'error');
   } catch(e) { showToast(e.message, 'error'); }
@@ -781,13 +820,13 @@ async function delLocal(id) {
 async function loadConta() {
   document.getElementById('token-show').value = TOKEN;
   try {
-    var r = await fetch(api('/accounts/me/'), { headers: hdrs() });
+    var r = await apiFetch(BASE + '/api/auth/me/');
     if (r.ok) {
       var d = await r.json();
       document.getElementById('me-data').textContent = JSON.stringify(d, null, 2);
       document.getElementById('sb-user').textContent = d.username || d.user || '--';
     } else {
-      document.getElementById('me-data').textContent = '/api/accounts/me/ retornou ' + r.status;
+      document.getElementById('me-data').textContent = '/api/auth/me/ retornou ' + r.status;
     }
   } catch(e) { document.getElementById('me-data').textContent = 'Erro: ' + e.message; }
 }
