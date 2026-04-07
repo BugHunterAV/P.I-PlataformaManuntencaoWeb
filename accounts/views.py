@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
+
 from .models import Empresa, Usuario
 from .serializers import EmpresaSerializer, UsuarioSerializer, MeSerializer
 from .permissions import IsGestor
@@ -16,8 +17,10 @@ class EmpresaViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        # Se for admin geral, vê todas as empresas
         if user.tipo_usuario == 'admin':
             return Empresa.objects.all()
+        # Se for usuário comum/gestor, vê apenas a própria empresa
         if user.empresa:
             return Empresa.objects.filter(pk=user.empresa.pk)
         return Empresa.objects.none()
@@ -32,8 +35,10 @@ class UsuarioViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        # Se for admin geral, vê todos os usuários de todas as empresas
         if user.tipo_usuario == 'admin':
             return Usuario.objects.select_related('empresa').all()
+        # Se for usuário comum/gestor, vê apenas os usuários da sua empresa
         if user.empresa:
             return Usuario.objects.select_related('empresa').filter(empresa=user.empresa)
         return Usuario.objects.none()

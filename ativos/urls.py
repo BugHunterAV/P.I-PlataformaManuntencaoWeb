@@ -6,7 +6,8 @@ from .views import EquipamentoViewSet, EquipamentoLocalizacaoViewSet
 router = DefaultRouter()
 
 # 2. Registra o ViewSet no roteador
-router.register(r'equipamentos', EquipamentoViewSet)
+# ativos/urls.py
+router.register(r'equipamentos', EquipamentoViewSet, basename='equipamentos')
 router.register(r'localizacao', EquipamentoLocalizacaoViewSet)
 
 # 3. Disponibiliza a rota
