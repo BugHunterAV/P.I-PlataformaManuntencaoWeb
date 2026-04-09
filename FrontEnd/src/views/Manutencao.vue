@@ -27,7 +27,6 @@ const loadOS = async () => {
     // Carregar equipamentos para o select do modal
     const eqRes = await api.get('equipamentos/');
     equipamentos.value = eqRes.data.results || eqRes.data;
-    }
   } catch (error) {
     console.error("Erro ao carregar Ordens de Serviço:", error);
   } finally {
@@ -40,7 +39,6 @@ const filterId = computed(() => route.query.id);
 const filteredOrdens = computed(() => {
   if (!filterId.value) return ordens.value;
   return ordens.value.filter(os => {
-    // Verifica se os.equipamento é objeto ou ID
     const eqId = os.equipamento?.id || os.equipamento;
     return String(eqId) === String(filterId.value);
   });
@@ -119,8 +117,6 @@ onMounted(() => {
       </button>
     </div>
 
-    <!-- Filtros Rápidos (Opcional Futuro) -->
-    
     <div v-if="isLoading && ordens.length === 0" class="loading-state glass-panel">
       <div class="loader-spinner"></div>
       <p>Buscando cronograma de manutenção...</p>
@@ -250,6 +246,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* Todo o CSS permanece igual ao que você tinha */
 .page-header {
   display: flex;
   justify-content: space-between;
