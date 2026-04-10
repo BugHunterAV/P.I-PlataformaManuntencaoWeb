@@ -71,15 +71,26 @@ Após executar o script de seed:
 ## 📁 Estrutura do Projeto
 
 P.I-PlataformaManuntencaoWeb/
-├── app/                  # Configurações principais do Django (settings, urls, etc.)
-├── accounts/             # Empresas, Usuários e Autenticação
-├── ativos/               # Equipamentos e Localização
-├── manutencao/           # Ordens de Serviço e Histórico
-├── telemetria/           # Sensores e Leituras IoT
-├── alertas/              # Sistema de Alertas automáticos
-├── dashboards/           # KPIs e Dashboards executivos
-├── scripts/              # Scripts de automação (seed)
+├── app/                      # Configurações principais do Django (settings, urls, etc.)
+├── accounts/                 # Empresas, Usuários e Autenticação
+├── ativos/                   # Equipamentos e Localização
+├── manutencao/               # Ordens de Serviço e Histórico
+├── telemetria/               # Sensores e Leituras IoT
+├── alertas/                  # Sistema de Alertas automáticos
+├── dashboards/               # KPIs e Dashboards executivos
+├── scripts/                  # Scripts de automação (seed)
 └── manage.py
+
+### Descrição detalhada de cada pasta:
+
+- **app/** → Contém as configurações centrais do projeto (settings.py, urls.py principais, wsgi.py, etc.)
+- **accounts/** → Gerencia Empresas e Usuários (modelos, serializers, views e permissões)
+- **ativos/** → Módulo responsável por Equipamentos e sua Localização física
+- **manutencao/** → Ordens de Serviço (O.S.) e Histórico de Manutenções
+- **telemetria/** → Sensores IoT e Leituras de telemetria em tempo real
+- **alertas/** → Sistema de alertas automáticos gerados pela telemetria
+- **dashboards/** → Cálculo e retorno de KPIs (MTBF, MTTR, Disponibilidade, etc.)
+- **scripts/** → Scripts auxiliares como automate_seed.py para popular o banco
 
 ---
 
