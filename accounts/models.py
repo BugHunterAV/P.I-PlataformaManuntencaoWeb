@@ -15,7 +15,7 @@ class Empresa(models.Model):
 
 # 2. Tabela USUARIO (Unificada com TECNICO)
 class Usuario(AbstractUser):
-    # Opções baseadas no seu DER (admin, técnico, gestor) 
+    
     TIPO_USUARIO_CHOICES = (
         ('admin', 'Administrador'),
         ('gestor', 'Gestor'),
@@ -23,7 +23,6 @@ class Usuario(AbstractUser):
     )
     
   
-    # Chave Estrangeira (FK) ligando o Usuário à Empresa 
     empresa = models.ForeignKey(
         Empresa, 
         on_delete=models.CASCADE, 
@@ -38,5 +37,5 @@ class Usuario(AbstractUser):
     telefone = models.CharField(max_length=20, blank=True, null=True) # [cite: 163]
 
     def __str__(self):
-        # Vai mostrar no painel: "joao.silva (Técnico) - Indústria XPTO"
+       
         return f"{self.username} ({self.get_tipo_usuario_display()}) - {self.empresa}"
