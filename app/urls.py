@@ -22,14 +22,14 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 
     # --- Apps ---
-    path('api/', include('accounts.urls')),   # inclui /api/auth/* automaticamente
+    path('api/auth/', include('authentication.urls')),
+    path('api/', include('accounts.urls')),
     path('api/', include('ativos.urls')),
     path('api/', include('manutencao.urls')),
     path('api/telemetria/', include('telemetria.urls')),
     path('api/', include('alertas.urls')),
     path('api/dashboards/', include('dashboards.urls')),
 
-    # --- Documentação OpenAPI ---
     path('api/schema/', SpectacularAPIView.as_view(permission_classes=[]), name='schema'),
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema', permission_classes=[]), name='swagger-ui'),
     path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema', permission_classes=[]), name='redoc'),

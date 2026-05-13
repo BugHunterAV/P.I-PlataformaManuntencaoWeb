@@ -6,8 +6,8 @@ from rest_framework.authtoken import views as auth_views
 path('api/accounts/login/', auth_views.obtain_auth_token, name='login'),
 
 router = DefaultRouter()
-router.register(r'empresas', EmpresaViewSet)
-router.register(r'usuarios', UsuarioViewSet)
+router.register(r'empresas', EmpresaViewSet, basename='empresas')
+router.register(r'usuarios', UsuarioViewSet, basename='usuarios')
 
 urlpatterns = [
     path('', include(router.urls)),

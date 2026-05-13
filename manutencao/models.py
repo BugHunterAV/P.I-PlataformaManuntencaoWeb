@@ -8,6 +8,14 @@ class OrdemServico(models.Model):
     equipamento = models.ForeignKey(Equipamento, on_delete=models.CASCADE, related_name='ordens_servico')
     responsavel = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='minhas_os')
     
+    # Tipo da OS
+    TIPO_OS_CHOICES = (
+        ('corretiva',  'Corretiva'),   # Gerada por alerta de sensor
+        ('preditiva',  'Preditiva'),   # Gerada por horímetro (plano de manutenção)
+        ('preventiva', 'Preventiva'),  # Criada manualmente pelo gestor
+    )
+    tipo_os = models.CharField(max_length=20, choices=TIPO_OS_CHOICES, default='preventiva')
+
     # Dados da OS
     titulo = models.CharField(max_length=200)
     descricao = models.TextField(help_text="Descreva o problema ou o serviço a ser realizado")
@@ -22,15 +30,14 @@ class OrdemServico(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pendente')
     
     PRIORIDADE_CHOICES = (
-        ('baixa', 'Baixa'),
-        ('media', 'Média'),
-        ('alta', 'Alta'),
-        ('urgente', 'Urgente (Parada de Máquina)'),
+        ('baixo', 'Baixo'),
+        ('medio', 'Médio'),
+        ('critico', 'Crítico'),
     )
-    prioridade = models.CharField(max_length=20, choices=PRIORIDADE_CHOICES, default='media')
+    prioridade = models.CharField(max_length=20, choices=PRIORIDADE_CHOICES, default='baixo')
     
     # Datas
-    data_abertura = models.DateTimeField(auto_now_add=True) # Preenche sozinho na hora que cria
+    data_abertura = models.DateTimeField(default=timezone.now) # Preenche com a hora atual, mas aceita valores manuais
     data_conclusao = models.DateTimeField(null=True, blank=True) # Só preenche quando o técnico terminar
 
     def save(self, *args, **kwargs):
@@ -48,11 +55,11 @@ class HistoricoManutencao(models.Model):
     descricao_servico = models.TextField()
     data_execucao = models.DateField()
     custo_pecas = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    custo_maao_de_obra = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    custo_mao_de_obra = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     
     @property
     def custo_total(self):
-        return self.custo_pecas + self.custo_maao_de_obra
+        return self.custo_pecas + self.custo_mao_de_obra
 
     def __str__(self):
         return f"Histórico OS #{self.ordem_servico.id} - {self.data_execucao}"

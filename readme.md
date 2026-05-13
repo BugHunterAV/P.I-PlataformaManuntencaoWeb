@@ -1,579 +1,373 @@
 # 🏭 Plataforma de Manutenção Industrial Preditiva
 
-> API REST para gestão inteligente de ativos industriais, ordens de manutenção e telemetria de sensores — construída com Django + Django REST Framework, pronta para integração com front-end Node.js.
-
-TESTE
-
-<div align="center">
-
-![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=flat&logo=python&logoColor=white)
-![Django](https://img.shields.io/badge/Django-6.0-092E20?style=flat&logo=django&logoColor=white)
-![DRF](https://img.shields.io/badge/Django_REST_Framework-3.17-ff1709?style=flat)
-![Status](https://img.shields.io/badge/Status-Em_Desenvolvimento-yellow?style=flat)
-![License](https://img.shields.io/badge/Licença-Acadêmica-blue?style=flat)
-
-</div>
-
----
-
-## 📋 Índice
-
-- [Sobre o Projeto](#-sobre-o-projeto)
-- [Tecnologias](#-tecnologias)
-- [Estrutura do Projeto](#-estrutura-do-projeto)
-- [Como Rodar Localmente](#-como-rodar-localmente)
-- [Variáveis de Ambiente](#-variáveis-de-ambiente)
-- [Endpoints da API](#-endpoints-da-api)
-- [Documentação Interativa](#-documentação-interativa)
-- [Integração com Front-end Node.js](#-integração-com-front-end-nodejs)
-- [Roadmap](#-roadmap)
-- [Problemas Comuns](#-problemas-comuns)
-- [Contribuindo](#-contribuindo)
+> API REST completa e profissional para gestão inteligente de ativos industriais, manutenção preditiva, ordens de serviço, telemetria IoT em tempo real, alertas automáticos e dashboards executivos.
 
 ---
 
 ## 📌 Sobre o Projeto
 
-Esta plataforma centraliza e digitaliza a gestão de manutenção industrial preditiva. Em vez de planilhas e processos manuais dispersos, a API oferece uma interface padronizada para que qualquer sistema — web, mobile ou desktop — possa:
+Esta é uma API REST desenvolvida em Django que tem como objetivo centralizar e digitalizar toda a gestão de manutenção industrial de uma empresa. 
 
-- 📦 **Gerenciar ativos industriais** — máquinas, equipamentos e sensores da planta
-- 🔧 **Controlar ordens de manutenção** — histórico, status e responsáveis por cada intervenção
-- 📡 **Receber telemetria de sensores** — temperatura, vibração, pressão e corrente em tempo real
-- 🚨 **Emitir alertas automáticos** — sistema de inteligência que gera alertas ao detectar anomalias
-- 📊 **Exibir dashboards analíticos** — KPIs como MTBF, MTTR e Disponibilidade atualizados em tempo real
-- 👥 **Controlar acesso por perfil** — restrições automáticas para Gestores e Técnicos (RBAC)
+O sistema permite que indústrias gerenciem de forma eficiente seus equipamentos, monitorem parâmetros em tempo real através de sensores IoT, recebam alertas automáticos quando algum parâmetro sai do normal, controlem todas as ordens de serviço desde a abertura até o fechamento, e tenham visibilidade gerencial através de dashboards com indicadores importantes como MTBF, MTTR e Disponibilidade dos ativos.
 
-O projeto é modular: cada funcionalidade vive em seu próprio app Django. Adicionar um novo módulo não quebra o que já existe.
+O projeto foi construído com foco em modularidade, segurança, escalabilidade, isolamento de dados por empresa (multi-tenant) e fácil integração com o Front-end em Vue.js.
 
 ---
 
-## 🛠 Tecnologias
+## 🛠 Tecnologias Utilizadas
 
-### Back-end (esta API)
-
-| Tecnologia | Versão | Função |
-|---|---|---|
-| Python | 3.14+ | Linguagem principal |
-| Django | 6.0 | Framework web e ORM |
-| Django REST Framework | 3.17 | Construção da API REST |
-| djangorestframework-simplejwt | 5.5 | Autenticação JWT segura |
-| drf-spectacular | 0.29 | Documentação automática Swagger/OpenAPI |
-| django-cors-headers | 4.9 | Permite requisições do front-end em outro domínio |
-| django-filter | 25.2 | Filtros avançados nos endpoints de listagem |
-| Faker | 40.12 | Geração de dados falsos para testes |
-| SQLite | — | Banco de dados local (desenvolvimento) |
-| PostgreSQL | — | Banco de dados em produção *(planejado)* |
-
-### Front-end (projeto separado)
-
-| Tecnologia | Função |
-|---|---|
-| Node.js | Runtime do servidor front-end |
-| Vue.js | Progressive JavaScript Framework |
-
----
-
-## 📁 Estrutura do Projeto
-
-```
-P.I-PlataformaManuntencaoWeb/
-│
-├── app/                        # ⚙️  Configurações centrais do Django
-│   ├── settings.py             #     Banco, apps instalados, CORS, autenticação
-│   ├── urls.py                 #     Mapa central de todas as rotas
-│   ├── wsgi.py                 #     Servidor web (produção)
-│   └── asgi.py                 #     Servidor assíncrono (WebSocket futuro)
-│
-├── accounts/                   # 👥  Módulo de usuários e autenticação
-│   ├── models.py               #     Modelo de usuário e perfis
-│   ├── serializers.py          #     Validação e serialização de dados
-│   ├── views.py                #     Login, registro, logout
-│   └── urls.py                 #     Rotas: /api/accounts/...
-│
-├── ativos/                     # 🏗️  Módulo de ativos industriais
-│   ├── models.py               #     Máquinas, equipamentos, localização
-│   ├── serializers.py
-│   ├── views.py                #     CRUD de ativos + filtros
-│   └── urls.py                 #     Rotas: /api/ativos/...
-│
-├── manutencao/                 # 🔧  Módulo de ordens de manutenção
-│   ├── models.py               #     Ordens, histórico, status, técnico
-│   ├── serializers.py
-│   ├── views.py                #     CRUD de manutenções + filtros
-│   └── urls.py                 #     Rotas: /api/manutencao/...
-│
-├── telemetria/                 # 📡  Módulo de sensores e IoT
-│   ├── models.py               #     Sensor e Telemetria (Leituras)
-│   ├── serializers.py
-│   ├── views.py                #     Ingestão de dados e CRUD de sensores
-│   └── urls.py                 #     Rotas: /api/telemetria/...
-│
-├── alertas/                    # 🚨  Módulo de alertas automáticos
-│   ├── models.py               #     Geração de alertas via Signals
-│   ├── serializers.py
-│   ├── views.py                #     Listagem e gestão de alertas
-│   └── urls.py                 #     Rotas: /api/alertas/
-│
-├── dashboards/                 # 📊  Módulo de KPIs Industriais
-│   ├── views.py                #     Cálculo de MTBF, MTTR e Disponibilidade
-│   └── urls.py                 #     Rotas: /api/dashboards/kpis/
-│
-├── manage.py                   # 🎛️  Ponto de entrada do Django (CLI)
-├── requirements.txt            # 📦  Dependências Python do projeto
-├── .env.example                # 🔐  Exemplo de variáveis de ambiente
-└── .gitignore                  # 🙈  Arquivos ignorados pelo Git
-```
+- Python 3.11 ou superior
+- Django 5.2
+- Django REST Framework
+- djangorestframework-simplejwt para autenticação com tokens JWT
+- drf-spectacular para geração automática de documentação Swagger e ReDoc
+- django-cors-headers para permitir requisições do front-end
+- django-filter para filtros avançados nas listagens
+- Faker para geração de dados realistas durante o seed
+- SQLite (suportado para desenvolvimento rápido)
+- PostgreSQL (Banco de dados oficial de produção e desenvolvimento)
 
 ---
 
 ## 🚀 Como Rodar Localmente
 
-Siga os passos abaixo **na ordem**. Execute cada comando no terminal dentro da pasta do projeto.
+Siga os passos abaixo na ordem exata:
 
-### Pré-requisitos
+1. Abra o terminal na pasta raiz do projeto e ative o ambiente virtual com o comando:
+   .\.venv\Scripts\activate   (no Windows PowerShell)
 
-Certifique-se de ter instalado:
+2. Instale todas as dependências do projeto com o comando:
+   pip install -r requirements.txt
 
-- **Python 3.11+** → [python.org/downloads](https://www.python.org/downloads/)
-- **Git** → [git-scm.com](https://git-scm.com/)
+3. Configure o seu banco de dados PostgreSQL (caso ainda não tenha feito):
+   - Certifique-se de que o serviço do PostgreSQL está rodando.
+   - Crie um banco de dados chamado `manutencao`.
+   - Ajuste o usuário e senha no arquivo `app/settings.py` se necessário.
 
-Para verificar:
-```bash
-python --version
-git --version
-```
+4. Execute as migrações para criar as tabelas no banco de dados:
+   python manage.py migrate
 
----
+4. Popule o banco de dados com dados realistas. Veja a seção [Scripts de Utilidade](#-scripts-de-utilidade) para detalhes:
+   python scripts/seed_db.py
 
-### 1. Clone o repositório
+5. Inicie o servidor de desenvolvimento com o comando:
+   python manage.py runserver
+   Caso a porta 8000 esteja ocupada, utilize:
+   python manage.py runserver 9000
 
-```bash
-git clone https://github.com/BugHunterAV/P.I-PlataformaManuntencaoWeb.git
-cd P.I-PlataformaManuntencaoWeb
-```
-
----
-
-### 2. Crie e ative o ambiente virtual
-
-O ambiente virtual isola as bibliotecas deste projeto do restante do seu computador. **Sempre use um.**
-
-```bash
-# Criar o ambiente virtual
-python -m venv .venv
-```
-
-```bash
-# Ativar — Linux / macOS
-source .venv/bin/activate
-
-# Ativar — Windows (PowerShell)
-.\.venv\Scripts\Activate.ps1
-
-# Ativar — Windows (CMD)
-.\.venv\Scripts\activate.bat
-```
-
-Quando ativo, você verá `(.venv)` no início da linha do terminal:
-
-```
-(.venv) C:\Projetos\P.I-PlataformaManuntencaoWeb>
-```
-
-> ⚠️ **Importante:** sempre que abrir um novo terminal, ative o `.venv` novamente antes de rodar qualquer comando.
+Após iniciar, a API estará acessível em: http://localhost:8000
 
 ---
 
-### 3. Instale as dependências
+## 🧪 Como Executar os Testes
 
-```bash
-pip install --upgrade pip
-pip install -r requirements.txt
-```
+O projeto utiliza o framework de testes nativo do Django. Os testes são isolados e não afetam o banco de dados de produção.
 
----
+1. Para rodar todos os testes do sistema:
+   python manage.py test
 
-### 4. Configure as variáveis de ambiente
+2. Para rodar testes de um módulo específico (ex: ativos):
+   python manage.py test ativos
 
-Copie o arquivo de exemplo e preencha com seus valores:
-
-```bash
-# Linux / macOS
-cp .env.example .env
-
-# Windows
-copy .env.example .env
-```
-
-Edite o `.env` com um editor de texto. Veja a seção [Variáveis de Ambiente](#-variáveis-de-ambiente) para saber o que preencher.
+3. Para ver o log detalhado dos testes:
+   python manage.py test -v 2
 
 ---
 
-### 6. População Inteligente e Superusuário (Recomendado)
+## 🛠️ Scripts de Utilidade
 
-Para agilizar o setup, criamos um script de automação que limpa o banco, aplica a população de dados de exemplo e configura o administrador padrão.
+O projeto conta com scripts na pasta `scripts/` para facilitar o desenvolvimento e testes de carga.
 
-```bash
-# Roda o script de setup automático
-python scripts/automate_seed.py
-```
+### 1. Seed de Banco de Dados (`seed_db.py`)
+Popula o banco com uma estrutura completa, multi-tenant e realista (inclui Horímetros e Planos de Manutenção).
 
-Este script irá:
-1. Limpar o banco de dados.
-2. Popular **5 empresas** e diversos usuários.
-3. Gerar **~200 ativos** com localizações industriais.
-4. Criar histórico de **7 dias de telemetria** para cada sensor.
-5. Garantir o superusuário `admin` com a senha `admin123`.
+*   **Uso Padrão** (3 empresas, 15 equipamentos/cada):
+    ```bash
+    python scripts/seed_db.py
+    ```
+*   **Uso Customizado** (Ex: 5 empresas, 30 equipamentos/cada):
+    ```bash
+    python scripts/seed_db.py --empresas 5 --equipamentos 30
+    ```
 
----
+### 2. Teste de Estresse de Telemetria (`stress_telemetry.py`)
+Simula o envio massivo de dados de sensores para testar a performance e a escalada de alertas e O.S.
 
-### 7. (Alternativa) Setup Manual
-
-Se preferir fazer manualmente:
-
-```bash
-# Aplique as migrações
-python manage.py migrate
-
-# Crie seu próprio superusuário
-python manage.py createsuperuser
-
-# (Opcional) Popule o banco interativamente
-python scripts/seed_db.py
-```
+*   **Uso Padrão** (100 leituras, 5 threads):
+    ```bash
+    python scripts/stress_telemetry.py
+    ```
+*   **Uso Pesado** (Ex: 1000 leituras, 20 threads):
+    ```bash
+    python scripts/stress_telemetry.py --leituras 1000 --threads 20
+    ```
 
 ---
 
-### 7. Inicie o servidor de desenvolvimento
+## 🔑 Credenciais Padrão
 
-```bash
-# Porta padrão (8000)
-python manage.py runserver
+Após executar o script de seed:
 
-# Ou em outra porta, se a 8000 estiver ocupada
-python manage.py runserver 9000
-```
+- Django Admin:
+  Usuário: admin
+  Senha: admin123
 
-Se tudo estiver certo, você verá no terminal:
-
-```
-Watching for file changes with StatReloader
-Performing system checks...
-
-System check identified no issues (0 silenced).
-Django version 5.2, using settings 'app.settings'
-Starting development server at http://127.0.0.1:8000/
-Quit the server with CTRL+C.
-```
-
-O servidor estará disponível em **http://localhost:8000**.
+- Usuários normais do sistema (Gestores e Técnicos):
+  Senha padrão para todos: 123
 
 ---
 
-## 🔐 Variáveis de Ambiente
+## 📁 Estrutura do Projeto
 
-Crie um arquivo `.env` na raiz do projeto. **Nunca versione este arquivo** — ele já está no `.gitignore`.
+P.I-PlataformaManuntencaoWeb/
+├── app/                      # Configurações principais do Django (settings, urls, etc.)
+├── accounts/                 # Empresas, Usuários e Autenticação
+├── ativos/                   # Equipamentos e Localização
+├── manutencao/               # Ordens de Serviço e Histórico
+├── telemetria/               # Sensores e Leituras IoT
+├── alertas/                  # Sistema de Alertas automáticos
+├── dashboards/               # KPIs e Dashboards executivos
+├── scripts/                  # Scripts de automação (seed)
+└── manage.py
 
-```env
-# Segurança — gere uma chave em: https://djecrety.ir/
-DJANGO_SECRET_KEY=sua-chave-secreta-muito-longa-aqui
+### Descrição detalhada de cada pasta:
 
-# Ambiente: True em desenvolvimento, False em produção
-DJANGO_DEBUG=True
-
-# Hosts permitidos (separados por vírgula)
-DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
-
-# Origens permitidas para o front-end Node.js (CORS)
-CORS_ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
-
-# Banco de dados em produção (deixe vazio para usar SQLite em dev)
-DATABASE_URL=
-```
+- **app/** → Contém as configurações centrais do projeto (settings.py, urls.py principais, wsgi.py, etc.)
+- **accounts/** → Gerencia Empresas e Usuários (modelos, serializers, views e permissões)
+- **ativos/** → Módulo responsável por Equipamentos e sua Localização física
+- **manutencao/** → Ordens de Serviço (O.S.) e Histórico de Manutenções
+- **telemetria/** → Sensores IoT e Leituras de telemetria em tempo real
+- **alertas/** → Sistema de alertas automáticos gerados pela telemetria
+- **dashboards/** → Cálculo e retorno de KPIs (MTBF, MTTR, Disponibilidade, etc.)
+- **scripts/** → Scripts auxiliares como `seed_db.py` e `stress_telemetry.py`
 
 ---
 
-## 🌐 Endpoints da API
+## 🔗 Principais Vinculações e Regras de Cascade
 
-Base URL em desenvolvimento: `http://localhost:8000/api/`
+| Modelo                    | Relacionado com               | Tipo de Relacionamento     | Cascade / Comportamento                              | Observação |
+|---------------------------|-------------------------------|----------------------------|-----------------------------------------------------|----------|
+| **Usuario**               | Empresa                       | ForeignKey                 | PROTECT (não permite excluir empresa com usuários) | Cada usuário pertence a uma empresa |
+| **Equipamento**           | Empresa                       | ForeignKey                 | CASCADE (excluir empresa exclui equipamentos)      | Ativo pertence a uma empresa |
+| **Equipamento**           | EquipamentoLocalizacao        | OneToOneField              | CASCADE                                             | Localização é única por equipamento |
+| **Sensor**                | Equipamento                   | ForeignKey                 | CASCADE                                             | Sensor pertence a um equipamento |
+| **Telemetria**            | Sensor                        | ForeignKey                 | CASCADE                                             | Leituras pertencem a um sensor |
+| **Alerta**                | Equipamento                   | ForeignKey                 | CASCADE                                             | Alertas são gerados por equipamento |
+| **OrdemServico**          | Equipamento                   | ForeignKey                 | PROTECT                                             | Não permite excluir equipamento com OS aberta |
+| **OrdemServico**          | Usuario (responsavel)         | ForeignKey                 | SET_NULL                                            | Se o responsável for excluído, fica nulo |
+| **HistoricoManutencao**   | OrdemServico                  | OneToOneField              | CASCADE                                             | Histórico é excluído junto com a OS |
+| **PlanoManutencao**      | Equipamento                   | ForeignKey                 | CASCADE                                             | Planos pertencem a um equipamento |
 
-Todas as rotas (exceto login e registro) exigem o header de autenticação:
-```
-Authorization: Bearer seu_token_aqui
-```
+---
 
-### Autenticação
+## 🛡 Segurança e Controle de Acesso
 
-| Método | Rota | Descrição | Auth |
-|---|---|---|---|
-| `POST` | `/api/auth/login/` | Login — retorna access/refresh tokens | Livre |
-| `POST` | `/api/auth/refresh/` | Renova o access token expirado | Ref. Token |
-| `GET` | `/api/auth/me/` | Dados do usuário logado | JWT |
+A API utiliza autenticação JWT através do header:
+Authorization: Bearer SEU_TOKEN_AQUI
 
-### Ativos industriais
+O sistema possui isolamento completo por empresa (multi-tenant). Um usuário só consegue ver e alterar dados da empresa à qual está vinculado.
 
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/ativos/` | Lista todos os ativos (suporta filtros) |
-| `POST` | `/api/ativos/` | Cadastra um novo ativo |
-| `GET` | `/api/ativos/{id}/` | Detalhe de um ativo específico |
-| `PUT` | `/api/ativos/{id}/` | Atualiza completamente um ativo |
-| `PATCH` | `/api/ativos/{id}/` | Atualiza parcialmente um ativo |
-| `DELETE` | `/api/ativos/{id}/` | Remove um ativo |
+Perfis Disponíveis:
+- admin → Tem acesso total ao sistema
+- gestor → Pode gerenciar usuários, equipamentos e ordens da própria empresa
+- tecnico → Pode visualizar dados e registrar manutenções. **Regra de Sigilo**: Técnicos só visualizam Ordens de Serviço que estão "sem responsável" ou que foram atribuídas a eles.
 
-**Filtros disponíveis:**
-```
-GET /api/ativos/?status=ativo
-GET /api/ativos/?search=bomba
-GET /api/ativos/?ordering=-criado_em
-GET /api/ativos/?criado_depois=2024-01-01&status=ativo
-```
+---
 
-### Manutenções
+## ⚙️ Inteligência Preditiva e Automação
 
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/manutencao/` | Lista todas as ordens de manutenção |
-| `POST` | `/api/manutencao/` | Cria uma nova ordem |
-| `GET` | `/api/manutencao/{id}/` | Detalhe de uma ordem específica |
-| `PUT` | `/api/manutencao/{id}/` | Atualiza uma ordem |
-| `PATCH` | `/api/manutencao/{id}/` | Atualiza parcialmente |
-| `DELETE` | `/api/manutencao/{id}/` | Remove uma ordem |
+O sistema monitora a telemetria em tempo real e toma decisões automáticas para prevenir falhas:
 
-### Telemetria e Sensores
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/telemetria/sensores/` | Lista sensores cadastrados |
-| `POST` | `/api/telemetria/sensores/` | Cadastra novo sensor em equipamento |
-| `GET` | `/api/telemetria/leituras/` | Lista histórico de telemetria |
-| `POST` | `/api/telemetria/leituras/` | Envia nova leitura (Gera alertas automáticos) |
+### 1. Regras de Disparo de Alertas
+A severidade do alerta é calculada com base no percentual atingido do `limite_alerta` configurado no sensor:
+- 🟢 **Baixo**: Valor >= **70%** do limite.
+- 🟡 **Médio**: Valor >= **85%** do limite.
+- 🔴 **Crítico**: Valor >= **100%** do limite.
 
-### Alertas e Localização
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/alertas/` | Lista alertas gerados por anomalias |
-| `GET` | `/api/localizacao/` | Lista localização industrial dos ativos |
-| `POST` | `/api/localizacao/` | Define setor e planta de um equipamento |
+### 2. Geração Automática de O.S.
+Qualquer anomalia detectada gera instantaneamente uma **Ordem de Serviço** para inspeção. A prioridade da O.S. (`baixo`, `medio`, `critico`) reflete exatamente o nível do alerta gerado.
 
-### Dashboards (KPIs)
-| Método | Rota | Descrição |
-|---|---|---|
-| `GET` | `/api/dashboards/kpis/` | Retorna MTBF, MTTR e disponibilidade |
-| `GET` | `/api/manutencao/historico/` | Histórico técnico e custos de manutenção |
+### 3. Escalada e Agrupamento Inteligente
+- **Escalada**: Se uma falha de nível "Médio" piorar para "Crítico", o sistema **eleva a prioridade** da O.S. já aberta em vez de criar uma duplicata.
+- **Multifuncionalidade**: Se houver falhas de tipos diferentes (ex: Temperatura e Vibração) no mesmo motor, o sistema cria **duas O.S. distintas** para rastreamento individual.
+
+### 4. Manutenção Preditiva por Horímetro (Tempo de Uso)
+Além dos sensores que detectam anomalias, o sistema conta com um motor preditivo baseado no desgaste natural (tempo de operação), medido pelo campo `horimetro` do equipamento.
+
+**Fluxo de Funcionamento Completo (A "Lógica de Ouro"):**
+
+1. **Criação do Equipamento (O Ponto de Partida)**:
+   - Ao cadastrar uma máquina (`POST /api/equipamentos/`), o gestor informa o horímetro atual (ex: `200` horas). 
+   - Se não for informado, o sistema assume `0.0`. Isso é crucial para máquinas que já estão em operação antes da adoção do sistema.
+
+2. **Criação dos Planos Customizados**:
+   - Uma máquina pode ter *múltiplos* planos de manutenção. Em vez de definir isso no equipamento, você cria planos vinculados a ele (`POST /api/planos-manutencao/`).
+   - Exemplo: "Troca de Óleo" a cada 100h e "Revisão Geral" a cada 1000h.
+   - **O Segredo (Carimbo Inicial)**: No exato momento em que você cria o plano "Troca de Óleo" (intervalo 100h) para a máquina que tem 200h, o sistema grava internamente: *Última manutenção foi em 200h*. Portanto, o **próximo disparo será em 300h**.
+
+3. **Monitoramento e Disparo Automático**:
+   - Conforme a máquina trabalha, o sistema externo ou o técnico atualiza o horímetro (`PATCH /api/equipamentos/{id}/`).
+   - Se o horímetro atingir ou ultrapassar 300h (ex: `PATCH` enviando `305`), o sistema intercepta essa atualização (via Signals) e **gera automaticamente uma O.S.** do tipo `preditiva`.
+
+4. **Ciclo Contínuo e Anti-Duplicação**:
+   - Após o disparo, o plano é atualizado. O novo "carimbo" passa a ser 305h. O próximo disparo será projetado para 405h.
+   - O sistema possui inteligência anti-duplicação: se o horímetro continuar subindo (ex: 310h), mas a O.S. Preditiva de "Troca de Óleo" ainda estiver aberta, ele **não** criará uma nova. Ele aguarda o fechamento do ciclo atual.
 
 ---
 
 ## 📖 Documentação Interativa
 
-Com o servidor rodando, acesse no navegador:
+Com o servidor rodando, acesse:
 
-| Interface | URL | Descrição |
-|---|---|---|
-| **Swagger UI** | `http://localhost:8000/api/schema/swagger-ui/` | Interface visual — teste endpoints direto no browser |
-| **ReDoc** | `http://localhost:8000/api/schema/redoc/` | Documentação em formato de referência |
-| **Schema OpenAPI** | `http://localhost:8000/api/schema/` | JSON/YAML bruto para geração de clientes |
-| **Admin Django** | `http://localhost:8000/admin/` | Painel administrativo completo |
-
-> A documentação é **gerada automaticamente** pelo `drf-spectacular`. Cada novo endpoint adicionado ao projeto aparece no Swagger UI sem nenhuma configuração extra.
+- Swagger UI (interface visual interativa): http://localhost:8000/api/schema/swagger-ui/
+- ReDoc (documentação mais limpa): http://localhost:8000/api/schema/redoc/
+- Painel Administrativo Django: http://localhost:8000/admin/
 
 ---
 
-## 🔗 Integração com Front-end Node.js
+## 🐛 Problemas Comuns e Soluções
 
-Esta API foi projetada para ser consumida por um front-end Node.js separado (React, Next.js, Vue ou similar).
-
-### Fluxo de autenticação
-
-**1. Login — obter o token:**
-```javascript
-const response = await fetch('http://localhost:8000/api/auth/login/', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ username: 'seu_usuario', password: 'sua_senha' })
-})
-const { token } = await response.json()
-// Salve o token (localStorage, cookie, contexto global)
-localStorage.setItem('token', token)
-```
-
-**2. Requisições autenticadas:**
-```javascript
-const token = localStorage.getItem('token')
-
-const response = await fetch('http://localhost:8000/api/ativos/', {
-  headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  }
-})
-const ativos = await response.json()
-```
-
-**3. Criar um ativo:**
-```javascript
-await fetch('http://localhost:8000/api/ativos/', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    nome: 'Bomba Centrífuga B-01',
-    numero_serie: 'BC-2024-001',
-    status: 'ativo'
-  })
-})
-```
-
-**4. Enviar leitura de sensor:**
-```javascript
-await fetch('http://localhost:8000/api/telemetria/leituras/', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Bearer ${token}`,
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({
-    sensor: 1,
-    valor: 95.5
-  })
-})
-```
+- O comando python não é reconhecido → Use py no lugar de python no Windows
+- Ambiente virtual não ativado → Rode novamente o comando de ativação
+- Porta 8000 já está em uso → Use python manage.py runserver 9000
+- Erro 403 Forbidden → O usuário logado não tem permissão para realizar a ação
+- Listagens retornando vazias → Verifique se o usuário está vinculado a uma empresa no painel admin
 
 ---
 
-## 🚨 Alertas Automáticos e Configuração
-
-A plataforma possui um sistema de **Inteligência Preditiva** que monitora todas as entradas de telemetria e gera alertas instantâneos se detectar valores fora do normal.
-
-### Como funciona?
-Sempre que uma nova leitura chega via API (`/api/telemetria/leituras/`), o Django dispara um *Signal* que:
-1. Identifica o **Tipo de Equipamento** (ex: Motor, Bomba).
-2. Busca o **Limite Máximo** configurado para aquele sensor.
-3. Se o valor for maior que o limite, cria um registro automático na tabela de **Alertas** com nível "Crítico".
-
-### ⚙️ Como configurar os limites (Onde editar?)
-Para facilitar a manutenção, os limites **não estão fixos no código**. Eles vivem em um arquivo de configuração didático:
-
-📂 **Caminho**: `telemetria/config_alertas.py`
-
-Basta editar o dicionário `LIMITES_ALERTA`:
-```python
-LIMITES_ALERTA = {
-    'Motor Elétrico': {
-        'temperatura': 85.0,  # Dispara alerta se > 85°C
-        'vibracao': 8.5       # Dispara alerta se > 8.5 mm/s
-    },
-    'Bomba Hidráulica': {
-        'pressao': 12.0       # Dispara alerta se > 12 bar
-    },
-    'default': {
-        'temperatura': 80.0   # Valor padrão para outros equipamentos
-    }
-}
-```
-
-> [!TIP]
-> Você pode adicionar novos tipos de equipamentos ou novos sensores (como 'umidade', 'corrente') diretamente nesse arquivo sem precisar reiniciar o servidor se estiver em modo Debug.
-
-### CORS
-
-A API já está configurada com `django-cors-headers`. Para liberar o seu front-end, adicione a URL no `.env`:
-
-```env
-CORS_ALLOWED_ORIGINS=http://localhost:3000
-```
-
-Reinicie o servidor após qualquer mudança no `.env`.
-
----
-
-## 🗺 Roadmap
+## 🗺 Roadmap do Projeto
 
 ### ✅ Concluído
-- [x] Estrutura base do projeto Django
-- [x] CRUD de ativos industriais (Equipamentos)
-- [x] CRUD de ordens de manutenção (OS)
-- [x] CRUD de usuários e empresas
-- [x] **Passo 1:** App `telemetria` — Sensores e IoT
-- [x] **Passo 2:** App `alertas` — Inteligência preditiva e Localização
-- [x] **Passo 3:** Histórico de Manutenção e Controle de Custos
-- [x] **Passo 4:** App `dashboards` — KPIs: MTBF, MTTR e Disponibilidade
-- [x] Configuração central de CORS e API Schema (Swagger)
+- Criação da estrutura completa de aplicativos Django
+- Implementação de todos os CRUDs necessários
+- Sistema completo de autenticação JWT com Refresh e Blacklist
+- Sistema de permissões RBAC por perfil e isolamento multi-tenant
+- Geração automática e escalada de O.S. para todos os níveis de alerta
+- Limites de alerta customizáveis individualmente por sensor
+- **Manutenção Preditiva por Horímetro**: Geração automática de O.S. baseada em horas de uso
+- **Classificação de O.S.**: Distinção entre ordens Corretivas (sensores), Preditivas (horímetro) e Preventivas (manuais)
+- Regras de visibilidade restrita para técnicos (Sigilo de O.S.)
+- Cálculo automático de KPIs no dashboard (Em testes)
+- Migração oficial para PostgreSQL (Pronto para produção)
+- Script de seed completo e realista
+- Documentação automática com Swagger e ReDoc
+- Suíte de 102 testes automatizados de integração e estresse
 
-### 🔄 Em Desenvolvimento (Passo 5 e 6)
-- [x] **Passo 5:** Autenticação JWT e Segurança de Perfis (Gestor/Técnico)
-- [x] scripts de automação de população e setup
-- [ ] **Passo 6:** Testes automatizados e Documentação Final
-
----
-
-## 🐛 Problemas Comuns
-
-**`python` não é reconhecido como comando**
-No Windows, tente `py` no lugar de `python`. Se não funcionar, reinstale o Python marcando a opção **"Add Python to PATH"**.
-
-**`No module named django`**
-O ambiente virtual não está ativo. Execute o comando de ativação do Passo 2 novamente.
-
-**Porta 8000 já está em uso**
-```bash
-python manage.py runserver 9000
-```
-
-**Script de ativação bloqueado no PowerShell (Windows)**
-```powershell
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
-```
-
-**Erro ao aplicar migrações**
-```bash
-python manage.py migrate --run-syncdb
-```
-
-**Erro de CORS no front-end Node.js**
-Confirme que a URL do seu front-end está em `CORS_ALLOWED_ORIGINS` no `.env` e reinicie o servidor Django após a mudança.
-
-**`django.core.exceptions.ImproperlyConfigured`**
-O arquivo `.env` provavelmente não foi criado. Siga o Passo 4 da instalação.
+### 🔄 Em Desenvolvimento
+- Paginação e filtros avançados em todas as listagens
+- Suporte a WebSockets para telemetria em tempo real
+- Preparação e deploy em ambiente de produção
 
 ---
 
-## 🤝 Contribuindo
+## 🔗 Endpoints da API - Lista Completa
 
-1. Faça um fork do repositório
-2. Crie uma branch descritiva:
-   ```bash
-   git checkout -b feat/telemetria-sensores
-   ```
-3. Faça commits claros e descritivos:
-   ```bash
-   git commit -m "feat: adiciona modelo LeituraSensor com limites de alerta"
-   ```
-4. Envie para o seu fork:
-   ```bash
-   git push origin feat/telemetria-sensores
-   ```
-5. Abra um **Pull Request** descrevendo o que foi feito e por quê
+**Base URL:** http://localhost:8000/api/
 
-### Convenção de commits
+### 🔐 Autenticação
 
-| Prefixo | Quando usar |
-|---|---|
-| `feat:` | Nova funcionalidade |
-| `fix:` | Correção de bug |
-| `docs:` | Alteração na documentação |
-| `refactor:` | Refatoração sem mudança de comportamento |
-| `chore:` | Configurações, dependências, tarefas auxiliares |
+| Método | Endpoint                          | Descrição |
+|--------|-----------------------------------|---------|
+| POST   | /api/auth/token/                  | Realizar login e obter tokens JWT (access e refresh) |
+| POST   | /api/auth/token/refresh/          | Renovar o token de acesso quando expirado |
+| GET    | /api/auth/me/                     | Retornar todos os dados do usuário atualmente logado |
+
+### 🏢 Empresas
+
+| Método | Endpoint                          | Descrição |
+|--------|-----------------------------------|---------|
+| GET    | /api/empresas/                    | Listar todas as empresas |
+| POST   | /api/empresas/                    | Criar nova empresa |
+| GET    | /api/empresas/{id}/               | Retornar detalhes de uma empresa específica |
+| PUT    | /api/empresas/{id}/               | Atualizar completamente uma empresa |
+| PATCH  | /api/empresas/{id}/               | Atualizar parcialmente uma empresa |
+| DELETE | /api/empresas/{id}/               | Excluir uma empresa |
+
+### 👤 Usuários
+
+| Método | Endpoint                          | Descrição |
+|--------|-----------------------------------|---------|
+| GET    | /api/usuarios/                    | Listar todos os usuários |
+| POST   | /api/usuarios/                    | Criar novo usuário |
+| GET    | /api/usuarios/{id}/               | Detalhes de um usuário específico |
+| PUT    | /api/usuarios/{id}/               | Atualizar completamente um usuário |
+| PATCH  | /api/usuarios/{id}/               | Atualizar parcialmente um usuário |
+| DELETE | /api/usuarios/{id}/               | Excluir um usuário |
+
+### ⚙️ Equipamentos
+
+| Método | Endpoint                          | Descrição |
+|--------|-----------------------------------|---------|
+| GET    | /api/equipamentos/                | Listar todos os equipamentos |
+| POST   | /api/equipamentos/                | Cadastrar novo equipamento |
+| GET    | /api/equipamentos/{id}/           | Detalhes de um equipamento específico |
+| PUT    | /api/equipamentos/{id}/           | Atualizar completamente um equipamento |
+| PATCH  | /api/equipamentos/{id}/           | Atualizar parcialmente um equipamento |
+| DELETE | /api/equipamentos/{id}/           | Excluir um equipamento |
+
+### 📍 Localização
+
+| Método | Endpoint                          | Descrição |
+|--------|-----------------------------------|---------|
+| GET    | /api/localizacao/                 | Listar localizações dos equipamentos |
+| POST   | /api/localizacao/                 | Cadastrar localização de um equipamento |
+| GET    | /api/localizacao/{id}/            | Detalhes de uma localização |
+| PUT    | /api/localizacao/{id}/            | Atualizar completamente uma localização |
+| PATCH  | /api/localizacao/{id}/            | Atualizar parcialmente uma localização |
+| DELETE | /api/localizacao/{id}/            | Excluir uma localização |
+
+### 🚨 Alertas
+
+| Método | Endpoint                          | Descrição |
+|--------|-----------------------------------|---------|
+| GET    | /api/alertas/                     | Listar todos os alertas |
+| GET    | /api/alertas/{id}/                | Detalhes de um alerta específico |
+| PATCH  | /api/alertas/{id}/                | Atualizar status do alerta (ex: marcar como resolvido) |
+
+### 🛠️ Ordens de Serviço
+
+| Método | Endpoint                          | Descrição |
+|--------|-----------------------------------|---------|
+| GET    | /api/ordens-servico/              | Listar todas as ordens de serviço |
+| POST   | /api/ordens-servico/              | Criar nova ordem de serviço |
+| GET    | /api/ordens-servico/{id}/         | Detalhes de uma ordem específica |
+| PUT    | /api/ordens-servico/{id}/         | Atualizar completamente uma ordem |
+| PATCH  | /api/ordens-servico/{id}/         | Atualizar parcialmente ou status da ordem |
+| DELETE | /api/ordens-servico/{id}/         | Excluir uma ordem de serviço |
+
+### 📡 Telemetria - Sensores
+
+| Método | Endpoint                          | Descrição |
+|--------|-----------------------------------|---------|
+| GET    | /api/telemetria/sensores/         | Listar todos os sensores |
+| POST   | /api/telemetria/sensores/         | Cadastrar novo sensor (com limite_alerta customizado) |
+| GET    | /api/telemetria/sensores/{id}/    | Detalhes de um sensor |
+| PUT    | /api/telemetria/sensores/{id}/    | Atualizar completamente um sensor |
+| PATCH  | /api/telemetria/sensores/{id}/    | Atualizar parcialmente um sensor |
+| DELETE | /api/telemetria/sensores/{id}/    | Excluir um sensor |
+
+### 📡 Telemetria - Leituras
+
+| Método | Endpoint                          | Descrição |
+|--------|-----------------------------------|---------|
+| GET    | /api/telemetria/leituras/         | Listar todas as leituras de telemetria |
+| POST   | /api/telemetria/leituras/         | Enviar nova leitura de sensor |
+| GET    | /api/telemetria/leituras/{id}/    | Detalhes de uma leitura específica |
+
+### 📅 Planos de Manutenção (Horímetro)
+
+| Método | Endpoint                          | Descrição |
+|--------|-----------------------------------|---------|
+| GET    | /api/planos-manutencao/           | Listar todos os planos de manutenção preditiva |
+| POST   | /api/planos-manutencao/           | Criar novo plano de manutenção por horímetro |
+| GET    | /api/planos-manutencao/{id}/      | Detalhes de um plano específico |
+| PATCH  | /api/planos-manutencao/{id}/      | Atualizar intervalo ou detalhes do plano |
+| DELETE | /api/planos-manutencao/{id}/      | Excluir um plano de manutenção |
+
+### 📊 Dashboards
+
+| Método | Endpoint                          | Descrição |
+|--------|-----------------------------------|---------|
+| GET    | /api/dashboards/resumo/           | Retornar resumo geral e KPIs da empresa |
 
 ---
-
-## 📄 Licença
-
-Projeto acadêmico — Projeto Interdisciplinar. Todos os direitos reservados aos autores.
-
----
-
-<div align="center">
-  Feito com Python 🐍 e Django 🎸
-</div>
