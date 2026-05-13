@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NanaSmart</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.21/vue.global.prod.min.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- TOASTS -->
+  <div class="toast-container">
+    <div v-for="t in toasts" :key="t.id" class="toast" :class="'toast-'+t.type">{{ t.msg }}</div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       LOGIN
+  ══════════════════════════════════════ -->
+  <div v-if="!token" class="login-wrap">
+    <div class="login-visual">
+      <div class="login-visual-content">
+        <div class="login-visual-tag">// Plataforma Operacional v2</div>
+        <h1 class="login-visual-headline">
+          Gestão de<br><em>Equipamentos</em><br>em tempo real
+        </h1>
+        <p class="login-visual-desc">
+          Monitore, controle e analise toda a sua frota de equipamentos.<br>
+          Alertas, telemetria e histórico em um único painel.
+        </p>
+        <div class="login-stats">
+          <div>
+            <div class="login-stat-val">99.9%</div>
+            <div class="login-stat-label">Uptime</div>
+          </div>
+          <div>
+            <div class="login-stat-val">24/7</div>
+            <div class="login-stat-label">Monitoramento</div>
+          </div>
+          <div>
+            <div class="login-stat-val">RT</div>
+            <div class="login-stat-label">Alertas</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="login-box">
+      <div class="login-form-tag">// Autenticação de Operador</div>
+      <h2 class="login-form-title">Acessar<br>NanaSmart</h2>
+      <label class="login-label">Usuário</label>
+      <input class="login-input" v-model="loginForm.username" type="text" placeholder="nome_de_usuario" @keydown.enter="doLogin" />
+      <label class="login-label">Senha</label>
+      <input class="login-input" v-model="loginForm.password" type="password" placeholder="••••••••" @keydown.enter="doLogin" />
+      <button class="login-btn" @click="doLogin" :disabled="loginLoading">
+        {{ loginLoading ? 'Autenticando...' : 'Entrar no Sistema' }}
+      </button>
+      <div v-if="loginError" class="login-error">⚠ {{ loginError }}</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════
+       APP
+  ══════════════════════════════════════ -->
+  <div v-else class="app">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-mark">
+          <div class="logo-icon">S</div>
+          <div class="logo-name">NanaSmart<span></span></div>
+        </div>
+        <div class="sidebar-version">v2.0 · Django REST</div>
+      </div>
+
+      <div class="sidebar-pill">
+        <span class="live-dot"></span>
+        Online
+      </div>
+
+      <div class="sidebar-group-label">Principal</div>
+      <div class="nav-item" :class="{active:view==='dashboard'}" @click="navigate('dashboard')">
+        <span class="nav-icon">◈</span> Dashboard
+      </div>
+
+      <div class="sidebar-group-label">Operações</div>
+      <div class="nav-item" :class="{active:view==='equipamentos'}" @click="navigate('equipamentos')">
+        <span class="nav-icon">⚙</span> Equipamentos
+      </div>
+      <div class="nav-item" :class="{active:view==='alertas'}" @click="navigate('alertas')">
+        <span class="nav-icon">◉</span> Alertas
+        <span v-if="alertCount>0" class="nav-count">{{ alertCount }}</span>
+      </div>
+      <div class="nav-item" :class="{active:view==='ordens'}" @click="navigate('ordens')">
+        <span class="nav-icon">✦</span> Ordens de Serviço
+      </div>
+      <div class="nav-item" :class="{active:view==='telemetria'}" @click="navigate('telemetria')">
+        <span class="nav-icon">⬡</span> Telemetria
+        <span class="live-dot" style="margin-left:auto"></span>
+      </div>
+      <div class="nav-item" :class="{active:view==='historico'}" @click="navigate('historico')">
+        <span class="nav-icon">☰</span> Histórico
+      </div>
+      <div class="nav-item" :class="{active:view==='localizacoes'}" @click="navigate('localizacoes')">
+        <span class="nav-icon">◎</span> Localizações
+      </div>
+
+      <template v-if="isAdmin">
+        <div class="sidebar-group-label">Administração</div>
+        <div class="nav-item" :class="{active:view==='empresas'}" @click="navigate('empresas')">
+          <span class="nav-icon">▣</span> Empresas
+        </div>
+        <div class="nav-item" :class="{active:view==='usuarios'}" @click="navigate('usuarios')">
+          <span class="nav-icon">◎</span> Usuários
+        </div>
+      </template>
+
+      <div class="sidebar-footer">
+        <div class="user-ava">{{ userInitial }}</div>
+        <div>
+          <div class="user-name">{{ me?.username || '—' }}</div>
+          <div class="user-role">{{ me?.tipo_usuario || 'user' }}</div>
+        </div>
+        <button class="logout-btn" title="Sair" @click="logout">⏻</button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <div class="topbar">
+        <div class="topbar-crumb">
+          <span class="topbar-crumb-root">NanaSmart</span>
+          <span class="topbar-crumb-sep">/</span>
+          <span class="topbar-crumb-cur">{{ viewTitle }}</span>
+        </div>
+        <div class="topbar-meta">
+          <span class="topbar-chip">API v1.0</span>
+          <span class="live-dot"></span>
+        </div>
+      </div>
+
+      <div class="content">
+
+        <!-- ══════════ DASHBOARD ══════════ -->
+        <div v-if="view==='dashboard'">
+
+          <!-- KPI Row -->
+          <div class="dash-grid" style="margin-bottom:16px" v-if="kpis">
+            <div class="kpi-mega col-3" style="--kpi-color:var(--ice)">
+              <div class="kpi-mega-icon">⚙</div>
+              <div class="kpi-mega-label">Equipamentos</div>
+              <div class="kpi-mega-val">{{ kpis.total_equipamentos ?? '—' }}</div>
+              <div class="kpi-mega-foot">total cadastrado</div>
+            </div>
+            <div class="kpi-mega col-3" style="--kpi-color:var(--danger)">
+              <div class="kpi-mega-icon">◉</div>
+              <div class="kpi-mega-label">Alertas Ativos</div>
+              <div class="kpi-mega-val">{{ kpis.alertas_ativos ?? dashAlerts.length }}</div>
+              <div class="kpi-mega-foot">requerem atenção</div>
+            </div>
+            <div class="kpi-mega col-3" style="--kpi-color:var(--warn)">
+              <div class="kpi-mega-icon">✦</div>
+              <div class="kpi-mega-label">Ordens Abertas</div>
+              <div class="kpi-mega-val">{{ kpis.ordens_abertas ?? '—' }}</div>
+              <div class="kpi-mega-foot">em andamento</div>
+            </div>
+            <div class="kpi-mega col-3" style="--kpi-color:var(--acid)">
+              <div class="kpi-mega-icon">⬡</div>
+              <div class="kpi-mega-label">Leituras Hoje</div>
+              <div class="kpi-mega-val">{{ kpis.leituras_hoje ?? lists.leituras.length }}</div>
+              <div class="kpi-mega-foot">pontos de telemetria</div>
+            </div>
+          </div>
+          <div v-else-if="!kpis" class="loading" style="height:120px"><div class="spinner"></div></div>
+
+          <!-- Charts Row 1 -->
+          <div class="dash-grid" style="margin-bottom:16px">
+            <div class="chart-card col-4">
+              <div class="chart-head">
+                <div class="chart-title">Status Equipamentos</div>
+                <div class="chart-sub">por condição</div>
+              </div>
+              <div class="chart-body">
+                <div v-if="chartEquipStatus.length" class="donut-wrap">
+                  <svg class="donut-svg" width="128" height="128" viewBox="0 0 128 128">
+                    <circle cx="64" cy="64" r="52" fill="none" stroke="var(--s4)" stroke-width="1"/>
+                    <path v-for="arc in donutArcs(chartEquipStatus)" :key="arc.label"
+                          :d="arc.d" :fill="arc.color" opacity=".9"/>
+                    <circle cx="64" cy="64" r="34" fill="var(--s2)"/>
+                    <text x="64" y="60" text-anchor="middle" fill="var(--t1)"
+                          font-family="Unbounded,sans-serif" font-size="18" font-weight="700">
+                      {{ chartEquipStatus.reduce((s,i)=>s+i.value,0) }}
+                    </text>
+                    <text x="64" y="74" text-anchor="middle" fill="var(--t4)"
+                          font-family="IBM Plex Mono,monospace" font-size="8" letter-spacing="1">
+                      TOTAL
+                    </text>
+                  </svg>
+                  <div class="donut-legend">
+                    <div v-for="seg in donutArcs(chartEquipStatus)" :key="seg.label" class="donut-legend-item">
+                      <div class="donut-dot" :style="{background:seg.color}"></div>
+                      <div class="donut-label">{{ seg.label }}</div>
+                      <div class="donut-pct" :style="{color:seg.color}">{{ seg.value }}</div>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="donut-empty">Sem dados</div>
+              </div>
+            </div>
+
+            <div class="chart-card col-4">
+              <div class="chart-head">
+                <div class="chart-title">Alertas por Nível</div>
+                <div class="chart-sub">ativos agora</div>
+              </div>
+              <div class="chart-body">
+                <div class="bar-list">
+                  <div v-for="b in chartAlertNivel" :key="b.label" class="bar-item">
+                    <div class="bar-meta">
+                      <span class="bar-label">{{ b.label }}</span>
+                      <span class="bar-val" :style="{color:b.color}">{{ b.value }}</span>
+                    </div>
+                    <div class="bar-track">
+                      <div class="bar-fill" :style="{width: b.pct+'%', background: b.color}"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-card col-4">
+              <div class="chart-head">
+                <div class="chart-title">Ordens de Serviço</div>
+                <div class="chart-sub">por status</div>
+              </div>
+              <div class="chart-body">
+                <div class="bar-list">
+                  <div v-for="b in chartOrdens" :key="b.label" class="bar-item">
+                    <div class="bar-meta">
+                      <span class="bar-label">{{ b.label }}</span>
+                      <span class="bar-val" :style="{color:b.color}">{{ b.value }}</span>
+                    </div>
+                    <div class="bar-track">
+                      <div class="bar-fill" :style="{width: b.pct+'%', background: b.color}"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Row 2 -->
+          <div class="dash-grid" style="margin-bottom:16px">
+            <div class="chart-card col-6">
+              <div class="chart-head">
+                <div class="chart-title">Telemetria — Últimas Leituras <span class="live-dot" style="margin-left:6px"></span></div>
+                <div class="chart-sub">valores dos sensores</div>
+              </div>
+              <div class="chart-body">
+                <div v-if="chartTelemetria.path" class="spark-wrap">
+                  <svg width="100%" viewBox="0 0 320 96" preserveAspectRatio="none" style="overflow:visible">
+                    <defs>
+                      <linearGradient id="spark-grad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="var(--acid)" stop-opacity=".25"/>
+                        <stop offset="100%" stop-color="var(--acid)" stop-opacity="0"/>
+                      </linearGradient>
+                    </defs>
+                    <line x1="0" y1="0"  x2="320" y2="0"  stroke="var(--edge)" stroke-width="0.5"/>
+                    <line x1="0" y1="48" x2="320" y2="48" stroke="var(--edge)" stroke-width="0.5"/>
+                    <line x1="0" y1="96" x2="320" y2="96" stroke="var(--edge)" stroke-width="0.5"/>
+                    <path :d="chartTelemetria.area" fill="url(#spark-grad)"/>
+                    <path :d="chartTelemetria.path" fill="none" stroke="var(--acid)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle v-for="(dot,i) in chartTelemetria.dots" :key="i"
+                            :cx="dot.x" :cy="dot.y" r="3"
+                            fill="var(--bg)" stroke="var(--acid)" stroke-width="1.5"/>
+                  </svg>
+                  <div class="spark-labels">
+                    <span>min {{ chartTelemetria.min }}</span>
+                    <span>{{ lists.leituras.length }} pontos</span>
+                    <span>max {{ chartTelemetria.max }}</span>
+                  </div>
+                </div>
+                <div v-else class="spark-no-data">Sem leituras de telemetria</div>
+              </div>
+            </div>
+
+            <div class="chart-card col-6">
+              <div class="chart-head">
+                <div class="chart-title">Custo por Tipo de Manutenção</div>
+                <div class="chart-sub">histórico (R$)</div>
+              </div>
+              <div class="chart-body">
+                <div v-if="chartHistoricoTipo.length" class="bar-list">
+                  <div v-for="b in chartHistoricoTipo" :key="b.label" class="bar-item">
+                    <div class="bar-meta">
+                      <span class="bar-label">{{ b.label }}</span>
+                      <span class="bar-val" :style="{color:b.color}">R$ {{ b.value }}</span>
+                    </div>
+                    <div class="bar-track">
+                      <div class="bar-fill" :style="{width: b.pct+'%', background: b.color}"></div>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="spark-no-data">Sem histórico de manutenção</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Row 3 -->
+          <div class="dash-grid">
+            <div class="chart-card col-6">
+              <div class="chart-head">
+                <div class="chart-title">Alertas Ativos</div>
+                <div class="chart-sub">
+                  <button class="btn btn-ghost btn-sm" @click="navigate('alertas')">Ver todos →</button>
+                </div>
+              </div>
+              <div class="chart-body" style="padding:0 20px">
+                <div v-if="dashAlerts.length" class="alert-stream">
+                  <div v-for="a in dashAlerts.slice(0,6)" :key="a.id" class="alert-row">
+                    <div class="alert-level-bar" :style="{background: nivelColor(a.nivel)}"></div>
+                    <div class="alert-info">
+                      <div class="alert-tipo">{{ a.tipo_alerta }}</div>
+                      <div class="alert-equip">{{ eqNome(a.equipamento) }}</div>
+                    </div>
+                    <div class="alert-badge-wrap">
+                      <span class="badge" :class="nivelBadge(a.nivel)">{{ a.nivel }}</span>
+                    </div>
+                    <div class="alert-time">{{ fmtDate(a.data_alerta).split(' ')[0] }}</div>
+                  </div>
+                </div>
+                <div v-else class="empty" style="padding:32px 0">
+                  <div class="empty-icon">◉</div>
+                  Nenhum alerta ativo
+                </div>
+              </div>
+            </div>
+
+            <div class="chart-card col-6">
+              <div class="chart-head">
+                <div class="chart-title">Ordens Recentes</div>
+                <div class="chart-sub">
+                  <button class="btn btn-ghost btn-sm" @click="navigate('ordens')">Ver todas →</button>
+                </div>
+              </div>
+              <div class="chart-body" style="padding:0 20px">
+                <div v-if="lists.ordens.length" class="activity-list">
+                  <div v-for="o in lists.ordens.slice(0,5)" :key="o.id" class="activity-item">
+                    <div class="activity-dot-col">
+                      <div class="activity-dot" :style="{
+                        background: o.status==='concluida'?'var(--mint)':o.status==='cancelada'?'var(--t4)':o.prioridade==='urgente'?'var(--danger)':'var(--acid)'
+                      }"></div>
+                      <div class="activity-line"></div>
+                    </div>
+                    <div class="activity-body">
+                      <div class="activity-title">{{ o.titulo }}</div>
+                      <div class="activity-desc">
+                        <span class="badge" :class="ordemStatusBadge(o.status)" style="font-size:8px">{{ o.status }}</span>
+                        &nbsp;·&nbsp; {{ eqNome(o.equipamento) }}
+                      </div>
+                    </div>
+                    <div class="activity-when">{{ fmtDate(o.data_abertura || o.criado_em).split(' ')[0] }}</div>
+                  </div>
+                </div>
+                <div v-else class="empty" style="padding:32px 0">
+                  <div class="empty-icon">✦</div>
+                  Nenhuma ordem
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- /DASHBOARD -->
+
+        <!-- ══════════ EQUIPAMENTOS ══════════ -->
+        <div v-if="view==='equipamentos'">
+          <div class="filter-bar">
+            <input class="filter-input" v-model="filters.equipamentos.search" placeholder="Buscar equipamento..." @input="debouncedFetch('eq',fetchEquipamentos)" />
+            <button class="btn btn-primary" @click="openModal('equipamento')">+ Novo</button>
+          </div>
+          <div class="table-wrap">
+            <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
+            <div v-else-if="lists.equipamentos.length===0" class="empty"><div class="empty-icon">⚙</div>Nenhum equipamento</div>
+            <table v-else>
+              <thead><tr><th>ID</th><th>Nome</th><th>Modelo</th><th>Fabricante</th><th>Nº Série</th><th>Status</th><th>Empresa</th><th>Ações</th></tr></thead>
+              <tbody>
+                <tr v-for="e in lists.equipamentos" :key="e.id">
+                  <td style="font-family:var(--mono);color:var(--t4)">#{{ e.id }}</td>
+                  <td style="font-weight:600;color:var(--t1)">{{ e.nome }}</td>
+                  <td style="font-family:var(--mono);font-size:11px">{{ e.modelo || '—' }}</td>
+                  <td>{{ e.fabricante || '—' }}</td>
+                  <td style="font-family:var(--mono);font-size:11px">{{ e.numero_serie || '—' }}</td>
+                  <td><span class="badge" :class="eqStatusBadge(e.status)"><span class="badge-dot"></span>{{ e.status || '—' }}</span></td>
+                  <td style="font-size:11px">{{ empresaNome(e.empresa) }}</td>
+                  <td><div class="action-btns">
+                    <button class="btn btn-ghost btn-sm" @click="editItem('equipamento',e)">Editar</button>
+                    <button v-if="isAdmin" class="btn btn-danger btn-sm" @click="deleteItem('equipamentos',e.id)">✕</button>
+                  </div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <button class="page-btn" :disabled="!pages.equipamentos.prev" @click="fetchPage('equipamentos',pages.equipamentos.prev)">← Anterior</button>
+            <span class="page-info">{{ lists.equipamentos.length }} registros</span>
+            <button class="page-btn" :disabled="!pages.equipamentos.next" @click="fetchPage('equipamentos',pages.equipamentos.next)">Próxima →</button>
+          </div>
+        </div>
+
+        <!-- ══════════ ALERTAS ══════════ -->
+        <div v-if="view==='alertas'">
+          <div class="filter-bar">
+            <input class="filter-input" v-model="filters.alertas.search" placeholder="Buscar alerta..." @input="debouncedFetch('al',fetchAlertas)" />
+            <select class="filter-select" v-model="filters.alertas.nivel" @change="fetchAlertas">
+              <option value="">Todos os níveis</option>
+              <option value="baixo">Baixo</option>
+              <option value="medio">Médio</option>
+              <option value="critico">Crítico</option>
+            </select>
+            <select class="filter-select" v-model="filters.alertas.status" @change="fetchAlertas">
+              <option value="">Todos os status</option>
+              <option value="ativo">Ativo</option>
+              <option value="resolvido">Resolvido</option>
+              <option value="ignorado">Ignorado</option>
+            </select>
+            <button class="btn btn-primary" @click="openModal('alerta')">+ Novo</button>
+          </div>
+          <div class="table-wrap">
+            <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
+            <div v-else-if="lists.alertas.length===0" class="empty"><div class="empty-icon">◉</div>Nenhum alerta</div>
+            <table v-else>
+              <thead><tr><th>ID</th><th>Tipo</th><th>Nível</th><th>Descrição</th><th>Equipamento</th><th>Status</th><th>Data</th><th>Ações</th></tr></thead>
+              <tbody>
+                <tr v-for="a in lists.alertas" :key="a.id">
+                  <td style="font-family:var(--mono);color:var(--t4)">#{{ a.id }}</td>
+                  <td style="font-weight:600;color:var(--t1)">{{ a.tipo_alerta }}</td>
+                  <td><span class="badge" :class="nivelBadge(a.nivel)"><span class="badge-dot"></span>{{ a.nivel }}</span></td>
+                  <td style="font-size:11px;color:var(--t3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.descricao || '—' }}</td>
+                  <td style="font-size:11px">{{ eqNome(a.equipamento) }}</td>
+                  <td><span class="badge" :class="statusBadge(a.status)">{{ a.status }}</span></td>
+                  <td style="font-family:var(--mono);font-size:10px;color:var(--t4)">{{ fmtDate(a.data_alerta) }}</td>
+                  <td><div class="action-btns">
+                    <button class="btn btn-ghost btn-sm" @click="editItem('alerta',a)">Editar</button>
+                    <button v-if="isAdmin" class="btn btn-danger btn-sm" @click="deleteItem('alertas',a.id)">✕</button>
+                  </div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <button class="page-btn" :disabled="!pages.alertas.prev" @click="fetchPage('alertas',pages.alertas.prev)">← Anterior</button>
+            <span class="page-info">{{ lists.alertas.length }} registros</span>
+            <button class="page-btn" :disabled="!pages.alertas.next" @click="fetchPage('alertas',pages.alertas.next)">Próxima →</button>
+          </div>
+        </div>
+
+        <!-- ══════════ ORDENS ══════════ -->
+        <div v-if="view==='ordens'">
+          <div class="filter-bar">
+            <input class="filter-input" v-model="filters.ordens.search" placeholder="Buscar ordem..." @input="debouncedFetch('os',fetchOrdens)" />
+            <select class="filter-select" v-model="filters.ordens.status" @change="fetchOrdens">
+              <option value="">Todos os status</option>
+              <option value="pendente">Pendente</option>
+              <option value="andamento">Em Andamento</option>
+              <option value="concluida">Concluída</option>
+              <option value="cancelada">Cancelada</option>
+            </select>
+            <button class="btn btn-primary" @click="openModal('ordem')">+ Nova Ordem</button>
+          </div>
+          <div class="table-wrap">
+            <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
+            <div v-else-if="lists.ordens.length===0" class="empty"><div class="empty-icon">✦</div>Nenhuma ordem</div>
+            <table v-else>
+              <thead><tr><th>ID</th><th>Título</th><th>Tipo</th><th>Prioridade</th><th>Status</th><th>Equipamento</th><th>Abertura</th><th>Ações</th></tr></thead>
+              <tbody>
+                <tr v-for="o in lists.ordens" :key="o.id">
+                  <td style="font-family:var(--mono);color:var(--t4)">#{{ o.id }}</td>
+                  <td style="font-weight:600;color:var(--t1);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ o.titulo }}</td>
+                  <td style="font-family:var(--mono);font-size:11px">{{ o.tipo_os || '—' }}</td>
+                  <td><span class="badge" :class="prioridadeBadge(o.prioridade)">{{ o.prioridade || '—' }}</span></td>
+                  <td><span class="badge" :class="ordemStatusBadge(o.status)">{{ o.status || '—' }}</span></td>
+                  <td style="font-size:11px">{{ eqNome(o.equipamento) }}</td>
+                  <td style="font-family:var(--mono);font-size:10px;color:var(--t4)">{{ fmtDate(o.data_abertura || o.criado_em) }}</td>
+                  <td><div class="action-btns">
+                    <button class="btn btn-ghost btn-sm" @click="editItem('ordem',o)">Editar</button>
+                    <button v-if="isAdmin" class="btn btn-danger btn-sm" @click="deleteItem('ordens-servico',o.id)">✕</button>
+                  </div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <button class="page-btn" :disabled="!pages.ordens.prev" @click="fetchPage('ordens',pages.ordens.prev)">← Anterior</button>
+            <span class="page-info">{{ lists.ordens.length }} registros</span>
+            <button class="page-btn" :disabled="!pages.ordens.next" @click="fetchPage('ordens',pages.ordens.next)">Próxima →</button>
+          </div>
+        </div>
+
+        <!-- ══════════ TELEMETRIA ══════════ -->
+        <div v-if="view==='telemetria'">
+          <div class="tele-grid" style="margin-bottom:20px">
+            <div>
+              <div class="section-header">
+                <div class="section-title">Sensores <span class="live-dot" style="margin-left:8px"></span></div>
+                <button class="btn btn-primary btn-sm" @click="openModal('sensor')">+ Sensor</button>
+              </div>
+              <div class="table-wrap">
+                <div v-if="loading" class="loading"><div class="spinner"></div></div>
+                <div v-else-if="lists.sensores.length===0" class="empty"><div class="empty-icon">⬡</div>Sem sensores</div>
+                <table v-else>
+                  <thead><tr><th>ID</th><th>Nome</th><th>Tipo</th><th>Unidade</th><th>Equipamento</th><th>Ativo</th><th>Ações</th></tr></thead>
+                  <tbody>
+                    <tr v-for="s in lists.sensores" :key="s.id">
+                      <td style="font-family:var(--mono);color:var(--t4)">#{{ s.id }}</td>
+                      <td style="font-weight:600;color:var(--t1)">{{ s.nome }}</td>
+                      <td style="font-family:var(--mono);font-size:11px">{{ s.tipo }}</td>
+                      <td style="color:var(--t3)">{{ s.unidade_medida || '—' }}</td>
+                      <td style="font-size:11px">{{ eqNome(s.equipamento) }}</td>
+                      <td>
+                        <span class="badge" :class="s.ativo ? 'badge-green' : 'badge-gray'">{{ s.ativo ? 'Ativo' : 'Inativo' }}</span>
+                      </td>
+                      <td><div class="action-btns">
+                        <button class="btn btn-ghost btn-sm" @click="editItem('sensor',s)">Editar</button>
+                        <button v-if="isAdmin" class="btn btn-danger btn-sm" @click="deleteItem('telemetria/sensores',s.id)">✕</button>
+                      </div></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="pagination">
+                <button class="page-btn" :disabled="!pages.sensores.prev" @click="fetchPage('sensores',pages.sensores.prev)">← Anterior</button>
+                <span class="page-info">{{ lists.sensores.length }} sensores</span>
+                <button class="page-btn" :disabled="!pages.sensores.next" @click="fetchPage('sensores',pages.sensores.next)">Próxima →</button>
+              </div>
+            </div>
+            <div>
+              <div class="section-header">
+                <div class="section-title">Últimas Leituras</div>
+                <div style="display:flex;gap:8px">
+                  <button class="btn btn-primary btn-sm" @click="openModal('leitura')">+ Leitura</button>
+                  <button class="btn btn-ghost btn-sm" @click="fetchTelemetria">↺ Atualizar</button>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <div v-if="loading" class="loading"><div class="spinner"></div></div>
+                <div v-else-if="lists.leituras.length===0" class="empty"><div class="empty-icon">⬡</div>Sem leituras</div>
+                <table v-else>
+                  <thead><tr><th>ID</th><th>Sensor</th><th>Valor</th><th>Data/Hora</th><th>Ações</th></tr></thead>
+                  <tbody>
+                    <tr v-for="l in lists.leituras.slice(0,30)" :key="l.id">
+                      <td style="font-family:var(--mono);color:var(--t4)">#{{ l.id }}</td>
+                      <td style="font-size:11px">{{ sensorNome(l.sensor) }}</td>
+                      <td style="font-weight:700;color:var(--acid);font-family:var(--mono)">{{ l.valor }}</td>
+                      <td style="font-family:var(--mono);font-size:10px;color:var(--t4)">{{ fmtDate(l.timestamp) }}</td>
+                      <td><div class="action-btns">
+                        <button class="btn btn-ghost btn-sm" @click="editItem('leitura',l)">Editar</button>
+                        <button v-if="isAdmin" class="btn btn-danger btn-sm" @click="deleteItem('telemetria/leituras',l.id)">✕</button>
+                      </div></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="pagination">
+                <button class="page-btn" :disabled="!pages.leituras.prev" @click="fetchPage('leituras',pages.leituras.prev)">← Anterior</button>
+                <span class="page-info">{{ lists.leituras.length }} leituras</span>
+                <button class="page-btn" :disabled="!pages.leituras.next" @click="fetchPage('leituras',pages.leituras.next)">Próxima →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══════════ HISTÓRICO ══════════ -->
+        <div v-if="view==='historico'">
+          <div class="filter-bar">
+            <input class="filter-input" v-model="filters.historico.search" placeholder="Buscar histórico..." @input="debouncedFetch('hi',fetchHistorico)" />
+            <button class="btn btn-primary" @click="openModal('historico')">+ Registro</button>
+          </div>
+          <div class="table-wrap">
+            <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
+            <div v-else-if="lists.historico.length===0" class="empty"><div class="empty-icon">☰</div>Nenhum histórico</div>
+            <table v-else>
+              <thead><tr><th>ID</th><th>OS</th><th>Descrição</th><th>Custo Peças</th><th>Custo M.O.</th><th>Data Execução</th><th>Ações</th></tr></thead>
+              <tbody>
+                <tr v-for="h in lists.historico" :key="h.id">
+                  <td style="font-family:var(--mono);color:var(--t4)">#{{ h.id }}</td>
+                  <td><span class="badge badge-blue">#{{ h.ordem_servico }}</span></td>
+                  <td style="font-size:11px;color:var(--t3);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ h.descricao_servico || '—' }}</td>
+                  <td style="font-family:var(--mono);color:var(--mint)">{{ h.custo_pecas!=null?'R$ '+Number(h.custo_pecas).toFixed(2):'—' }}</td>
+                  <td style="font-family:var(--mono);color:var(--mint)">{{ h.custo_mao_de_obra!=null?'R$ '+Number(h.custo_mao_de_obra).toFixed(2):'—' }}</td>
+                  <td style="font-family:var(--mono);font-size:10px;color:var(--t4)">{{ h.data_execucao || '—' }}</td>
+                  <td><div class="action-btns">
+                    <button class="btn btn-ghost btn-sm" @click="editItem('historico',h)">Editar</button>
+                    <button v-if="isAdmin" class="btn btn-danger btn-sm" @click="deleteItem('historico',h.id)">✕</button>
+                  </div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <button class="page-btn" :disabled="!pages.historico.prev" @click="fetchPage('historico',pages.historico.prev)">← Anterior</button>
+            <span class="page-info">{{ lists.historico.length }} registros</span>
+            <button class="page-btn" :disabled="!pages.historico.next" @click="fetchPage('historico',pages.historico.next)">Próxima →</button>
+          </div>
+        </div>
+
+        <!-- ══════════ LOCALIZAÇÕES ══════════ -->
+        <div v-if="view==='localizacoes'">
+          <div class="filter-bar">
+            <input class="filter-input" v-model="filters.localizacoes.search" placeholder="Buscar localização..." @input="debouncedFetch('loc',fetchLocalizacoes)" />
+            <button class="btn btn-primary" @click="openModal('localizacao')">+ Localização</button>
+          </div>
+          <div class="table-wrap">
+            <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
+            <div v-else-if="lists.localizacoes.length===0" class="empty"><div class="empty-icon">◎</div>Nenhuma localização</div>
+            <table v-else>
+              <thead><tr><th>ID</th><th>Equipamento</th><th>Setor</th><th>Atualização</th><th>Ações</th></tr></thead>
+              <tbody>
+                <tr v-for="loc in lists.localizacoes" :key="loc.id">
+                  <td style="font-family:var(--mono);color:var(--t4)">#{{ loc.id }}</td>
+                  <td style="font-size:11px">{{ eqNome(loc.equipamento) }}</td>
+                  <td style="font-family:var(--mono);font-size:11px;color:var(--acid)">{{ loc.setor ?? '—' }}</td>
+                  <td style="font-family:var(--mono);font-size:10px;color:var(--t4)">{{ fmtDate(loc.atualizado_em || loc.criado_em) }}</td>
+                  <td><div class="action-btns">
+                    <button class="btn btn-ghost btn-sm" @click="editItem('localizacao',loc)">Editar</button>
+                    <button v-if="isAdmin" class="btn btn-danger btn-sm" @click="deleteItem('localizacao',loc.id)">✕</button>
+                  </div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <button class="page-btn" :disabled="!pages.localizacoes.prev" @click="fetchPage('localizacoes',pages.localizacoes.prev)">← Anterior</button>
+            <span class="page-info">{{ lists.localizacoes.length }} registros</span>
+            <button class="page-btn" :disabled="!pages.localizacoes.next" @click="fetchPage('localizacoes',pages.localizacoes.next)">Próxima →</button>
+          </div>
+        </div>
+
+        <!-- ══════════ EMPRESAS ══════════ -->
+        <div v-if="view==='empresas'">
+          <div class="filter-bar">
+            <input class="filter-input" v-model="filters.empresas.search" placeholder="Buscar empresa..." @input="debouncedFetch('em',fetchEmpresas)" />
+            <button class="btn btn-primary" @click="openModal('empresa')">+ Empresa</button>
+          </div>
+          <div class="table-wrap">
+            <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
+            <div v-else-if="lists.empresas.length===0" class="empty"><div class="empty-icon">▣</div>Nenhuma empresa</div>
+            <table v-else>
+              <thead><tr><th>ID</th><th>Nome</th><th>CNPJ</th><th>Cidade</th><th>Estado</th><th>Email</th><th>Telefone</th><th>Ações</th></tr></thead>
+              <tbody>
+                <tr v-for="e in lists.empresas" :key="e.id">
+                  <td style="font-family:var(--mono);color:var(--t4)">#{{ e.id }}</td>
+                  <td style="font-weight:600;color:var(--t1)">{{ e.nome }}</td>
+                  <td style="font-family:var(--mono);font-size:11px">{{ e.cnpj || '—' }}</td>
+                  <td>{{ e.cidade || '—' }}</td>
+                  <td>{{ e.estado || '—' }}</td>
+                  <td style="font-size:11px;color:var(--t3)">{{ e.email || '—' }}</td>
+                  <td style="font-family:var(--mono);font-size:11px">{{ e.telefone || '—' }}</td>
+                  <td><div class="action-btns">
+                    <button class="btn btn-ghost btn-sm" @click="editItem('empresa',e)">Editar</button>
+                    <button class="btn btn-danger btn-sm" @click="deleteItem('empresas',e.id)">✕</button>
+                  </div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <button class="page-btn" :disabled="!pages.empresas.prev" @click="fetchPage('empresas',pages.empresas.prev)">← Anterior</button>
+            <span class="page-info">{{ lists.empresas.length }} registros</span>
+            <button class="page-btn" :disabled="!pages.empresas.next" @click="fetchPage('empresas',pages.empresas.next)">Próxima →</button>
+          </div>
+        </div>
+
+        <!-- ══════════ USUÁRIOS ══════════ -->
+        <div v-if="view==='usuarios'">
+          <div class="filter-bar">
+            <input class="filter-input" v-model="filters.usuarios.search" placeholder="Buscar usuário..." @input="debouncedFetch('us',fetchUsuarios)" />
+            <button class="btn btn-primary" @click="openModal('usuario')">+ Usuário</button>
+          </div>
+          <div class="table-wrap">
+            <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
+            <div v-else-if="lists.usuarios.length===0" class="empty"><div class="empty-icon">◎</div>Nenhum usuário</div>
+            <table v-else>
+              <thead><tr><th>ID</th><th>Username</th><th>Nome</th><th>Email</th><th>Tipo</th><th>Cargo</th><th>Empresa</th><th>Ações</th></tr></thead>
+              <tbody>
+                <tr v-for="u in lists.usuarios" :key="u.id">
+                  <td style="font-family:var(--mono);color:var(--t4)">#{{ u.id }}</td>
+                  <td style="font-family:var(--mono);font-weight:600;color:var(--t1)">{{ u.username }}</td>
+                  <td>{{ [u.first_name,u.last_name].filter(Boolean).join(' ')||'—' }}</td>
+                  <td style="font-size:11px;color:var(--t3)">{{ u.email||'—' }}</td>
+                  <td><span class="badge" :class="u.tipo_usuario==='admin'?'badge-red':u.tipo_usuario==='tecnico'?'badge-blue':'badge-gray'">{{ u.tipo_usuario }}</span></td>
+                  <td style="font-size:11px">{{ u.cargo||'—' }}</td>
+                  <td style="font-size:11px">{{ empresaNome(u.empresa) }}</td>
+                  <td><div class="action-btns">
+                    <button class="btn btn-ghost btn-sm" @click="editItem('usuario',u)">Editar</button>
+                    <button class="btn btn-danger btn-sm" @click="deleteItem('usuarios',u.id)">✕</button>
+                  </div></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination">
+            <button class="page-btn" :disabled="!pages.usuarios.prev" @click="fetchPage('usuarios',pages.usuarios.prev)">← Anterior</button>
+            <span class="page-info">{{ lists.usuarios.length }} registros</span>
+            <button class="page-btn" :disabled="!pages.usuarios.next" @click="fetchPage('usuarios',pages.usuarios.next)">Próxima →</button>
+          </div>
+        </div>
+
+      </div><!-- /content -->
+    </main>
+  </div><!-- /app -->
+
+  <!-- ══════════════════════════════════════
+       MODAL
+  ══════════════════════════════════════ -->
+  <div v-if="modal.open" class="modal-backdrop" @click.self="modal.open=false">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">{{ modal.title }}</div>
+        <button class="modal-close" @click="modal.open=false">×</button>
+      </div>
+      <div class="modal-body">
+        <div v-if="formErrors._global" class="field-error-global">⚠ {{ formErrors._global }}</div>
+
+        <!-- EQUIPAMENTO -->
+        <template v-if="modal.type==='equipamento'">
+          <div class="field-row">
+            <div class="field" :class="{hasError:formErrors.nome}">
+              <label>Nome *</label>
+              <input v-model="fd.nome" placeholder="Ex: Compressor AR-01" />
+              <span v-if="formErrors.nome" class="field-error">{{ formErrors.nome }}</span>
+            </div>
+            <div class="field" :class="{hasError:formErrors.tipo}">
+              <label>Tipo *</label>
+              <input v-model="fd.tipo" placeholder="Ex: Motor elétrico, Bomba Hidráulica" />
+              <span v-if="formErrors.tipo" class="field-error">{{ formErrors.tipo }}</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Fabricante</label><input v-model="fd.fabricante" /></div>
+            <div class="field"><label>Modelo</label><input v-model="fd.modelo" placeholder="Ex: XR-2000" /></div>
+          </div>
+          <div class="field-row">
+            <div class="field" :class="{hasError:formErrors.numero_serie}">
+              <label>Número de Série *</label>
+              <input v-model="fd.numero_serie" placeholder="Ex: SN-00001" />
+              <span v-if="formErrors.numero_serie" class="field-error">{{ formErrors.numero_serie }}</span>
+            </div>
+            <div class="field"><label>Data de Instalação</label><input type="date" v-model="fd.data_instalacao" /></div>
+          </div>
+          <div class="field-row">
+            <div class="field" :class="{hasError:formErrors.status}">
+              <label>Status</label>
+              <select v-model="fd.status">
+                <option value="ativo">Ativo</option>
+                <option value="manutencao">Em Manutenção</option>
+                <option value="inativo">Inativo</option>
+              </select>
+              <span v-if="formErrors.status" class="field-error">{{ formErrors.status }}</span>
+            </div>
+            <div class="field" :class="{hasError:formErrors.empresa}">
+              <label>Empresa *</label>
+              <select v-model.number="fd.empresa">
+                <option :value="null">— Selecione —</option>
+                <option v-for="e in lists.empresas" :key="e.id" :value="e.id">{{ e.nome }}</option>
+              </select>
+              <span v-if="formErrors.empresa" class="field-error">{{ formErrors.empresa }}</span>
+            </div>
+          </div>
+        </template>
+
+        <!-- ALERTA -->
+        <template v-if="modal.type==='alerta'">
+          <div class="field-row">
+            <div class="field" :class="{hasError:formErrors.tipo_alerta}">
+              <label>Tipo de Alerta *</label><input v-model="fd.tipo_alerta" placeholder="Ex: Alta Temperatura" />
+              <span v-if="formErrors.tipo_alerta" class="field-error">{{ formErrors.tipo_alerta }}</span>
+            </div>
+            <div class="field" :class="{hasError:formErrors.equipamento}">
+              <label>Equipamento *</label>
+              <select v-model.number="fd.equipamento">
+                <option :value="null">— Selecione —</option>
+                <option v-for="e in lists.equipamentos" :key="e.id" :value="e.id">{{ e.nome }} (#{{ e.id }})</option>
+              </select>
+              <span v-if="formErrors.equipamento" class="field-error">{{ formErrors.equipamento }}</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Nível</label>
+              <select v-model="fd.nivel">
+                <option value="baixo">Baixo</option>
+                <option value="medio">Médio</option>
+                <option value="critico">Crítico</option>
+              </select>
+            </div>
+            <div class="field"><label>Status</label>
+              <select v-model="fd.status">
+                <option value="ativo">Ativo</option>
+                <option value="resolvido">Resolvido</option>
+                <option value="ignorado">Ignorado</option>
+              </select>
+            </div>
+          </div>
+          <div class="field" :class="{hasError:formErrors.descricao}">
+            <label>Descrição *</label><textarea v-model="fd.descricao" rows="3" placeholder="Descreva o alerta..."></textarea>
+            <span v-if="formErrors.descricao" class="field-error">{{ formErrors.descricao }}</span>
+          </div>
+        </template>
+
+        <!-- ORDEM -->
+        <template v-if="modal.type==='ordem'">
+          <div class="field" :class="{hasError:formErrors.titulo}">
+            <label>Título *</label><input v-model="fd.titulo" placeholder="Ex: Manutenção preventiva compressor" />
+            <span v-if="formErrors.titulo" class="field-error">{{ formErrors.titulo }}</span>
+          </div>
+          <div class="field-row">
+            <div class="field" :class="{hasError:formErrors.tipo_os}">
+              <label>Tipo de OS</label>
+              <select v-model="fd.tipo_os">
+                <option value="preventiva">Preventiva</option>
+                <option value="corretiva">Corretiva</option>
+                <option value="preditiva">Preditiva</option>
+              </select>
+              <span v-if="formErrors.tipo_os" class="field-error">{{ formErrors.tipo_os }}</span>
+            </div>
+            <div class="field" :class="{hasError:formErrors.equipamento}">
+              <label>Equipamento *</label>
+              <select v-model.number="fd.equipamento">
+                <option :value="null">— Selecione —</option>
+                <option v-for="e in lists.equipamentos" :key="e.id" :value="e.id">{{ e.nome }} (#{{ e.id }})</option>
+              </select>
+              <span v-if="formErrors.equipamento" class="field-error">{{ formErrors.equipamento }}</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field" :class="{hasError:formErrors.prioridade}">
+              <label>Prioridade</label>
+              <select v-model="fd.prioridade">
+                <option value="baixo">Baixo</option>
+                <option value="medio">Médio</option>
+                <option value="critico">Crítico</option>
+              </select>
+              <span v-if="formErrors.prioridade" class="field-error">{{ formErrors.prioridade }}</span>
+            </div>
+            <div class="field" :class="{hasError:formErrors.status}">
+              <label>Status</label>
+              <select v-model="fd.status">
+                <option value="pendente">Pendente</option>
+                <option value="andamento">Em Andamento</option>
+                <option value="concluida">Concluída</option>
+                <option value="cancelada">Cancelada</option>
+              </select>
+              <span v-if="formErrors.status" class="field-error">{{ formErrors.status }}</span>
+            </div>
+          </div>
+          <div class="field">
+            <label>Responsável</label>
+            <select v-model.number="fd.responsavel">
+              <option :value="null">— Sem responsável —</option>
+              <option v-for="u in lists.usuarios" :key="u.id" :value="u.id">{{ u.username }} ({{ u.tipo_usuario }})</option>
+            </select>
+          </div>
+          <div class="field" :class="{hasError:formErrors.descricao}">
+            <label>Descrição *</label>
+            <textarea v-model="fd.descricao" rows="3" placeholder="Descreva o problema ou o serviço a ser realizado..."></textarea>
+            <span v-if="formErrors.descricao" class="field-error">{{ formErrors.descricao }}</span>
+          </div>
+        </template>
+
+        <!-- EMPRESA -->
+        <template v-if="modal.type==='empresa'">
+          <div class="field" :class="{hasError:formErrors.nome}">
+            <label>Nome *</label><input v-model="fd.nome" placeholder="Razão social" />
+            <span v-if="formErrors.nome" class="field-error">{{ formErrors.nome }}</span>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>CNPJ</label><input v-model="fd.cnpj" placeholder="00.000.000/0001-00" /></div>
+            <div class="field"><label>Telefone</label><input v-model="fd.telefone" /></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Cidade</label><input v-model="fd.cidade" /></div>
+            <div class="field"><label>Estado</label><input v-model="fd.estado" placeholder="SP" /></div>
+          </div>
+          <div class="field"><label>Email</label><input type="email" v-model="fd.email" /></div>
+          <div class="field"><label>Endereço</label><input v-model="fd.endereco" /></div>
+        </template>
+
+        <!-- SENSOR -->
+        <template v-if="modal.type==='sensor'">
+          <div class="field" :class="{hasError:formErrors.nome}">
+            <label>Nome *</label><input v-model="fd.nome" placeholder="Ex: Sensor Temp. Motor" />
+            <span v-if="formErrors.nome" class="field-error">{{ formErrors.nome }}</span>
+          </div>
+          <div class="field-row">
+            <div class="field" :class="{hasError:formErrors.tipo}">
+              <label>Tipo *</label>
+              <select v-model="fd.tipo">
+                <option value="">— Selecione —</option>
+                <option value="temperatura">Temperatura</option>
+                <option value="pressao">Pressão</option>
+                <option value="vibracao">Vibração</option>
+                <option value="umidade">Umidade</option>
+                <option value="corrente">Corrente</option>
+                <option value="tensao">Tensão</option>
+                <option value="fluxo">Fluxo</option>
+              </select>
+              <span v-if="formErrors.tipo" class="field-error">{{ formErrors.tipo }}</span>
+            </div>
+            <div class="field"><label>Unidade de Medida</label><input v-model="fd.unidade_medida" placeholder="ex: °C, kPa, A" /></div>
+          </div>
+          <div class="field" :class="{hasError:formErrors.equipamento}">
+            <label>Equipamento *</label>
+            <select v-model.number="fd.equipamento">
+              <option :value="null">— Selecione —</option>
+              <option v-for="e in lists.equipamentos" :key="e.id" :value="e.id">{{ e.nome }} (#{{ e.id }})</option>
+            </select>
+            <span v-if="formErrors.equipamento" class="field-error">{{ formErrors.equipamento }}</span>
+          </div>
+          <div class="field">
+            <label>Ativo</label>
+            <select v-model="fd.ativo">
+              <option :value="true">Sim</option>
+              <option :value="false">Não</option>
+            </select>
+          </div>
+        </template>
+
+        <!-- LEITURA DE TELEMETRIA -->
+        <template v-if="modal.type==='leitura'">
+          <div class="field" :class="{hasError:formErrors.sensor}">
+            <label>Sensor *</label>
+            <select v-model.number="fd.sensor">
+              <option :value="null">— Selecione —</option>
+              <option v-for="s in lists.sensores" :key="s.id" :value="s.id">{{ s.nome }} ({{ s.tipo }}) #{{ s.id }}</option>
+            </select>
+            <span v-if="formErrors.sensor" class="field-error">{{ formErrors.sensor }}</span>
+          </div>
+          <div class="field-row">
+            <div class="field" :class="{hasError:formErrors.valor}">
+              <label>Valor *</label>
+              <input v-model="fd.valor" placeholder="Ex: 72.5" />
+              <span v-if="formErrors.valor" class="field-error">{{ formErrors.valor }}</span>
+            </div>
+            <div class="field">
+              <label>Timestamp</label>
+              <input type="datetime-local" v-model="fd.timestamp" />
+            </div>
+          </div>
+        </template>
+
+        <!-- HISTÓRICO -->
+        <template v-if="modal.type==='historico'">
+          <div class="field" :class="{hasError:formErrors.ordem_servico}">
+            <label>Ordem de Serviço *</label>
+            <select v-model.number="fd.ordem_servico">
+              <option :value="null">— Selecione —</option>
+              <option v-for="o in lists.ordens" :key="o.id" :value="o.id">#{{ o.id }} — {{ o.titulo }}</option>
+            </select>
+            <span v-if="formErrors.ordem_servico" class="field-error">{{ formErrors.ordem_servico }}</span>
+          </div>
+          <div class="field" :class="{hasError:formErrors.descricao_servico}">
+            <label>Descrição do Serviço *</label>
+            <textarea v-model="fd.descricao_servico" rows="3" placeholder="Descreva o serviço realizado..."></textarea>
+            <span v-if="formErrors.descricao_servico" class="field-error">{{ formErrors.descricao_servico }}</span>
+          </div>
+          <div class="field-row">
+            <div class="field" :class="{hasError:formErrors.custo_pecas}">
+              <label>Custo de Peças (R$)</label>
+              <input type="number" step="0.01" v-model.number="fd.custo_pecas" placeholder="0.00" />
+              <span v-if="formErrors.custo_pecas" class="field-error">{{ formErrors.custo_pecas }}</span>
+            </div>
+            <div class="field" :class="{hasError:formErrors.custo_mao_de_obra}">
+              <label>Custo Mão de Obra (R$)</label>
+              <input type="number" step="0.01" v-model.number="fd.custo_mao_de_obra" placeholder="0.00" />
+              <span v-if="formErrors.custo_mao_de_obra" class="field-error">{{ formErrors.custo_mao_de_obra }}</span>
+            </div>
+          </div>
+          <div class="field" :class="{hasError:formErrors.data_execucao}">
+            <label>Data da Execução *</label>
+            <input type="date" v-model="fd.data_execucao" />
+            <span v-if="formErrors.data_execucao" class="field-error">{{ formErrors.data_execucao }}</span>
+          </div>
+        </template>
+
+        <!-- LOCALIZAÇÃO -->
+        <template v-if="modal.type==='localizacao'">
+          <div class="field" :class="{hasError:formErrors.equipamento}">
+            <label>Equipamento *</label>
+            <select v-model.number="fd.equipamento">
+              <option :value="null">— Selecione —</option>
+              <option v-for="e in lists.equipamentos" :key="e.id" :value="e.id">{{ e.nome }} (#{{ e.id }})</option>
+            </select>
+            <span v-if="formErrors.equipamento" class="field-error">{{ formErrors.equipamento }}</span>
+          </div>
+          <div class="field" :class="{hasError:formErrors.setor}">
+            <label>Setor *</label>
+            <input v-model="fd.setor" placeholder="Ex: Produção B" />
+            <span v-if="formErrors.setor" class="field-error">{{ formErrors.setor }}</span>
+          </div>
+        </template>
+
+        <!-- USUÁRIO -->
+        <template v-if="modal.type==='usuario'">
+          <div class="field-row">
+            <div class="field" :class="{hasError:formErrors.username}">
+              <label>Username *</label><input v-model="fd.username" />
+              <span v-if="formErrors.username" class="field-error">{{ formErrors.username }}</span>
+            </div>
+            <div class="field" :class="{hasError:formErrors.email}">
+              <label>Email</label><input type="email" v-model="fd.email" />
+              <span v-if="formErrors.email" class="field-error">{{ formErrors.email }}</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Nome</label><input v-model="fd.first_name" /></div>
+            <div class="field"><label>Sobrenome</label><input v-model="fd.last_name" /></div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Tipo de Usuário</label>
+              <select v-model="fd.tipo_usuario">
+                <option value="admin">Admin</option>
+                <option value="tecnico">Técnico</option>
+                <option value="visualizador">Visualizador</option>
+              </select>
+            </div>
+            <div class="field" :class="{hasError:formErrors.empresa}">
+              <label>Empresa</label>
+              <select v-model.number="fd.empresa">
+                <option :value="null">— Nenhuma —</option>
+                <option v-for="e in lists.empresas" :key="e.id" :value="e.id">{{ e.nome }}</option>
+              </select>
+              <span v-if="formErrors.empresa" class="field-error">{{ formErrors.empresa }}</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field"><label>Cargo</label><input v-model="fd.cargo" /></div>
+            <div class="field"><label>Telefone</label><input v-model="fd.telefone" /></div>
+          </div>
+        </template>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" @click="modal.open=false">Cancelar</button>
+        <button class="btn btn-primary" @click="saveItem" :disabled="modal.saving">
+          {{ modal.saving ? 'Salvando...' : (modal.editId ? 'Atualizar' : 'Criar') }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#app -->
+<script src="app.js"></script>
+</body>
+</html>
