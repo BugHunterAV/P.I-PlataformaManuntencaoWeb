@@ -26,6 +26,7 @@ urlpatterns = [
     path('api/', include('accounts.urls')),
     path('api/', include('ativos.urls')),
     path('api/', include('manutencao.urls')),
+    path('api/dashboards/', include('manutencao.dashboards.urls')),
     path('api/telemetria/', include('telemetria.urls')),
     path('api/', include('alertas.urls')),
 

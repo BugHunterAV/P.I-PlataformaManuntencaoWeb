@@ -47,7 +47,7 @@ def checar_limites_telemetria(sender, instance, created, **kwargs):
     else:
         return  # Valor normal — nenhum alerta necessário
 
-    tipo_alerta = f"Alerta de {sensor.get_tipo_sensor_display()}"
+    tipo_alerta = f"Alerta de {sensor.get_tipo_display()}"
 
     # Deduplicação: busca alerta ativo do mesmo tipo no mesmo equipamento
     alerta_existente = Alerta.objects.filter(
@@ -101,7 +101,7 @@ def checar_limites_telemetria(sender, instance, created, **kwargs):
             alerta_existente.nivel = nivel
             alerta_descricao_escalada = (
                 f"Situação agravada em {equipamento.nome} ({equipamento.tipo}). "
-                f"Sensor de {sensor.get_tipo_sensor_display()} registrou "
+                f"Sensor de {sensor.get_tipo_display()} registrou "
                 f"{valor}{sensor.unidade_medida} "
                 f"({round(percentual * 100, 1)}% do limite de {limite}{sensor.unidade_medida})."
             )
@@ -115,7 +115,7 @@ def checar_limites_telemetria(sender, instance, created, **kwargs):
     # Cria novo alerta
     alerta_descricao = (
         f"Anomalia detectada em {equipamento.nome} ({equipamento.tipo}). "
-        f"Sensor de {sensor.get_tipo_sensor_display()} registrou "
+        f"Sensor de {sensor.get_tipo_display()} registrou "
         f"{valor}{sensor.unidade_medida} "
         f"({round(percentual * 100, 1)}% do limite de {limite}{sensor.unidade_medida})."
     )

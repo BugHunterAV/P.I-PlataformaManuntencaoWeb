@@ -3,14 +3,14 @@ from .models import Sensor, Telemetria
 
 @admin.register(Sensor)
 class SensorAdmin(admin.ModelAdmin):
-    list_display = ('tipo_sensor', 'equipamento', 'unidade_medida', 'ativo')
-    list_filter = ('tipo_sensor', 'ativo', 'equipamento')
-    search_fields = ('equipamento__nome', 'tipo_sensor')
+    list_display = ('tipo', 'equipamento', 'unidade_medida', 'ativo')
+    list_filter = ('tipo', 'ativo', 'equipamento')
+    search_fields = ('equipamento__nome', 'tipo')
 
 @admin.register(Telemetria)
 class TelemetriaAdmin(admin.ModelAdmin):
-    list_display = ('sensor', 'valor', 'data_hora', 'get_equipamento')
-    list_filter = ('sensor__tipo_sensor', 'data_hora')
+    list_display = ('sensor', 'valor', 'timestamp', 'get_equipamento')
+    list_filter = ('sensor__tipo', 'timestamp')
     search_fields = ('sensor__equipamento__nome',)
 
     def get_equipamento(self, obj):

@@ -9,7 +9,7 @@ class SensorViewSet(viewsets.ModelViewSet):
     serializer_class = SensorSerializer
     permission_classes = [IsAuthenticatedNoDeleteForTecnico]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['equipamento', 'tipo_sensor', 'ativo']
+    filterset_fields = ['equipamento', 'tipo', 'ativo']
     search_fields = ['descricao']
 
     def get_queryset(self):
@@ -30,7 +30,7 @@ class TelemetriaViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Telemetria.objects.select_related('sensor', 'sensor__equipamento').order_by('-data_hora')
+        qs = Telemetria.objects.select_related('sensor', 'sensor__equipamento').order_by('-timestamp')
         if user.tipo_usuario == 'admin':
             return qs.all()
         if user.empresa:

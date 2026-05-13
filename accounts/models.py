@@ -6,9 +6,11 @@ class Empresa(models.Model):
     nome = models.CharField(max_length=255) 
     cnpj = models.CharField(max_length=18, unique=True) 
     email = models.EmailField() 
-    telefone = models.CharField(max_length=20, blank=True, null=True) 
-    endereco = models.TextField(blank=True, null=True) 
-    data_cadastro = models.DateTimeField(auto_now_add=True) 
+    telefone = models.CharField(max_length=20, blank=True, null=True) # [cite: 99]
+    cidade = models.CharField(max_length=100, blank=True, null=True)
+    estado = models.CharField(max_length=50, blank=True, null=True)
+    endereco = models.TextField(blank=True, null=True) # [cite: 100]
+    data_cadastro = models.DateTimeField(auto_now_add=True) # 
 
     def __str__(self):
         return self.nome
