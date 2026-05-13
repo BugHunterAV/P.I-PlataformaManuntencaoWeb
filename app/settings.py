@@ -40,7 +40,6 @@ INSTALLED_APPS = [
     
     'rest_framework',
     'rest_framework_simplejwt',
-    'authentication',
     'accounts',
     'django_filters',
     'ativos',
@@ -49,7 +48,6 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'telemetria',
     'alertas',
-    'dashboards',
 ]
 
 MIDDLEWARE = [

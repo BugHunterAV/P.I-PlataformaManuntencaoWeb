@@ -28,7 +28,6 @@ urlpatterns = [
     path('api/', include('manutencao.urls')),
     path('api/telemetria/', include('telemetria.urls')),
     path('api/', include('alertas.urls')),
-    path('api/dashboards/', include('dashboards.urls')),
 
     path('api/schema/', SpectacularAPIView.as_view(permission_classes=[]), name='schema'),
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema', permission_classes=[]), name='swagger-ui'),
