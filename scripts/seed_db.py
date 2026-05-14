@@ -182,7 +182,7 @@ def run_seed(num_empresas, equip_por_empresa):
     t_start = time.time()
     print("\n[ASSETS] Gerando Ativos e Instrumentação...")
     now = timezone.now()
-    inicio_historico = now - timedelta(days=30) # Reduzido para 30 dias para performance
+    inicio_historico = now - timedelta(days=120) # Aumentado para 4 meses
     todos_sensores = []
     total_equip = num_empresas * equip_por_empresa
     count = 0
@@ -228,14 +228,13 @@ def run_seed(num_empresas, equip_por_empresa):
 
     # 5. Telemetria (Simulação Coerente)
     t_start = time.time()
-    dias_hist = 30
-    print(f"\n[TELEMETRY] Gerando histórico ({dias_hist} dias com tendências)...")
+    print("\n[TELEMETRY] Gerando histórico (120 dias com tendências)...")
     leituras_bulk = []
     for sensor, min_v, max_v in todos_sensores:
         base_val = random.uniform(min_v, (min_v + max_v) / 2)
         trend = random.uniform(-0.01, 0.05) # Pequena tendência de desgaste
         
-        for h in range(dias_hist * 24): # Horário (1 leitura por hora durante X dias)
+        for h in range(120 * 24): # Horário (1 leitura por hora durante 120 dias)
             ponto = inicio_historico + timedelta(hours=h)
             fluctuacao = random.uniform(-0.5, 0.5)
             val = base_val + (h * trend) + fluctuacao
@@ -263,7 +262,7 @@ def run_seed(num_empresas, equip_por_empresa):
         
         # Histórico de OS Concluídas
         for _ in range(random.randint(2, 6)): # Mais OS por conta do período maior
-            data_os = now - timedelta(days=random.randint(5, 28))
+            data_os = now - timedelta(days=random.randint(5, 115))
             tipo_os = random.choice(['preventiva', 'corretiva'])
             os_obj = OrdemServico.objects.create(
                 equipamento=eq, responsavel=random.choice(tecnicos_empresa) if tecnicos_empresa else None,
