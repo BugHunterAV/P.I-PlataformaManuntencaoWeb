@@ -392,6 +392,10 @@
               <option value="manutencao">Manutenção</option>
               <option value="inativo">Inativo</option>
             </select>
+            <select class="filter-select" v-model="filters.equipamentos.setor" @change="fetchEquipamentos">
+              <option value="">Todos os Setores</option>
+              <option v-for="s in availableSectors" :key="s" :value="s">{{ s }}</option>
+            </select>
             <select v-if="isAdmin" class="filter-select" v-model="filters.equipamentos.empresa" @change="fetchEquipamentos">
               <option value="">Todas as Empresas</option>
               <option v-for="emp in lists.empresas" :key="emp.id" :value="emp.id">{{ emp.nome }}</option>

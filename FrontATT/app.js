@@ -34,7 +34,7 @@ createApp({
       localizacoes:{ next:null, prev:null },
     });
     const filters = reactive({
-      equipamentos:{ search:'', status:'', empresa:'' },
+      equipamentos:{ search:'', status:'', empresa:'', setor:'' },
       alertas:{ search:'', nivel:'', status:'' },
       ordens:{ search:'', status:'', prioridade:'', tipo_os:'' },
       historico:{ search:'', data_de:'', data_ate:'', custo_min:'', custo_max:'' },
@@ -156,6 +156,11 @@ createApp({
         pct: (value/max)*100,
         color: palette[i % palette.length]
       }));
+    });
+    
+    const availableSectors = computed(() => {
+      const sectors = lists.localizacoes.map(l => l.setor).filter(Boolean);
+      return [...new Set(sectors)].sort();
     });
 
     // ─ Toast ─────────────────────────────────────────
@@ -342,6 +347,7 @@ createApp({
       const p = new URLSearchParams();
       if (filters.equipamentos.search) p.set('search', filters.equipamentos.search);
       if (filters.equipamentos.status) p.set('status', filters.equipamentos.status);
+      if (filters.equipamentos.setor) p.set('localizacao__setor', filters.equipamentos.setor);
       const empFilter = filters.equipamentos.empresa || globalEmpresa.value;
       if (empFilter) p.set('empresa', empFilter);
       const d = await api('/api/equipamentos/?'+p);
@@ -694,6 +700,7 @@ createApp({
       onGlobalEmpresaChange,
       chartEquipStatus, chartAlertNivel, chartOrdens, chartTelemetria,
       chartHistoricoTipo, donutArcs,
+      availableSectors,
     };
   }
 }).mount('#app');

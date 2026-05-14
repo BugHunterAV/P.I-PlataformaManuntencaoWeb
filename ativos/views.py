@@ -9,7 +9,7 @@ class EquipamentoViewSet(viewsets.ModelViewSet):
     serializer_class = EquipamentoSerializer
     permission_classes = [IsGestorOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['empresa', 'status', 'tipo']
+    filterset_fields = ['empresa', 'status', 'tipo', 'localizacao__setor']
     search_fields = ['nome', 'fabricante', 'modelo', 'numero_serie']
 
     def get_queryset(self):
