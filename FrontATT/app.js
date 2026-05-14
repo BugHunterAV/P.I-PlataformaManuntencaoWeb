@@ -294,8 +294,9 @@ createApp({
 
     async function fetchDashboard() {
       try {
+        const empParam = globalEmpresa.value ? '&empresa=' + globalEmpresa.value : '';
         const [eqRes, alertRes, ordRes, telRes, histRes] = await Promise.allSettled([
-          api('/api/equipamentos/?limit=999'),
+          api('/api/equipamentos/?limit=999' + empParam),
           api('/api/alertas/?status=ativo&limit=999'),
           api('/api/ordens-servico/?limit=999'),
           api('/api/telemetria/leituras/'),
@@ -303,8 +304,23 @@ createApp({
         ]);
 
         if (eqRes.status==='fulfilled'   && eqRes.value)   lists.equipamentos = normList(eqRes.value);
-        if (alertRes.status==='fulfilled' && alertRes.value) { dashAlerts.value = normList(alertRes.value); alertCount.value = dashAlerts.value.length; }
-        if (ordRes.status==='fulfilled'  && ordRes.value)  lists.ordens       = normList(ordRes.value);
+        
+        // IDs dos equipamentos da empresa filtrada (para filtrar alertas, ordens, etc.)
+        const eqIds = globalEmpresa.value
+          ? new Set(lists.equipamentos.map(eq => eq.id))
+          : null;
+
+        if (alertRes.status==='fulfilled' && alertRes.value) {
+          let alerts = normList(alertRes.value);
+          if (eqIds) alerts = alerts.filter(a => eqIds.has(a.equipamento));
+          dashAlerts.value = alerts;
+          alertCount.value = alerts.length;
+        }
+        if (ordRes.status==='fulfilled'  && ordRes.value) {
+          let ordens = normList(ordRes.value);
+          if (eqIds) ordens = ordens.filter(o => eqIds.has(o.equipamento));
+          lists.ordens = ordens;
+        }
         if (telRes.status==='fulfilled'  && telRes.value)  lists.leituras     = normList(telRes.value);
         if (histRes.status==='fulfilled' && histRes.value) lists.historico    = normList(histRes.value);
 
@@ -341,9 +357,19 @@ createApp({
       if (filters.alertas.search) p.set('search', filters.alertas.search);
       if (filters.alertas.nivel)  p.set('nivel',  filters.alertas.nivel);
       if (filters.alertas.status) p.set('status', filters.alertas.status);
-      if (globalEmpresa.value) p.set('equipamento__empresa', globalEmpresa.value);
       const d = await api('/api/alertas/?'+p);
-      lists.alertas = normList(d);
+      let items = normList(d);
+      // Filtro por empresa: filtra client-side via IDs de equipamentos da empresa
+      if (globalEmpresa.value) {
+        const eqIds = new Set(lists.equipamentos.filter(eq => String(eq.empresa) === String(globalEmpresa.value)).map(eq => eq.id));
+        if (eqIds.size === 0) {
+          // Busca equipamentos da empresa para ter os IDs
+          const eqRes = await api('/api/equipamentos/?empresa=' + globalEmpresa.value + '&limit=999');
+          normList(eqRes).forEach(eq => eqIds.add(eq.id));
+        }
+        items = items.filter(a => eqIds.has(a.equipamento));
+      }
+      lists.alertas = items;
       Object.assign(pages.alertas, normPages(d));
     }); }
 
@@ -353,7 +379,14 @@ createApp({
       if (filters.ordens.status) p.set('status', filters.ordens.status);
       if (globalEmpresa.value) p.set('equipamento__empresa', globalEmpresa.value);
       const d = await api('/api/ordens-servico/?'+p);
-      lists.ordens = normList(d);
+      let items = normList(d);
+      // Filtro client-side por empresa (caso o backend não suporte o param)
+      if (globalEmpresa.value && items.length > 0) {
+        const eqRes = await api('/api/equipamentos/?empresa=' + globalEmpresa.value + '&limit=999');
+        const eqIds = new Set(normList(eqRes).map(eq => eq.id));
+        items = items.filter(o => eqIds.has(o.equipamento));
+      }
+      lists.ordens = items;
       Object.assign(pages.ordens, normPages(d));
     }); }
 
@@ -362,20 +395,39 @@ createApp({
         api('/api/telemetria/sensores/'),
         api('/api/telemetria/leituras/'),
       ]);
-      lists.sensores = normList(s);
+      let sItems = normList(s);
+      let lItems = normList(l);
+      // Filtro client-side por empresa global
+      if (globalEmpresa.value) {
+        const eqRes = await api('/api/equipamentos/?empresa=' + globalEmpresa.value + '&limit=999');
+        const eqIds = new Set(normList(eqRes).map(eq => eq.id));
+        sItems = sItems.filter(sensor => eqIds.has(sensor.equipamento));
+        const sIds = new Set(sItems.map(sensor => sensor.id));
+        lItems = lItems.filter(l => sIds.has(l.sensor));
+      }
+      lists.sensores = sItems;
       Object.assign(pages.sensores, normPages(s));
-      lists.leituras = normList(l);
+      lists.leituras = lItems;
       Object.assign(pages.leituras, normPages(l));
     }); }
 
     async function fetchHistorico() { await withLoading(async () => {
       const p = new URLSearchParams();
       if (filters.historico.search) p.set('search', filters.historico.search);
-      if (filters.historico.data_de) p.set('data_execucao__gte', filters.historico.data_de);
-      if (filters.historico.data_ate) p.set('data_execucao__lte', filters.historico.data_ate);
-      if (globalEmpresa.value) p.set('ordem_servico__equipamento__empresa', globalEmpresa.value);
+      if (filters.historico.data_de) p.set('data_execucao_depois', filters.historico.data_de);
+      if (filters.historico.data_ate) p.set('data_execucao_antes', filters.historico.data_ate);
       const d = await api('/api/historico/?'+p);
       let items = normList(d);
+      // Filtro client-side por empresa
+      if (globalEmpresa.value) {
+        const eqRes = await api('/api/equipamentos/?empresa=' + globalEmpresa.value + '&limit=999');
+        const eqIds = new Set(normList(eqRes).map(eq => eq.id));
+        // Precisamos buscar as ordens para saber o equipamento de cada histórico
+        const osRes = await api('/api/ordens-servico/?limit=999');
+        const osMap = {};
+        normList(osRes).forEach(o => { osMap[o.id] = o.equipamento; });
+        items = items.filter(h => eqIds.has(osMap[h.ordem_servico]));
+      }
       // Filtro local de custo (soma peças + mão de obra)
       if (filters.historico.custo_min) {
         const min = parseFloat(filters.historico.custo_min);
@@ -606,7 +658,13 @@ createApp({
     }
     function onGlobalEmpresaChange() {
       // Recarrega a aba atual ao mudar o filtro global
-      fetchers[view.value]?.();
+      // Também recarrega o dashboard se estiver nele
+      const currentView = view.value;
+      if (currentView === 'dashboard') {
+        fetchDashboard();
+      } else {
+        fetchers[currentView]?.();
+      }
     }
 
     // ─ Init ──────────────────────────────────────────
