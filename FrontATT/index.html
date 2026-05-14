@@ -134,9 +134,18 @@
           <span class="topbar-crumb-sep">/</span>
           <span class="topbar-crumb-cur">{{ viewTitle }}</span>
         </div>
-        <div class="topbar-meta">
-          <span class="topbar-chip">API v1.0</span>
-          <span class="live-dot"></span>
+        <div style="display:flex;align-items:center;gap:12px">
+          <!-- FILTRO GLOBAL POR EMPRESA (Admin) -->
+          <template v-if="isAdmin && lists.empresas.length">
+            <select class="filter-select" v-model="globalEmpresa" @change="onGlobalEmpresaChange" style="min-width:180px;border:1px solid var(--acid);background:rgba(198,241,53,0.06);font-size:12px">
+              <option value="">🏢 Todas as Empresas</option>
+              <option v-for="emp in lists.empresas" :key="emp.id" :value="emp.id">{{ emp.nome }}</option>
+            </select>
+          </template>
+          <div class="topbar-meta">
+            <span class="topbar-chip">API v1.0</span>
+            <span class="live-dot"></span>
+          </div>
         </div>
       </div>
 
@@ -377,13 +386,23 @@
         <div v-if="view==='equipamentos'">
           <div class="filter-bar">
             <input class="filter-input" v-model="filters.equipamentos.search" placeholder="Buscar equipamento..." @input="debouncedFetch('eq',fetchEquipamentos)" />
+            <select class="filter-select" v-model="filters.equipamentos.status" @change="fetchEquipamentos">
+              <option value="">Todos os Status</option>
+              <option value="ativo">Ativo</option>
+              <option value="manutencao">Manutenção</option>
+              <option value="inativo">Inativo</option>
+            </select>
+            <select v-if="isAdmin" class="filter-select" v-model="filters.equipamentos.empresa" @change="fetchEquipamentos">
+              <option value="">Todas as Empresas</option>
+              <option v-for="emp in lists.empresas" :key="emp.id" :value="emp.id">{{ emp.nome }}</option>
+            </select>
             <button class="btn btn-primary" @click="openModal('equipamento')">+ Novo</button>
           </div>
           <div class="table-wrap">
             <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
             <div v-else-if="lists.equipamentos.length===0" class="empty"><div class="empty-icon">⚙</div>Nenhum equipamento</div>
             <table v-else>
-              <thead><tr><th>ID</th><th>Nome</th><th>Modelo</th><th>Fabricante</th><th>Nº Série</th><th>Status</th><th>Empresa</th><th>Ações</th></tr></thead>
+              <thead><tr><th>ID</th><th>Nome</th><th>Modelo</th><th>Fabricante</th><th>Nº Série</th><th>Setor</th><th>Status</th><th>Empresa</th><th>Ações</th></tr></thead>
               <tbody>
                 <tr v-for="e in lists.equipamentos" :key="e.id">
                   <td style="font-family:var(--mono);color:var(--t4)">#{{ e.id }}</td>
@@ -391,6 +410,7 @@
                   <td style="font-family:var(--mono);font-size:11px">{{ e.modelo || '—' }}</td>
                   <td>{{ e.fabricante || '—' }}</td>
                   <td style="font-family:var(--mono);font-size:11px">{{ e.numero_serie || '—' }}</td>
+                  <td style="font-family:var(--mono);font-size:11px;color:var(--acid)">{{ locSetor(e.id) }}</td>
                   <td><span class="badge" :class="eqStatusBadge(e.status)"><span class="badge-dot"></span>{{ e.status || '—' }}</span></td>
                   <td style="font-size:11px">{{ empresaNome(e.empresa) }}</td>
                   <td><div class="action-btns">
@@ -572,15 +592,31 @@
 
         <!-- ══════════ HISTÓRICO ══════════ -->
         <div v-if="view==='historico'">
-          <div class="filter-bar">
+          <div class="filter-bar" style="flex-wrap:wrap">
             <input class="filter-input" v-model="filters.historico.search" placeholder="Buscar histórico..." @input="debouncedFetch('hi',fetchHistorico)" />
+            <div style="display:flex;align-items:center;gap:6px">
+              <label style="font-size:11px;color:var(--t4);white-space:nowrap">De:</label>
+              <input type="date" class="filter-input" style="width:140px" v-model="filters.historico.data_de" @change="fetchHistorico" />
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <label style="font-size:11px;color:var(--t4);white-space:nowrap">Até:</label>
+              <input type="date" class="filter-input" style="width:140px" v-model="filters.historico.data_ate" @change="fetchHistorico" />
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <label style="font-size:11px;color:var(--t4);white-space:nowrap">R$ Min:</label>
+              <input type="number" class="filter-input" style="width:100px" v-model="filters.historico.custo_min" placeholder="0" @input="debouncedFetch('hic',fetchHistorico)" />
+            </div>
+            <div style="display:flex;align-items:center;gap:6px">
+              <label style="font-size:11px;color:var(--t4);white-space:nowrap">R$ Max:</label>
+              <input type="number" class="filter-input" style="width:100px" v-model="filters.historico.custo_max" placeholder="999999" @input="debouncedFetch('hic2',fetchHistorico)" />
+            </div>
             <button class="btn btn-primary" @click="openModal('historico')">+ Registro</button>
           </div>
           <div class="table-wrap">
             <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
             <div v-else-if="lists.historico.length===0" class="empty"><div class="empty-icon">☰</div>Nenhum histórico</div>
             <table v-else>
-              <thead><tr><th>ID</th><th>OS</th><th>Descrição</th><th>Custo Peças</th><th>Custo M.O.</th><th>Data Execução</th><th>Ações</th></tr></thead>
+              <thead><tr><th>ID</th><th>OS</th><th>Descrição</th><th>Custo Peças</th><th>Custo M.O.</th><th>Total</th><th>Data Execução</th><th>Ações</th></tr></thead>
               <tbody>
                 <tr v-for="h in lists.historico" :key="h.id">
                   <td style="font-family:var(--mono);color:var(--t4)">#{{ h.id }}</td>
@@ -588,6 +624,7 @@
                   <td style="font-size:11px;color:var(--t3);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ h.descricao_servico || '—' }}</td>
                   <td style="font-family:var(--mono);color:var(--mint)">{{ h.custo_pecas!=null?'R$ '+Number(h.custo_pecas).toFixed(2):'—' }}</td>
                   <td style="font-family:var(--mono);color:var(--mint)">{{ h.custo_mao_de_obra!=null?'R$ '+Number(h.custo_mao_de_obra).toFixed(2):'—' }}</td>
+                  <td style="font-family:var(--mono);font-weight:700;color:var(--acid)">R$ {{ custoTotal(h) }}</td>
                   <td style="font-family:var(--mono);font-size:10px;color:var(--t4)">{{ h.data_execucao || '—' }}</td>
                   <td><div class="action-btns">
                     <button class="btn btn-ghost btn-sm" @click="editItem('historico',h)">Editar</button>
@@ -716,9 +753,7 @@
   <div v-if="modal.open" class="modal-backdrop" @click.self="modal.open=false">
     <div class="modal">
       <div class="modal-header">
-        <div class="modal-title" :style="modal.back && modal.type === 'sensor' ? 'font-size: 1.6em; color: var(--primary); font-weight: 800;' : ''">
-          {{ modal.title }}
-        </div>
+        <div class="modal-title">{{ modal.title }}</div>
         <button class="modal-close" @click="modal.open=false">×</button>
       </div>
       <div class="modal-body">
@@ -727,27 +762,23 @@
         <!-- EQUIPAMENTO -->
         <template v-if="modal.type==='equipamento'">
           <div class="field-row">
-            <div class="field" :class="{'has-error':formErrors.nome}">
+            <div class="field" :class="{hasError:formErrors.nome}">
               <label>Nome *</label>
               <input v-model="fd.nome" placeholder="Ex: Compressor AR-01" />
               <span v-if="formErrors.nome" class="field-error">{{ formErrors.nome }}</span>
             </div>
-            <div class="field" :class="{'has-error':formErrors.tipo}">
+            <div class="field" :class="{hasError:formErrors.tipo}">
               <label>Tipo *</label>
-              <input v-model="fd.tipo" list="tipo_equip_list" placeholder="Ex: Motor elétrico, Bomba Hidráulica" />
-              <datalist id="tipo_equip_list">
-                <option v-for="c in TIPO_EQUIPAMENTO_CHOICES" :key="c.id" :value="c.label"></option>
-              </datalist>
+              <input v-model="fd.tipo" placeholder="Ex: Motor elétrico, Bomba Hidráulica" />
               <span v-if="formErrors.tipo" class="field-error">{{ formErrors.tipo }}</span>
             </div>
           </div>
-
           <div class="field-row">
             <div class="field"><label>Fabricante</label><input v-model="fd.fabricante" /></div>
             <div class="field"><label>Modelo</label><input v-model="fd.modelo" placeholder="Ex: XR-2000" /></div>
           </div>
           <div class="field-row">
-            <div class="field" :class="{'has-error':formErrors.numero_serie}">
+            <div class="field" :class="{hasError:formErrors.numero_serie}">
               <label>Número de Série *</label>
               <input v-model="fd.numero_serie" placeholder="Ex: SN-00001" />
               <span v-if="formErrors.numero_serie" class="field-error">{{ formErrors.numero_serie }}</span>
@@ -755,7 +786,7 @@
             <div class="field"><label>Data de Instalação</label><input type="date" v-model="fd.data_instalacao" /></div>
           </div>
           <div class="field-row">
-            <div class="field" :class="{'has-error':formErrors.status}">
+            <div class="field" :class="{hasError:formErrors.status}">
               <label>Status</label>
               <select v-model="fd.status">
                 <option value="ativo">Ativo</option>
@@ -764,7 +795,7 @@
               </select>
               <span v-if="formErrors.status" class="field-error">{{ formErrors.status }}</span>
             </div>
-            <div class="field" :class="{'has-error':formErrors.empresa}">
+            <div class="field" :class="{hasError:formErrors.empresa}">
               <label>Empresa *</label>
               <select v-model.number="fd.empresa">
                 <option :value="null">— Selecione —</option>
@@ -773,41 +804,16 @@
               <span v-if="formErrors.empresa" class="field-error">{{ formErrors.empresa }}</span>
             </div>
           </div>
-
-          <!-- SEÇÃO DE SENSORES -->
-          <div class="modal-section" style="margin-top:20px; border-top: 1px solid var(--edge); padding-top: 15px;">
-            <div v-if="canSaveEquip" class="section-header" style="margin-bottom: 10px;">
-              <div class="section-title" style="font-size: 14px;">Sensores Vinculados</div>
-              <button class="btn btn-primary btn-sm" @click="addSensorFromEquip">+ Adicionar Sensor</button>
-            </div>
-            
-            <div v-if="modal.editId" class="table-wrap" style="max-height: 150px; overflow-y: auto;">
-              <table v-if="fd._sensores && fd._sensores.length > 0">
-                <thead><tr><th>Nome</th><th>Tipo</th><th>Status</th></tr></thead>
-                <tbody>
-                  <tr v-for="s in fd._sensores" :key="s.id">
-                    <td>{{ s.nome }}</td>
-                    <td style="font-size: 10px;">{{ s.tipo }}</td>
-                    <td><span class="badge" :class="s.ativo ? 'badge-green' : 'badge-gray'">{{ s.ativo ? 'Ativo' : 'Inat' }}</span></td>
-                  </tr>
-                </tbody>
-              </table>
-              <div v-else class="empty" style="padding: 15px; font-size: 12px;">Nenhum sensor vinculado.</div>
-            </div>
-            <div v-else class="empty" style="padding: 20px; font-size: 12px; background: var(--bg); border: 1px dashed var(--edge); border-radius: 8px;">
-              O equipamento precisa ser <strong>salvo primeiro</strong> para que você possa vincular sensores a ele.
-            </div>
-          </div>
         </template>
 
         <!-- ALERTA -->
         <template v-if="modal.type==='alerta'">
           <div class="field-row">
-            <div class="field" :class="{'has-error':formErrors.tipo_alerta}">
+            <div class="field" :class="{hasError:formErrors.tipo_alerta}">
               <label>Tipo de Alerta *</label><input v-model="fd.tipo_alerta" placeholder="Ex: Alta Temperatura" />
               <span v-if="formErrors.tipo_alerta" class="field-error">{{ formErrors.tipo_alerta }}</span>
             </div>
-            <div class="field" :class="{'has-error':formErrors.equipamento}">
+            <div class="field" :class="{hasError:formErrors.equipamento}">
               <label>Equipamento *</label>
               <select v-model.number="fd.equipamento">
                 <option :value="null">— Selecione —</option>
@@ -832,7 +838,7 @@
               </select>
             </div>
           </div>
-          <div class="field" :class="{'has-error':formErrors.descricao}">
+          <div class="field" :class="{hasError:formErrors.descricao}">
             <label>Descrição *</label><textarea v-model="fd.descricao" rows="3" placeholder="Descreva o alerta..."></textarea>
             <span v-if="formErrors.descricao" class="field-error">{{ formErrors.descricao }}</span>
           </div>
@@ -840,12 +846,12 @@
 
         <!-- ORDEM -->
         <template v-if="modal.type==='ordem'">
-          <div class="field" :class="{'has-error':formErrors.titulo}">
+          <div class="field" :class="{hasError:formErrors.titulo}">
             <label>Título *</label><input v-model="fd.titulo" placeholder="Ex: Manutenção preventiva compressor" />
             <span v-if="formErrors.titulo" class="field-error">{{ formErrors.titulo }}</span>
           </div>
           <div class="field-row">
-            <div class="field" :class="{'has-error':formErrors.tipo_os}">
+            <div class="field" :class="{hasError:formErrors.tipo_os}">
               <label>Tipo de OS</label>
               <select v-model="fd.tipo_os">
                 <option value="preventiva">Preventiva</option>
@@ -854,7 +860,7 @@
               </select>
               <span v-if="formErrors.tipo_os" class="field-error">{{ formErrors.tipo_os }}</span>
             </div>
-            <div class="field" :class="{'has-error':formErrors.equipamento}">
+            <div class="field" :class="{hasError:formErrors.equipamento}">
               <label>Equipamento *</label>
               <select v-model.number="fd.equipamento">
                 <option :value="null">— Selecione —</option>
@@ -864,7 +870,7 @@
             </div>
           </div>
           <div class="field-row">
-            <div class="field" :class="{'has-error':formErrors.prioridade}">
+            <div class="field" :class="{hasError:formErrors.prioridade}">
               <label>Prioridade</label>
               <select v-model="fd.prioridade">
                 <option value="baixo">Baixo</option>
@@ -873,7 +879,7 @@
               </select>
               <span v-if="formErrors.prioridade" class="field-error">{{ formErrors.prioridade }}</span>
             </div>
-            <div class="field" :class="{'has-error':formErrors.status}">
+            <div class="field" :class="{hasError:formErrors.status}">
               <label>Status</label>
               <select v-model="fd.status">
                 <option value="pendente">Pendente</option>
@@ -891,7 +897,7 @@
               <option v-for="u in lists.usuarios" :key="u.id" :value="u.id">{{ u.username }} ({{ u.tipo_usuario }})</option>
             </select>
           </div>
-          <div class="field" :class="{'has-error':formErrors.descricao}">
+          <div class="field" :class="{hasError:formErrors.descricao}">
             <label>Descrição *</label>
             <textarea v-model="fd.descricao" rows="3" placeholder="Descreva o problema ou o serviço a ser realizado..."></textarea>
             <span v-if="formErrors.descricao" class="field-error">{{ formErrors.descricao }}</span>
@@ -900,7 +906,7 @@
 
         <!-- EMPRESA -->
         <template v-if="modal.type==='empresa'">
-          <div class="field" :class="{'has-error':formErrors.nome}">
+          <div class="field" :class="{hasError:formErrors.nome}">
             <label>Nome *</label><input v-model="fd.nome" placeholder="Razão social" />
             <span v-if="formErrors.nome" class="field-error">{{ formErrors.nome }}</span>
           </div>
@@ -918,12 +924,12 @@
 
         <!-- SENSOR -->
         <template v-if="modal.type==='sensor'">
-          <div class="field" :class="{'has-error':formErrors.nome}">
+          <div class="field" :class="{hasError:formErrors.nome}">
             <label>Nome *</label><input v-model="fd.nome" placeholder="Ex: Sensor Temp. Motor" />
             <span v-if="formErrors.nome" class="field-error">{{ formErrors.nome }}</span>
           </div>
           <div class="field-row">
-            <div class="field" :class="{'has-error':formErrors.tipo}">
+            <div class="field" :class="{hasError:formErrors.tipo}">
               <label>Tipo *</label>
               <select v-model="fd.tipo">
                 <option value="">— Selecione —</option>
@@ -939,33 +945,26 @@
             </div>
             <div class="field"><label>Unidade de Medida</label><input v-model="fd.unidade_medida" placeholder="ex: °C, kPa, A" /></div>
           </div>
-          <div class="field" :class="{'has-error':formErrors.equipamento}">
+          <div class="field" :class="{hasError:formErrors.equipamento}">
             <label>Equipamento *</label>
-            <select v-model.number="fd.equipamento" :disabled="!!modal.back">
+            <select v-model.number="fd.equipamento">
               <option :value="null">— Selecione —</option>
               <option v-for="e in lists.equipamentos" :key="e.id" :value="e.id">{{ e.nome }} (#{{ e.id }})</option>
             </select>
             <span v-if="formErrors.equipamento" class="field-error">{{ formErrors.equipamento }}</span>
           </div>
-          <div class="field-row">
-            <div class="field" :class="{'has-error':formErrors.limite_alerta}">
-              <label>Limite de Alerta ({{ fd.unidade_medida || 'valor' }}) *</label>
-              <input type="number" step="0.1" v-model.number="fd.limite_alerta" placeholder="Ex: 85.0" />
-              <span v-if="formErrors.limite_alerta" class="field-error">{{ formErrors.limite_alerta }}</span>
-            </div>
-            <div class="field">
-              <label>Ativo</label>
-              <select v-model="fd.ativo">
-                <option :value="true">Sim</option>
-                <option :value="false">Não</option>
-              </select>
-            </div>
+          <div class="field">
+            <label>Ativo</label>
+            <select v-model="fd.ativo">
+              <option :value="true">Sim</option>
+              <option :value="false">Não</option>
+            </select>
           </div>
         </template>
 
         <!-- LEITURA DE TELEMETRIA -->
         <template v-if="modal.type==='leitura'">
-          <div class="field" :class="{'has-error':formErrors.sensor}">
+          <div class="field" :class="{hasError:formErrors.sensor}">
             <label>Sensor *</label>
             <select v-model.number="fd.sensor">
               <option :value="null">— Selecione —</option>
@@ -974,7 +973,7 @@
             <span v-if="formErrors.sensor" class="field-error">{{ formErrors.sensor }}</span>
           </div>
           <div class="field-row">
-            <div class="field" :class="{'has-error':formErrors.valor}">
+            <div class="field" :class="{hasError:formErrors.valor}">
               <label>Valor *</label>
               <input v-model="fd.valor" placeholder="Ex: 72.5" />
               <span v-if="formErrors.valor" class="field-error">{{ formErrors.valor }}</span>
@@ -988,7 +987,7 @@
 
         <!-- HISTÓRICO -->
         <template v-if="modal.type==='historico'">
-          <div class="field" :class="{'has-error':formErrors.ordem_servico}">
+          <div class="field" :class="{hasError:formErrors.ordem_servico}">
             <label>Ordem de Serviço *</label>
             <select v-model.number="fd.ordem_servico">
               <option :value="null">— Selecione —</option>
@@ -996,24 +995,24 @@
             </select>
             <span v-if="formErrors.ordem_servico" class="field-error">{{ formErrors.ordem_servico }}</span>
           </div>
-          <div class="field" :class="{'has-error':formErrors.descricao_servico}">
+          <div class="field" :class="{hasError:formErrors.descricao_servico}">
             <label>Descrição do Serviço *</label>
             <textarea v-model="fd.descricao_servico" rows="3" placeholder="Descreva o serviço realizado..."></textarea>
             <span v-if="formErrors.descricao_servico" class="field-error">{{ formErrors.descricao_servico }}</span>
           </div>
           <div class="field-row">
-            <div class="field" :class="{'has-error':formErrors.custo_pecas}">
+            <div class="field" :class="{hasError:formErrors.custo_pecas}">
               <label>Custo de Peças (R$)</label>
               <input type="number" step="0.01" v-model.number="fd.custo_pecas" placeholder="0.00" />
               <span v-if="formErrors.custo_pecas" class="field-error">{{ formErrors.custo_pecas }}</span>
             </div>
-            <div class="field" :class="{'has-error':formErrors.custo_mao_de_obra}">
+            <div class="field" :class="{hasError:formErrors.custo_mao_de_obra}">
               <label>Custo Mão de Obra (R$)</label>
               <input type="number" step="0.01" v-model.number="fd.custo_mao_de_obra" placeholder="0.00" />
               <span v-if="formErrors.custo_mao_de_obra" class="field-error">{{ formErrors.custo_mao_de_obra }}</span>
             </div>
           </div>
-          <div class="field" :class="{'has-error':formErrors.data_execucao}">
+          <div class="field" :class="{hasError:formErrors.data_execucao}">
             <label>Data da Execução *</label>
             <input type="date" v-model="fd.data_execucao" />
             <span v-if="formErrors.data_execucao" class="field-error">{{ formErrors.data_execucao }}</span>
@@ -1022,7 +1021,7 @@
 
         <!-- LOCALIZAÇÃO -->
         <template v-if="modal.type==='localizacao'">
-          <div class="field" :class="{'has-error':formErrors.equipamento}">
+          <div class="field" :class="{hasError:formErrors.equipamento}">
             <label>Equipamento *</label>
             <select v-model.number="fd.equipamento">
               <option :value="null">— Selecione —</option>
@@ -1030,7 +1029,7 @@
             </select>
             <span v-if="formErrors.equipamento" class="field-error">{{ formErrors.equipamento }}</span>
           </div>
-          <div class="field" :class="{'has-error':formErrors.setor}">
+          <div class="field" :class="{hasError:formErrors.setor}">
             <label>Setor *</label>
             <input v-model="fd.setor" placeholder="Ex: Produção B" />
             <span v-if="formErrors.setor" class="field-error">{{ formErrors.setor }}</span>
@@ -1040,11 +1039,11 @@
         <!-- USUÁRIO -->
         <template v-if="modal.type==='usuario'">
           <div class="field-row">
-            <div class="field" :class="{'has-error':formErrors.username}">
+            <div class="field" :class="{hasError:formErrors.username}">
               <label>Username *</label><input v-model="fd.username" />
               <span v-if="formErrors.username" class="field-error">{{ formErrors.username }}</span>
             </div>
-            <div class="field" :class="{'has-error':formErrors.email}">
+            <div class="field" :class="{hasError:formErrors.email}">
               <label>Email</label><input type="email" v-model="fd.email" />
               <span v-if="formErrors.email" class="field-error">{{ formErrors.email }}</span>
             </div>
@@ -1061,7 +1060,7 @@
                 <option value="visualizador">Visualizador</option>
               </select>
             </div>
-            <div class="field" :class="{'has-error':formErrors.empresa}">
+            <div class="field" :class="{hasError:formErrors.empresa}">
               <label>Empresa</label>
               <select v-model.number="fd.empresa">
                 <option :value="null">— Nenhuma —</option>
@@ -1078,7 +1077,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" @click="modal.open=false">Cancelar</button>
-        <button v-if="canSaveEquip" class="btn btn-primary" @click="saveItem" :disabled="modal.saving">
+        <button class="btn btn-primary" @click="saveItem" :disabled="modal.saving">
           {{ modal.saving ? 'Salvando...' : (modal.editId ? 'Atualizar' : 'Criar') }}
         </button>
       </div>

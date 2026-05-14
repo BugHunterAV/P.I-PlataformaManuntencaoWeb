@@ -15,6 +15,7 @@ createApp({
     const dashAlerts   = ref([]);
     const alertCount   = ref(0);
     const toasts       = ref([]);
+    const globalEmpresa = ref('');  // Filtro global por empresa (admin)
 
     const lists = reactive({
       equipamentos:[], alertas:[], ordens:[],
@@ -33,17 +34,17 @@ createApp({
       localizacoes:{ next:null, prev:null },
     });
     const filters = reactive({
-      equipamentos:{ search:'' },
+      equipamentos:{ search:'', status:'', empresa:'' },
       alertas:{ search:'', nivel:'', status:'' },
       ordens:{ search:'', status:'' },
-      historico:{ search:'' },
+      historico:{ search:'', data_de:'', data_ate:'', custo_min:'', custo_max:'' },
       empresas:{ search:'' },
       usuarios:{ search:'' },
       localizacoes:{ search:'' },
     });
 
     // ─ Modal ─────────────────────────────────────────
-    const modal      = reactive({ open:false, type:'', title:'', editId:null, saving:false, back:null, backFd:null });
+    const modal      = reactive({ open:false, type:'', title:'', editId:null, saving:false });
     const fd         = reactive({});
     const formErrors = ref({});
 
@@ -324,9 +325,15 @@ createApp({
     async function fetchEquipamentos() { await withLoading(async () => {
       const p = new URLSearchParams();
       if (filters.equipamentos.search) p.set('search', filters.equipamentos.search);
+      if (filters.equipamentos.status) p.set('status', filters.equipamentos.status);
+      const empFilter = filters.equipamentos.empresa || globalEmpresa.value;
+      if (empFilter) p.set('empresa', empFilter);
       const d = await api('/api/equipamentos/?'+p);
       lists.equipamentos = normList(d);
       Object.assign(pages.equipamentos, normPages(d));
+      // Busca localizações para mostrar o setor ao lado de cada equipamento
+      const locRes = await api('/api/localizacao/?limit=999');
+      lists.localizacoes = normList(locRes);
     }); }
 
     async function fetchAlertas() { await withLoading(async () => {
@@ -334,6 +341,7 @@ createApp({
       if (filters.alertas.search) p.set('search', filters.alertas.search);
       if (filters.alertas.nivel)  p.set('nivel',  filters.alertas.nivel);
       if (filters.alertas.status) p.set('status', filters.alertas.status);
+      if (globalEmpresa.value) p.set('equipamento__empresa', globalEmpresa.value);
       const d = await api('/api/alertas/?'+p);
       lists.alertas = normList(d);
       Object.assign(pages.alertas, normPages(d));
@@ -343,6 +351,7 @@ createApp({
       const p = new URLSearchParams();
       if (filters.ordens.search) p.set('search', filters.ordens.search);
       if (filters.ordens.status) p.set('status', filters.ordens.status);
+      if (globalEmpresa.value) p.set('equipamento__empresa', globalEmpresa.value);
       const d = await api('/api/ordens-servico/?'+p);
       lists.ordens = normList(d);
       Object.assign(pages.ordens, normPages(d));
@@ -362,8 +371,21 @@ createApp({
     async function fetchHistorico() { await withLoading(async () => {
       const p = new URLSearchParams();
       if (filters.historico.search) p.set('search', filters.historico.search);
+      if (filters.historico.data_de) p.set('data_execucao__gte', filters.historico.data_de);
+      if (filters.historico.data_ate) p.set('data_execucao__lte', filters.historico.data_ate);
+      if (globalEmpresa.value) p.set('ordem_servico__equipamento__empresa', globalEmpresa.value);
       const d = await api('/api/historico/?'+p);
-      lists.historico = normList(d);
+      let items = normList(d);
+      // Filtro local de custo (soma peças + mão de obra)
+      if (filters.historico.custo_min) {
+        const min = parseFloat(filters.historico.custo_min);
+        items = items.filter(h => (parseFloat(h.custo_pecas)||0) + (parseFloat(h.custo_mao_de_obra)||0) >= min);
+      }
+      if (filters.historico.custo_max) {
+        const max = parseFloat(filters.historico.custo_max);
+        items = items.filter(h => (parseFloat(h.custo_pecas)||0) + (parseFloat(h.custo_mao_de_obra)||0) <= max);
+      }
+      lists.historico = items;
       Object.assign(pages.historico, normPages(d));
     }); }
 
@@ -440,7 +462,7 @@ createApp({
       empresa:     { title:'Empresa', endpoint:'/api/empresas/',
         defaults:{ nome:'', cnpj:'', telefone:'', email:'', cidade:'', estado:'', endereco:'' } },
       sensor:      { title:'Sensor', endpoint:'/api/telemetria/sensores/',
-        defaults:{ nome:'', tipo:'', unidade_medida:'', equipamento:null, ativo:true, limite_alerta:null } },
+        defaults:{ nome:'', tipo:'', unidade_medida:'', equipamento:null, ativo:true } },
       leitura:     { title:'Leitura de Telemetria', endpoint:'/api/telemetria/leituras/',
         defaults:{ sensor:null, valor:'', timestamp:'' } },
       
@@ -454,17 +476,6 @@ createApp({
         defaults:{ equipamento:null, setor:'' } },
     };
 
-    const TIPO_EQUIPAMENTO_CHOICES = [
-      { id: 'motor_eletrico', label: 'Motor Elétrico' },
-      { id: 'bomba_hidraulica', label: 'Bomba Hidráulica' },
-      { id: 'compressor_ar', label: 'Compressor de Ar' },
-      { id: 'gerador', label: 'Gerador' },
-      { id: 'prensa', label: 'Prensa' },
-      { id: 'esteira', label: 'Esteira' },
-      { id: 'ventilador', label: 'Ventilador Industrial' },
-      { id: 'outro', label: 'Outro' },
-    ];
-
     function resetForm(defaults) {
       // Remove chaves que não existem nos novos defaults
       Object.keys(fd).forEach(k => { if (!(k in defaults)) delete fd[k]; });
@@ -477,7 +488,6 @@ createApp({
       const cfg = modalConfig[type];
       modal.type = type; modal.title = 'Novo ' + cfg.title;
       modal.editId = null; formErrors.value = {};
-      modal.back = null; modal.backFd = null;
       resetForm(cfg.defaults); modal.open = true;
       
       if (['equipamento','alerta','ordem','sensor','localizacao','leitura'].includes(type)) {
@@ -490,28 +500,11 @@ createApp({
       if (type === 'historico') await fetchOrdensAll(); // Histórico precisa das ordens
     }
 
-    async function fetchSensorsByEquip(equipId) {
-      if (!equipId) return [];
-      try {
-        const d = await api(`/api/telemetria/sensores/?equipamento=${equipId}&limit=999`);
-        return Array.isArray(d) ? d : (d?.results ?? []);
-      } catch { return []; }
-    }
-
     async function editItem(type, item) {
       const cfg = modalConfig[type];
       modal.type = type; modal.title = 'Editar ' + cfg.title;
       modal.editId = item.id; formErrors.value = {};
-      modal.back = null; modal.backFd = null;
-      
-      const itemData = { ...item };
-      
-      // Se for equipamento e o tipo não estiver nos choices, seta como 'outro' e guarda o valor custom
-      if (type === 'equipamento') {
-        itemData._sensores = await fetchSensorsByEquip(item.id);
-      }
-
-      resetForm({ ...cfg.defaults, ...itemData }); modal.open = true;
+      resetForm({ ...cfg.defaults, ...item }); modal.open = true;
       
       if (['equipamento','alerta','ordem','sensor','localizacao','leitura'].includes(type)) {
         await fetchEquipamentosAll();
@@ -528,11 +521,6 @@ createApp({
       modal.saving = true; formErrors.value = {};
       try {
         const payload = { ...fd };
-
-        if (modal.type === 'equipamento' && payload.tipo === 'outro') {
-          // No longer needed as we'll use a direct input or datalist
-        }
-        delete payload._sensores;
 
         // Limpa FKs vazias
         ['empresa','equipamento','sensor','ordem_servico','responsavel'].forEach(k => {
@@ -557,16 +545,6 @@ createApp({
         } else {
           await api(cfg.endpoint, { method:'POST', body:JSON.stringify(payload) });
         }
-
-        if (modal.back) {
-          const b = modal.back;
-          const bFd = modal.backFd;
-          modal.back = null; modal.backFd = null;
-          editItem(b, bFd); // Reabre o modal anterior
-          toast('Salvo e retornando...', 'success');
-          return;
-        }
-
         modal.open = false;
         toast(modal.editId ? 'Atualizado com sucesso!' : 'Criado com sucesso!', 'success');
         navigate(view.value);
@@ -618,37 +596,33 @@ createApp({
       const s = lists.sensores.find(s => s.id === id);
       return s ? `${s.nome} (#${s.id})` : `#${id}`;
     }
+    function locSetor(eqId) {
+      if (eqId == null) return '—';
+      const loc = lists.localizacoes.find(l => l.equipamento === eqId);
+      return loc ? (loc.setor || '—') : '—';
+    }
+    function custoTotal(h) {
+      return ((parseFloat(h.custo_pecas)||0) + (parseFloat(h.custo_mao_de_obra)||0)).toFixed(2);
+    }
+    function onGlobalEmpresaChange() {
+      // Recarrega a aba atual ao mudar o filtro global
+      fetchers[view.value]?.();
+    }
 
     // ─ Init ──────────────────────────────────────────
     onMounted(async () => {
-      if (token.value) { await fetchMe(); navigate('dashboard'); }
-    });
-
-    // Sugestão automática de Unidade de Medida baseada no tipo de sensor
-    watch(() => fd.tipo, (newTipo) => {
-      if (modal.type === 'sensor' && !modal.editId) {
-        const units = {
-          temperatura: '°C',
-          pressao: 'bar',
-          vibracao: 'mm/s',
-          umidade: '%',
-          corrente: 'A',
-          tensao: 'V',
-          fluxo: 'L/min'
-        };
-        if (units[newTipo]) fd.unidade_medida = units[newTipo];
+      if (token.value) {
+        await fetchMe();
+        // Carrega lista de empresas para o filtro global do admin
+        await fetchEmpresasAll();
+        navigate('dashboard');
       }
-    });
-
-    const canSaveEquip = computed(() => {
-      if (modal.type !== 'equipamento') return true;
-      return !!(fd.nome && fd.tipo && fd.numero_serie && fd.empresa);
     });
 
     return {
       token, me, view, loading, loginLoading, loginError, loginForm,
       kpis, dashAlerts, alertCount, toasts, lists, pages, filters,
-      modal, fd, formErrors,
+      modal, fd, formErrors, globalEmpresa,
       isAdmin, userInitial, viewTitle,
       doLogin, logout, navigate, debouncedFetch,
       fetchEquipamentos, fetchAlertas, fetchOrdens, fetchTelemetria,
@@ -656,59 +630,10 @@ createApp({
       openModal, editItem, saveItem, deleteItem,
       fmtDate, nivelBadge, nivelColor, statusBadge, eqStatusBadge,
       ordemStatusBadge, prioridadeBadge,
-      eqNome, empresaNome, sensorNome,
+      eqNome, empresaNome, sensorNome, locSetor, custoTotal,
+      onGlobalEmpresaChange,
       chartEquipStatus, chartAlertNivel, chartOrdens, chartTelemetria,
       chartHistoricoTipo, donutArcs,
-      TIPO_EQUIPAMENTO_CHOICES,
-      canSaveEquip,
-      async addSensorFromEquip() {
-        const equipId = modal.editId;
-        
-        if (!equipId) {
-          if (!confirm('O equipamento precisa ser salvo para adicionar sensores. Deseja salvar agora?')) return;
-          
-          // Tenta salvar o equipamento
-          try {
-            const cfg = modalConfig.equipamento;
-            const payload = { ...fd };
-            delete payload._sensores;
-            
-            const res = await api(cfg.endpoint, { method:'POST', body:JSON.stringify(payload) });
-            if (res && res.id) {
-              toast('Equipamento salvo! Agora você pode adicionar os sensores.', 'success');
-              // Atualiza o modal para modo de edição com o novo ID
-              modal.editId = res.id;
-              fd.id = res.id;
-              modal.title = 'Editar ' + cfg.title;
-              fd._sensores = [];
-              // Continua para abrir o modal de sensor abaixo
-            } else {
-              return;
-            }
-          } catch (e) {
-            // Erros de validação já são tratados pelo api/saveItem
-            return;
-          }
-        }
-
-        const currentEquipId = modal.editId;
-        const currentEquipData = { ...fd };
-
-        // Salva estado para voltar depois
-        modal.back = 'equipamento';
-        modal.backFd = currentEquipData;
-
-        // Abre o modal de sensor
-        modal.type = 'sensor';
-        modal.title = 'Novo Sensor para ' + currentEquipData.nome;
-        modal.editId = null;
-        formErrors.value = {};
-        
-        const sensorDefaults = modalConfig.sensor.defaults;
-        resetForm({ ...sensorDefaults, equipamento: currentEquipId });
-        
-        await fetchEquipamentosAll();
-      }
     };
   }
 }).mount('#app');
