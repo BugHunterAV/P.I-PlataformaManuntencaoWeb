@@ -22,7 +22,7 @@ class OrdemServicoViewSet(viewsets.ModelViewSet):
     serializer_class = OrdemServicoSerializer
     permission_classes = [IsAuthenticatedNoDeleteForTecnico, IsOwnerOrGestorOrUnassigned]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['status', 'prioridade', 'equipamento', 'responsavel']
+    filterset_fields = ['status', 'prioridade', 'equipamento', 'responsavel', 'tipo_os']
     search_fields = ['titulo', 'descricao']
     ordering_fields = ['data_abertura', 'prioridade', 'status']
     ordering = ['-data_abertura']

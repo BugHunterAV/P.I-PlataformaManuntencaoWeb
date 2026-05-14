@@ -36,7 +36,7 @@ createApp({
     const filters = reactive({
       equipamentos:{ search:'', status:'', empresa:'' },
       alertas:{ search:'', nivel:'', status:'' },
-      ordens:{ search:'', status:'' },
+      ordens:{ search:'', status:'', prioridade:'', tipo_os:'' },
       historico:{ search:'', data_de:'', data_ate:'', custo_min:'', custo_max:'' },
       empresas:{ search:'' },
       usuarios:{ search:'' },
@@ -377,6 +377,8 @@ createApp({
       const p = new URLSearchParams();
       if (filters.ordens.search) p.set('search', filters.ordens.search);
       if (filters.ordens.status) p.set('status', filters.ordens.status);
+      if (filters.ordens.prioridade) p.set('prioridade', filters.ordens.prioridade);
+      if (filters.ordens.tipo_os) p.set('tipo_os', filters.ordens.tipo_os);
       if (globalEmpresa.value) p.set('equipamento__empresa', globalEmpresa.value);
       const d = await api('/api/ordens-servico/?'+p);
       let items = normList(d);

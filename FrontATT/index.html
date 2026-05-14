@@ -486,6 +486,18 @@
               <option value="concluida">Concluída</option>
               <option value="cancelada">Cancelada</option>
             </select>
+            <select class="filter-select" v-model="filters.ordens.prioridade" @change="fetchOrdens">
+              <option value="">Todas as prioridades</option>
+              <option value="baixo">Baixo</option>
+              <option value="medio">Médio</option>
+              <option value="critico">Crítico</option>
+            </select>
+            <select class="filter-select" v-model="filters.ordens.tipo_os" @change="fetchOrdens">
+              <option value="">Todos os tipos</option>
+              <option value="preventiva">Preventiva</option>
+              <option value="corretiva">Corretiva</option>
+              <option value="preditiva">Preditiva</option>
+            </select>
             <button class="btn btn-primary" @click="openModal('ordem')">+ Nova Ordem</button>
           </div>
           <div class="table-wrap">
