@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     'accounts',
     'django_filters',
     'ativos',
+    'django_extensions',
     'corsheaders', 
     'manutencao',
     'drf_spectacular',
