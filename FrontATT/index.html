@@ -716,7 +716,9 @@
   <div v-if="modal.open" class="modal-backdrop" @click.self="modal.open=false">
     <div class="modal">
       <div class="modal-header">
-        <div class="modal-title">{{ modal.title }}</div>
+        <div class="modal-title" :style="modal.back && modal.type === 'sensor' ? 'font-size: 1.6em; color: var(--primary); font-weight: 800;' : ''">
+          {{ modal.title }}
+        </div>
         <button class="modal-close" @click="modal.open=false">×</button>
       </div>
       <div class="modal-body">
@@ -939,7 +941,7 @@
           </div>
           <div class="field" :class="{'has-error':formErrors.equipamento}">
             <label>Equipamento *</label>
-            <select v-model.number="fd.equipamento">
+            <select v-model.number="fd.equipamento" :disabled="!!modal.back">
               <option :value="null">— Selecione —</option>
               <option v-for="e in lists.equipamentos" :key="e.id" :value="e.id">{{ e.nome }} (#{{ e.id }})</option>
             </select>
