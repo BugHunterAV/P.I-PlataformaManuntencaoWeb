@@ -14,16 +14,9 @@ class Sensor(models.Model):
     nome = models.CharField(max_length=100)
     tipo = models.CharField(max_length=50, choices=TIPO_SENSOR_CHOICES)
     unidade_medida = models.CharField(max_length=20, help_text="Ex: °C, mm/s, bar, A")
-    limite_alerta = models.FloatField(null=True, blank=True, help_text="Limite máximo para gerar alerta crítico")
+    limite_alerta = models.FloatField(help_text="Limite máximo para gerar alerta crítico")
     descricao = models.TextField(blank=True, null=True)
     ativo = models.BooleanField(default=True)
-
-    def save(self, *args, **kwargs):
-        # Se o limite não for fornecido, busca o padrão do sistema
-        if self.limite_alerta is None:
-            from .config_alertas import obter_limite
-            self.limite_alerta = obter_limite(self.equipamento.tipo, self.tipo)
-        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.get_tipo_display()} - {self.nome} ({self.equipamento.nome})"

@@ -34,15 +34,15 @@ def run_stress_test(num_leituras, num_threads):
     )
     # Garante um sensor de temperatura com limite conhecido
     sensor, _ = Sensor.objects.get_or_create(
-        equipamento=equipamento, tipo_sensor='temperatura', 
-        defaults={'unidade_medida': '°C', 'limite_alerta': 100.0}
+        equipamento=equipamento, tipo='temperatura', 
+        defaults={'unidade_medida': '°C', 'limite_alerta': 100.0, 'nome': 'Sensor de Stress'}
     )
     
     # Limpa dados anteriores para precisão do teste
     Telemetria.objects.filter(sensor=sensor).delete()
     Alerta.objects.filter(equipamento=equipamento).delete()
     
-    print(f"Alvo: {equipamento.nome} | Sensor: {sensor.tipo_sensor} (Limite: {sensor.limite_alerta}C)")
+    print(f"Alvo: {equipamento.nome} | Sensor: {sensor.tipo} (Limite: {sensor.limite_alerta}C)")
 
     def insert_reading(val):
         try:

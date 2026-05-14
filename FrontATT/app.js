@@ -440,7 +440,7 @@ createApp({
       empresa:     { title:'Empresa', endpoint:'/api/empresas/',
         defaults:{ nome:'', cnpj:'', telefone:'', email:'', cidade:'', estado:'', endereco:'' } },
       sensor:      { title:'Sensor', endpoint:'/api/telemetria/sensores/',
-        defaults:{ nome:'', tipo:'', unidade_medida:'', equipamento:null, ativo:true } },
+        defaults:{ nome:'', tipo:'', unidade_medida:'', equipamento:null, ativo:true, limite_alerta:null } },
       leitura:     { title:'Leitura de Telemetria', endpoint:'/api/telemetria/leituras/',
         defaults:{ sensor:null, valor:'', timestamp:'' } },
       
@@ -578,6 +578,22 @@ createApp({
     // ─ Init ──────────────────────────────────────────
     onMounted(async () => {
       if (token.value) { await fetchMe(); navigate('dashboard'); }
+    });
+
+    // Sugestão automática de Unidade de Medida baseada no tipo de sensor
+    watch(() => fd.tipo, (newTipo) => {
+      if (modal.type === 'sensor' && !modal.editId) {
+        const units = {
+          temperatura: '°C',
+          pressao: 'bar',
+          vibracao: 'mm/s',
+          umidade: '%',
+          corrente: 'A',
+          tensao: 'V',
+          fluxo: 'L/min'
+        };
+        if (units[newTipo]) fd.unidade_medida = units[newTipo];
+      }
     });
 
     return {

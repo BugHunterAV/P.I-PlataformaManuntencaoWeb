@@ -215,7 +215,7 @@ def run_seed(num_empresas, equip_por_empresa):
             # Sensores
             for s_tipo in sensores_list:
                 unidade, min_v, max_v = CONFIG_SENSORES.get(s_tipo, ('un', 0, 100))
-                sensor = Sensor.objects.create(equipamento=eq, tipo_sensor=s_tipo, unidade_medida=unidade)
+                sensor = Sensor.objects.create(equipamento=eq, tipo=s_tipo, unidade_medida=unidade, nome=f"Sensor {s_tipo.capitalize()}")
                 todos_sensores.append((sensor, min_v, max_v))
             
             count += 1
@@ -238,7 +238,7 @@ def run_seed(num_empresas, equip_por_empresa):
             # Garantir limites
             val = max(min_v * 0.8, min(val, max_v * 1.5))
             
-            leituras_bulk.append(Telemetria(sensor=sensor, valor=round(val, 2), data_hora=ponto))
+            leituras_bulk.append(Telemetria(sensor=sensor, valor=round(val, 2), timestamp=ponto))
             
             if len(leituras_bulk) > 5000:
                 Telemetria.objects.bulk_create(leituras_bulk)
