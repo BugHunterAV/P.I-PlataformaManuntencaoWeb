@@ -6,7 +6,23 @@ class Equipamento(models.Model):
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='equipamentos')
     
     nome = models.CharField(max_length=255)
-    tipo = models.CharField(max_length=100, help_text="Ex: Motor elétrico, Bomba Hidráulica")
+    TIPO_EQUIPAMENTO_CHOICES = (
+        ('motor_eletrico', 'Motor Elétrico'),
+        ('bomba_hidraulica', 'Bomba Hidráulica'),
+        ('compressor_ar', 'Compressor de Ar'),
+        ('gerador', 'Gerador'),
+        ('prensa', 'Prensa'),
+        ('esteira', 'Esteira'),
+        ('ventilador', 'Ventilador Industrial'),
+        ('outro', 'Outro'),
+    )
+    
+    tipo = models.CharField(
+        max_length=100, 
+        blank=True, 
+        null=True,
+        help_text="Ex: Motor elétrico, Bomba Hidráulica"
+    )
     fabricante = models.CharField(max_length=100, blank=True, null=True)
     modelo = models.CharField(max_length=100, blank=True, null=True)
     numero_serie = models.CharField(max_length=100, unique=True)
@@ -16,7 +32,7 @@ class Equipamento(models.Model):
 
     STATUS_CHOICES = (
         ('ativo', 'Ativo'),
-        ('manutencao','Em Manutencao'),
+        ('manutencao','Em Manutenção'),
         ('inativo', 'Inativo'),
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ativo')

@@ -1,6 +1,12 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from .models import Equipamento
+import os
+import dotenv import load_dotenv
+import gemini_api.client import get_media_quebras_equipamentos
+from manutencao.models import OrdemServico
+
+
 
 
 @receiver(post_save, sender=Equipamento)
@@ -50,3 +56,16 @@ def verificar_planos_por_horimetro(sender, instance, **kwargs):
         # Atualiza o registro do plano para o próximo ciclo
         plano.horimetro_ultima_os = instance.horimetro
         plano.save(update_fields=['horimetro_ultima_os'])
+
+
+load_dotenv()
+api_key = os.getenv("GEMINI_API_KEY")
+
+@receiver(pre_save,sender=OrdemServico)
+def verificar_manutencao(sender,instance,**kwargs):
+    if not instance.description:
+        if len(api_key) > 0:
+            texto = get_media_quebras_equipamentos(instance.equipamento.nome)
+            instance.description = texto
+            
+            

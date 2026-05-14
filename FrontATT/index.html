@@ -732,10 +732,14 @@
             </div>
             <div class="field" :class="{'has-error':formErrors.tipo}">
               <label>Tipo *</label>
-              <input v-model="fd.tipo" placeholder="Ex: Motor elétrico, Bomba Hidráulica" />
+              <input v-model="fd.tipo" list="tipo_equip_list" placeholder="Ex: Motor elétrico, Bomba Hidráulica" />
+              <datalist id="tipo_equip_list">
+                <option v-for="c in TIPO_EQUIPAMENTO_CHOICES" :key="c.id" :value="c.label"></option>
+              </datalist>
               <span v-if="formErrors.tipo" class="field-error">{{ formErrors.tipo }}</span>
             </div>
           </div>
+
           <div class="field-row">
             <div class="field"><label>Fabricante</label><input v-model="fd.fabricante" /></div>
             <div class="field"><label>Modelo</label><input v-model="fd.modelo" placeholder="Ex: XR-2000" /></div>
@@ -765,6 +769,31 @@
                 <option v-for="e in lists.empresas" :key="e.id" :value="e.id">{{ e.nome }}</option>
               </select>
               <span v-if="formErrors.empresa" class="field-error">{{ formErrors.empresa }}</span>
+            </div>
+          </div>
+
+          <!-- SEÇÃO DE SENSORES -->
+          <div class="modal-section" style="margin-top:20px; border-top: 1px solid var(--edge); padding-top: 15px;">
+            <div v-if="canSaveEquip" class="section-header" style="margin-bottom: 10px;">
+              <div class="section-title" style="font-size: 14px;">Sensores Vinculados</div>
+              <button class="btn btn-primary btn-sm" @click="addSensorFromEquip">+ Adicionar Sensor</button>
+            </div>
+            
+            <div v-if="modal.editId" class="table-wrap" style="max-height: 150px; overflow-y: auto;">
+              <table v-if="fd._sensores && fd._sensores.length > 0">
+                <thead><tr><th>Nome</th><th>Tipo</th><th>Status</th></tr></thead>
+                <tbody>
+                  <tr v-for="s in fd._sensores" :key="s.id">
+                    <td>{{ s.nome }}</td>
+                    <td style="font-size: 10px;">{{ s.tipo }}</td>
+                    <td><span class="badge" :class="s.ativo ? 'badge-green' : 'badge-gray'">{{ s.ativo ? 'Ativo' : 'Inat' }}</span></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div v-else class="empty" style="padding: 15px; font-size: 12px;">Nenhum sensor vinculado.</div>
+            </div>
+            <div v-else class="empty" style="padding: 20px; font-size: 12px; background: var(--bg); border: 1px dashed var(--edge); border-radius: 8px;">
+              O equipamento precisa ser <strong>salvo primeiro</strong> para que você possa vincular sensores a ele.
             </div>
           </div>
         </template>
@@ -1047,7 +1076,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" @click="modal.open=false">Cancelar</button>
-        <button class="btn btn-primary" @click="saveItem" :disabled="modal.saving">
+        <button v-if="canSaveEquip" class="btn btn-primary" @click="saveItem" :disabled="modal.saving">
           {{ modal.saving ? 'Salvando...' : (modal.editId ? 'Atualizar' : 'Criar') }}
         </button>
       </div>

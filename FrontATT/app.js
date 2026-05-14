@@ -43,7 +43,7 @@ createApp({
     });
 
     // ─ Modal ─────────────────────────────────────────
-    const modal      = reactive({ open:false, type:'', title:'', editId:null, saving:false });
+    const modal      = reactive({ open:false, type:'', title:'', editId:null, saving:false, back:null, backFd:null });
     const fd         = reactive({});
     const formErrors = ref({});
 
@@ -454,6 +454,17 @@ createApp({
         defaults:{ equipamento:null, setor:'' } },
     };
 
+    const TIPO_EQUIPAMENTO_CHOICES = [
+      { id: 'motor_eletrico', label: 'Motor Elétrico' },
+      { id: 'bomba_hidraulica', label: 'Bomba Hidráulica' },
+      { id: 'compressor_ar', label: 'Compressor de Ar' },
+      { id: 'gerador', label: 'Gerador' },
+      { id: 'prensa', label: 'Prensa' },
+      { id: 'esteira', label: 'Esteira' },
+      { id: 'ventilador', label: 'Ventilador Industrial' },
+      { id: 'outro', label: 'Outro' },
+    ];
+
     function resetForm(defaults) {
       // Remove chaves que não existem nos novos defaults
       Object.keys(fd).forEach(k => { if (!(k in defaults)) delete fd[k]; });
@@ -466,6 +477,7 @@ createApp({
       const cfg = modalConfig[type];
       modal.type = type; modal.title = 'Novo ' + cfg.title;
       modal.editId = null; formErrors.value = {};
+      modal.back = null; modal.backFd = null;
       resetForm(cfg.defaults); modal.open = true;
       
       if (['equipamento','alerta','ordem','sensor','localizacao','leitura'].includes(type)) {
@@ -478,11 +490,28 @@ createApp({
       if (type === 'historico') await fetchOrdensAll(); // Histórico precisa das ordens
     }
 
+    async function fetchSensorsByEquip(equipId) {
+      if (!equipId) return [];
+      try {
+        const d = await api(`/api/telemetria/sensores/?equipamento=${equipId}&limit=999`);
+        return Array.isArray(d) ? d : (d?.results ?? []);
+      } catch { return []; }
+    }
+
     async function editItem(type, item) {
       const cfg = modalConfig[type];
       modal.type = type; modal.title = 'Editar ' + cfg.title;
       modal.editId = item.id; formErrors.value = {};
-      resetForm({ ...cfg.defaults, ...item }); modal.open = true;
+      modal.back = null; modal.backFd = null;
+      
+      const itemData = { ...item };
+      
+      // Se for equipamento e o tipo não estiver nos choices, seta como 'outro' e guarda o valor custom
+      if (type === 'equipamento') {
+        itemData._sensores = await fetchSensorsByEquip(item.id);
+      }
+
+      resetForm({ ...cfg.defaults, ...itemData }); modal.open = true;
       
       if (['equipamento','alerta','ordem','sensor','localizacao','leitura'].includes(type)) {
         await fetchEquipamentosAll();
@@ -499,6 +528,11 @@ createApp({
       modal.saving = true; formErrors.value = {};
       try {
         const payload = { ...fd };
+
+        if (modal.type === 'equipamento' && payload.tipo === 'outro') {
+          // No longer needed as we'll use a direct input or datalist
+        }
+        delete payload._sensores;
 
         // Limpa FKs vazias
         ['empresa','equipamento','sensor','ordem_servico','responsavel'].forEach(k => {
@@ -523,6 +557,16 @@ createApp({
         } else {
           await api(cfg.endpoint, { method:'POST', body:JSON.stringify(payload) });
         }
+
+        if (modal.back) {
+          const b = modal.back;
+          const bFd = modal.backFd;
+          modal.back = null; modal.backFd = null;
+          editItem(b, bFd); // Reabre o modal anterior
+          toast('Salvo e retornando...', 'success');
+          return;
+        }
+
         modal.open = false;
         toast(modal.editId ? 'Atualizado com sucesso!' : 'Criado com sucesso!', 'success');
         navigate(view.value);
@@ -596,6 +640,11 @@ createApp({
       }
     });
 
+    const canSaveEquip = computed(() => {
+      if (modal.type !== 'equipamento') return true;
+      return !!(fd.nome && fd.tipo && fd.numero_serie && fd.empresa);
+    });
+
     return {
       token, me, view, loading, loginLoading, loginError, loginForm,
       kpis, dashAlerts, alertCount, toasts, lists, pages, filters,
@@ -610,6 +659,56 @@ createApp({
       eqNome, empresaNome, sensorNome,
       chartEquipStatus, chartAlertNivel, chartOrdens, chartTelemetria,
       chartHistoricoTipo, donutArcs,
+      TIPO_EQUIPAMENTO_CHOICES,
+      canSaveEquip,
+      async addSensorFromEquip() {
+        const equipId = modal.editId;
+        
+        if (!equipId) {
+          if (!confirm('O equipamento precisa ser salvo para adicionar sensores. Deseja salvar agora?')) return;
+          
+          // Tenta salvar o equipamento
+          try {
+            const cfg = modalConfig.equipamento;
+            const payload = { ...fd };
+            delete payload._sensores;
+            
+            const res = await api(cfg.endpoint, { method:'POST', body:JSON.stringify(payload) });
+            if (res && res.id) {
+              toast('Equipamento salvo! Agora você pode adicionar os sensores.', 'success');
+              // Atualiza o modal para modo de edição com o novo ID
+              modal.editId = res.id;
+              fd.id = res.id;
+              modal.title = 'Editar ' + cfg.title;
+              fd._sensores = [];
+              // Continua para abrir o modal de sensor abaixo
+            } else {
+              return;
+            }
+          } catch (e) {
+            // Erros de validação já são tratados pelo api/saveItem
+            return;
+          }
+        }
+
+        const currentEquipId = modal.editId;
+        const currentEquipData = { ...fd };
+
+        // Salva estado para voltar depois
+        modal.back = 'equipamento';
+        modal.backFd = currentEquipData;
+
+        // Abre o modal de sensor
+        modal.type = 'sensor';
+        modal.title = 'Novo Sensor para ' + currentEquipData.nome;
+        modal.editId = null;
+        formErrors.value = {};
+        
+        const sensorDefaults = modalConfig.sensor.defaults;
+        resetForm({ ...sensorDefaults, equipamento: currentEquipId });
+        
+        await fetchEquipamentosAll();
+      }
     };
   }
 }).mount('#app');

@@ -7,3 +7,8 @@ class AtivosConfig(AppConfig):
 
     def ready(self):
         import ativos.signals  # noqa: F401
+
+class TelemetriaConfig(AppConfig):
+    name = 'telemetria'
+    def ready(self):
+        import telemetria.signals  # noqa: F401
