@@ -37,6 +37,8 @@ createApp({
       equipamentos:{ search:'', status:'', empresa:'', setor:'' },
       alertas:{ search:'', nivel:'', status:'' },
       ordens:{ search:'', status:'', prioridade:'', tipo_os:'' },
+      telemetria_sensores:{ search:'', tipo:'', ativo:'' },
+      telemetria_leituras:{ valor_min:'', valor_max:'' },
       historico:{ search:'', data_de:'', data_ate:'', custo_min:'', custo_max:'' },
       empresas:{ search:'' },
       usuarios:{ search:'' },
@@ -399,9 +401,18 @@ createApp({
     }); }
 
     async function fetchTelemetria() { await withLoading(async () => {
+      const ps = new URLSearchParams();
+      if (filters.telemetria_sensores.search) ps.set('search', filters.telemetria_sensores.search);
+      if (filters.telemetria_sensores.tipo) ps.set('tipo', filters.telemetria_sensores.tipo);
+      if (filters.telemetria_sensores.ativo !== '') ps.set('ativo', filters.telemetria_sensores.ativo);
+
+      const pl = new URLSearchParams();
+      if (filters.telemetria_leituras.valor_min) pl.set('valor_min', filters.telemetria_leituras.valor_min);
+      if (filters.telemetria_leituras.valor_max) pl.set('valor_max', filters.telemetria_leituras.valor_max);
+
       const [s,l] = await Promise.all([
-        api('/api/telemetria/sensores/'),
-        api('/api/telemetria/leituras/'),
+        api('/api/telemetria/sensores/?'+ps),
+        api('/api/telemetria/leituras/?'+pl),
       ]);
       let sItems = normList(s);
       let lItems = normList(l);

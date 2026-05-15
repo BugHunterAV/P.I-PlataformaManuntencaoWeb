@@ -541,6 +541,22 @@
                 <div class="section-title">Sensores <span class="live-dot" style="margin-left:8px"></span></div>
                 <button class="btn btn-primary btn-sm" @click="openModal('sensor')">+ Sensor</button>
               </div>
+              <div class="filter-bar" style="margin-bottom:12px; background:rgba(0,0,0,0.2); padding:8px; border-radius:6px; border:1px solid var(--border)">
+                <input class="filter-input" style="flex:1" v-model="filters.telemetria_sensores.search" placeholder="Buscar..." @input="debouncedFetch('ts',fetchTelemetria)" />
+                <select class="filter-select" style="flex:1" v-model="filters.telemetria_sensores.tipo" @change="fetchTelemetria">
+                  <option value="">Tipo (Todos)</option>
+                  <option value="temperatura">Temperatura</option>
+                  <option value="vibracao">Vibração</option>
+                  <option value="pressao">Pressão</option>
+                  <option value="corrente">Corrente Elétrica</option>
+                  <option value="umidade">Umidade</option>
+                </select>
+                <select class="filter-select" style="flex:1" v-model="filters.telemetria_sensores.ativo" @change="fetchTelemetria">
+                  <option value="">Status (Todos)</option>
+                  <option value="true">Ativo</option>
+                  <option value="false">Inativo</option>
+                </select>
+              </div>
               <div class="table-wrap">
                 <div v-if="loading" class="loading"><div class="spinner"></div></div>
                 <div v-else-if="lists.sensores.length===0" class="empty"><div class="empty-icon">⬡</div>Sem sensores</div>
@@ -577,6 +593,12 @@
                   <button class="btn btn-primary btn-sm" @click="openModal('leitura')">+ Leitura</button>
                   <button class="btn btn-ghost btn-sm" @click="fetchTelemetria">↺ Atualizar</button>
                 </div>
+              </div>
+              <div class="filter-bar" style="margin-bottom:12px; background:rgba(0,0,0,0.2); padding:8px; border-radius:6px; border:1px solid var(--border)">
+                <label style="font-size:11px;color:var(--t4);white-space:nowrap">Valor:</label>
+                <input type="number" class="filter-input" style="flex:1" v-model="filters.telemetria_leituras.valor_min" placeholder="Mínimo" @input="debouncedFetch('tlmin',fetchTelemetria)" />
+                <span style="color:var(--t4)">-</span>
+                <input type="number" class="filter-input" style="flex:1" v-model="filters.telemetria_leituras.valor_max" placeholder="Máximo" @input="debouncedFetch('tlmax',fetchTelemetria)" />
               </div>
               <div class="table-wrap">
                 <div v-if="loading" class="loading"><div class="spinner"></div></div>

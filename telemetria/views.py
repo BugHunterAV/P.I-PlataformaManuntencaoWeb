@@ -22,11 +22,21 @@ class SensorViewSet(viewsets.ModelViewSet):
         return qs.none()
 
 
+from django_filters import rest_framework as df_filters
+
+class TelemetriaFilter(df_filters.FilterSet):
+    valor_min = df_filters.NumberFilter(field_name="valor", lookup_expr='gte')
+    valor_max = df_filters.NumberFilter(field_name="valor", lookup_expr='lte')
+
+    class Meta:
+        model = Telemetria
+        fields = ['sensor', 'sensor__equipamento', 'valor_min', 'valor_max']
+
 class TelemetriaViewSet(viewsets.ModelViewSet):
     serializer_class = TelemetriaSerializer
     permission_classes = [IsAuthenticatedNoDeleteForTecnico]
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ['sensor', 'sensor__equipamento']
+    filterset_class = TelemetriaFilter
 
     def get_queryset(self):
         user = self.request.user
