@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'drf_spectacular',
     'telemetria',
     'alertas',
+    'exportacao',
 ]
 
 MIDDLEWARE = [
