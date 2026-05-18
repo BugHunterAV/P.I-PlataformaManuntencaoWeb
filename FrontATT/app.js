@@ -638,6 +638,56 @@ createApp({
       } catch { toast('Erro ao excluir', 'error'); }
     }
 
+    // ─ Exportação ────────────────────────────────────
+    async function exportData(resource, format) {
+      toast(`Gerando exportação ${format.toUpperCase()}...`, 'success');
+      const p = new URLSearchParams();
+      
+      if (resource === 'equipamentos') {
+        if (filters.equipamentos.status) p.set('status', filters.equipamentos.status);
+        if (filters.equipamentos.empresa || globalEmpresa.value) p.set('empresa', filters.equipamentos.empresa || globalEmpresa.value);
+      } else if (resource === 'alertas') {
+        if (filters.alertas.nivel) p.set('nivel', filters.alertas.nivel);
+        if (filters.alertas.status) p.set('status', filters.alertas.status);
+      } else if (resource === 'ordens-servico') {
+        if (filters.ordens.status) p.set('status', filters.ordens.status);
+        if (filters.ordens.prioridade) p.set('prioridade', filters.ordens.prioridade);
+        if (filters.ordens.tipo_os) p.set('tipo_os', filters.ordens.tipo_os);
+      } else if (resource === 'historico') {
+        if (filters.historico.data_de) p.set('data_execucao_depois', filters.historico.data_de);
+        if (filters.historico.data_ate) p.set('data_execucao_antes', filters.historico.data_ate);
+      } else if (resource === 'dashboard') {
+        if (globalEmpresa.value) p.set('empresa_id', globalEmpresa.value);
+      }
+
+      try {
+        const headers = {};
+        if (token.value) headers['Authorization'] = `Bearer ${token.value}`;
+        
+        const res = await fetch(BASE + `/api/exportar/${resource}/${format}/?` + p.toString(), { headers });
+        if (!res.ok) throw new Error('Erro na exportação');
+        
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        
+        let filename = `${resource}.${format === 'excel' ? 'xlsx' : format}`;
+        const cd = res.headers.get('Content-Disposition');
+        if (cd && cd.includes('filename=')) {
+          filename = cd.split('filename=')[1].replace(/"/g, '');
+        }
+        
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+      } catch (e) {
+        toast('Erro ao exportar dados', 'error');
+      }
+    }
+
     // ─ Helpers ───────────────────────────────────────
     function fmtDate(d) {
       if (!d) return '—';
@@ -704,7 +754,7 @@ createApp({
       doLogin, logout, navigate, debouncedFetch,
       fetchEquipamentos, fetchAlertas, fetchOrdens, fetchTelemetria,
       fetchHistorico, fetchEmpresas, fetchUsuarios, fetchLocalizacoes, fetchPage, fetchDashboard,
-      openModal, editItem, saveItem, deleteItem,
+      openModal, editItem, saveItem, deleteItem, exportData,
       fmtDate, nivelBadge, nivelColor, statusBadge, eqStatusBadge,
       ordemStatusBadge, prioridadeBadge,
       eqNome, empresaNome, sensorNome, locSetor, custoTotal,

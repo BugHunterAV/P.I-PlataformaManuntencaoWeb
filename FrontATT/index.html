@@ -6,6 +6,15 @@
   <title>NanaSmart</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.4.21/vue.global.prod.min.js"></script>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .export-btns {
+      display: flex;
+      gap: 6px;
+      border-left: 1px solid var(--border);
+      padding-left: 12px;
+      margin-left: auto;
+    }
+  </style>
 </head>
 <body>
 <div id="app">
@@ -143,6 +152,10 @@
             </select>
           </template>
           <div class="topbar-meta">
+            <template v-if="view==='dashboard'">
+              <button class="btn btn-ghost btn-sm" @click="exportData('dashboard', 'pdf')" title="Exportar Dashboard em PDF">📄 PDF</button>
+              <button class="btn btn-ghost btn-sm" @click="exportData('dashboard', 'excel')" title="Exportar Dashboard em Excel">📊 Excel</button>
+            </template>
             <span class="topbar-chip">API v1.0</span>
             <span class="live-dot"></span>
           </div>
@@ -401,6 +414,11 @@
               <option v-for="emp in lists.empresas" :key="emp.id" :value="emp.id">{{ emp.nome }}</option>
             </select>
             <button class="btn btn-primary" @click="openModal('equipamento')">+ Novo</button>
+            <div class="export-btns">
+              <button class="btn btn-ghost btn-sm" @click="exportData('equipamentos', 'pdf')">PDF</button>
+              <button class="btn btn-ghost btn-sm" @click="exportData('equipamentos', 'excel')">Excel</button>
+              <button class="btn btn-ghost btn-sm" @click="exportData('equipamentos', 'csv')">CSV</button>
+            </div>
           </div>
           <div class="table-wrap">
             <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
@@ -449,6 +467,11 @@
               <option value="ignorado">Ignorado</option>
             </select>
             <button class="btn btn-primary" @click="openModal('alerta')">+ Novo</button>
+            <div class="export-btns">
+              <button class="btn btn-ghost btn-sm" @click="exportData('alertas', 'pdf')">PDF</button>
+              <button class="btn btn-ghost btn-sm" @click="exportData('alertas', 'excel')">Excel</button>
+              <button class="btn btn-ghost btn-sm" @click="exportData('alertas', 'csv')">CSV</button>
+            </div>
           </div>
           <div class="table-wrap">
             <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
@@ -503,6 +526,11 @@
               <option value="preditiva">Preditiva</option>
             </select>
             <button class="btn btn-primary" @click="openModal('ordem')">+ Nova Ordem</button>
+            <div class="export-btns">
+              <button class="btn btn-ghost btn-sm" @click="exportData('ordens-servico', 'pdf')">PDF</button>
+              <button class="btn btn-ghost btn-sm" @click="exportData('ordens-servico', 'excel')">Excel</button>
+              <button class="btn btn-ghost btn-sm" @click="exportData('ordens-servico', 'csv')">CSV</button>
+            </div>
           </div>
           <div class="table-wrap">
             <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
@@ -599,6 +627,11 @@
                 <input type="number" class="filter-input" style="flex:1" v-model="filters.telemetria_leituras.valor_min" placeholder="Mínimo" @input="debouncedFetch('tlmin',fetchTelemetria)" />
                 <span style="color:var(--t4)">-</span>
                 <input type="number" class="filter-input" style="flex:1" v-model="filters.telemetria_leituras.valor_max" placeholder="Máximo" @input="debouncedFetch('tlmax',fetchTelemetria)" />
+                <div class="export-btns" style="border-left:none; padding-left:0; margin-left:auto;">
+                  <button class="btn btn-ghost btn-sm" @click="exportData('telemetria', 'pdf')">PDF</button>
+                  <button class="btn btn-ghost btn-sm" @click="exportData('telemetria', 'excel')">Excel</button>
+                  <button class="btn btn-ghost btn-sm" @click="exportData('telemetria', 'csv')">CSV</button>
+                </div>
               </div>
               <div class="table-wrap">
                 <div v-if="loading" class="loading"><div class="spinner"></div></div>
@@ -649,6 +682,11 @@
               <input type="number" class="filter-input" style="width:100px" v-model="filters.historico.custo_max" placeholder="999999" @input="debouncedFetch('hic2',fetchHistorico)" />
             </div>
             <button class="btn btn-primary" @click="openModal('historico')">+ Registro</button>
+            <div class="export-btns">
+              <button class="btn btn-ghost btn-sm" @click="exportData('historico', 'pdf')">PDF</button>
+              <button class="btn btn-ghost btn-sm" @click="exportData('historico', 'excel')">Excel</button>
+              <button class="btn btn-ghost btn-sm" @click="exportData('historico', 'csv')">CSV</button>
+            </div>
           </div>
           <div class="table-wrap">
             <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
