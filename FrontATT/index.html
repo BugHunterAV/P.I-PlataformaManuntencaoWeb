@@ -9,11 +9,40 @@
   <style>
     .export-btns {
       display: flex;
-      gap: 6px;
-      border-left: 1px solid var(--border);
-      padding-left: 12px;
+      gap: 8px;
+      align-items: center;
       margin-left: auto;
+      background: rgba(0,0,0,0.2);
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
     }
+    .export-label {
+      font-size: 11px;
+      color: var(--t4);
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin-right: 4px;
+    }
+    .btn-export {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-export.pdf { background: rgba(255, 59, 59, 0.1); color: #ff3b3b; border: 1px solid rgba(255, 59, 59, 0.3); }
+    .btn-export.pdf:hover { background: rgba(255, 59, 59, 0.2); }
+    .btn-export.excel { background: rgba(0, 212, 170, 0.1); color: #00d4aa; border: 1px solid rgba(0, 212, 170, 0.3); }
+    .btn-export.excel:hover { background: rgba(0, 212, 170, 0.2); }
+    .btn-export.csv { background: rgba(77, 184, 255, 0.1); color: #4db8ff; border: 1px solid rgba(77, 184, 255, 0.3); }
+    .btn-export.csv:hover { background: rgba(77, 184, 255, 0.2); }
   </style>
 </head>
 <body>
@@ -153,8 +182,11 @@
           </template>
           <div class="topbar-meta">
             <template v-if="view==='dashboard'">
-              <button class="btn btn-ghost btn-sm" @click="exportData('dashboard', 'pdf')" title="Exportar Dashboard em PDF">📄 PDF</button>
-              <button class="btn btn-ghost btn-sm" @click="exportData('dashboard', 'excel')" title="Exportar Dashboard em Excel">📊 Excel</button>
+              <div class="export-btns" style="margin-left:0; margin-right:12px; padding:4px 8px;">
+                <span class="export-label">Exportar Dash:</span>
+                <button class="btn-export pdf" @click="exportData('dashboard', 'pdf')" title="Baixar PDF">📄 PDF</button>
+                <button class="btn-export excel" @click="exportData('dashboard', 'excel')" title="Baixar Excel">📊 Excel</button>
+              </div>
             </template>
             <span class="topbar-chip">API v1.0</span>
             <span class="live-dot"></span>
@@ -415,9 +447,10 @@
             </select>
             <button class="btn btn-primary" @click="openModal('equipamento')">+ Novo</button>
             <div class="export-btns">
-              <button class="btn btn-ghost btn-sm" @click="exportData('equipamentos', 'pdf')">PDF</button>
-              <button class="btn btn-ghost btn-sm" @click="exportData('equipamentos', 'excel')">Excel</button>
-              <button class="btn btn-ghost btn-sm" @click="exportData('equipamentos', 'csv')">CSV</button>
+              <span class="export-label">Exportar:</span>
+              <button class="btn-export pdf" @click="exportData('equipamentos', 'pdf')">📄 PDF</button>
+              <button class="btn-export excel" @click="exportData('equipamentos', 'excel')">📊 Excel</button>
+              <button class="btn-export csv" @click="exportData('equipamentos', 'csv')">📝 CSV</button>
             </div>
           </div>
           <div class="table-wrap">
@@ -468,9 +501,10 @@
             </select>
             <button class="btn btn-primary" @click="openModal('alerta')">+ Novo</button>
             <div class="export-btns">
-              <button class="btn btn-ghost btn-sm" @click="exportData('alertas', 'pdf')">PDF</button>
-              <button class="btn btn-ghost btn-sm" @click="exportData('alertas', 'excel')">Excel</button>
-              <button class="btn btn-ghost btn-sm" @click="exportData('alertas', 'csv')">CSV</button>
+              <span class="export-label">Exportar:</span>
+              <button class="btn-export pdf" @click="exportData('alertas', 'pdf')">📄 PDF</button>
+              <button class="btn-export excel" @click="exportData('alertas', 'excel')">📊 Excel</button>
+              <button class="btn-export csv" @click="exportData('alertas', 'csv')">📝 CSV</button>
             </div>
           </div>
           <div class="table-wrap">
@@ -527,9 +561,10 @@
             </select>
             <button class="btn btn-primary" @click="openModal('ordem')">+ Nova Ordem</button>
             <div class="export-btns">
-              <button class="btn btn-ghost btn-sm" @click="exportData('ordens-servico', 'pdf')">PDF</button>
-              <button class="btn btn-ghost btn-sm" @click="exportData('ordens-servico', 'excel')">Excel</button>
-              <button class="btn btn-ghost btn-sm" @click="exportData('ordens-servico', 'csv')">CSV</button>
+              <span class="export-label">Exportar:</span>
+              <button class="btn-export pdf" @click="exportData('ordens-servico', 'pdf')">📄 PDF</button>
+              <button class="btn-export excel" @click="exportData('ordens-servico', 'excel')">📊 Excel</button>
+              <button class="btn-export csv" @click="exportData('ordens-servico', 'csv')">📝 CSV</button>
             </div>
           </div>
           <div class="table-wrap">
@@ -627,10 +662,11 @@
                 <input type="number" class="filter-input" style="flex:1" v-model="filters.telemetria_leituras.valor_min" placeholder="Mínimo" @input="debouncedFetch('tlmin',fetchTelemetria)" />
                 <span style="color:var(--t4)">-</span>
                 <input type="number" class="filter-input" style="flex:1" v-model="filters.telemetria_leituras.valor_max" placeholder="Máximo" @input="debouncedFetch('tlmax',fetchTelemetria)" />
-                <div class="export-btns" style="border-left:none; padding-left:0; margin-left:auto;">
-                  <button class="btn btn-ghost btn-sm" @click="exportData('telemetria', 'pdf')">PDF</button>
-                  <button class="btn btn-ghost btn-sm" @click="exportData('telemetria', 'excel')">Excel</button>
-                  <button class="btn btn-ghost btn-sm" @click="exportData('telemetria', 'csv')">CSV</button>
+                <div class="export-btns" style="border-left:none; padding-left:0; margin-left:auto; background:transparent; border:none;">
+                  <span class="export-label">Exportar:</span>
+                  <button class="btn-export pdf" @click="exportData('telemetria', 'pdf')">📄 PDF</button>
+                  <button class="btn-export excel" @click="exportData('telemetria', 'excel')">📊 Excel</button>
+                  <button class="btn-export csv" @click="exportData('telemetria', 'csv')">📝 CSV</button>
                 </div>
               </div>
               <div class="table-wrap">
@@ -683,9 +719,10 @@
             </div>
             <button class="btn btn-primary" @click="openModal('historico')">+ Registro</button>
             <div class="export-btns">
-              <button class="btn btn-ghost btn-sm" @click="exportData('historico', 'pdf')">PDF</button>
-              <button class="btn btn-ghost btn-sm" @click="exportData('historico', 'excel')">Excel</button>
-              <button class="btn btn-ghost btn-sm" @click="exportData('historico', 'csv')">CSV</button>
+              <span class="export-label">Exportar:</span>
+              <button class="btn-export pdf" @click="exportData('historico', 'pdf')">📄 PDF</button>
+              <button class="btn-export excel" @click="exportData('historico', 'excel')">📊 Excel</button>
+              <button class="btn-export csv" @click="exportData('historico', 'csv')">📝 CSV</button>
             </div>
           </div>
           <div class="table-wrap">
