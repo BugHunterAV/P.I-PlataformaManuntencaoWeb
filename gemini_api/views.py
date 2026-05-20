@@ -249,20 +249,19 @@ class GeminiChatView(APIView):
         )
 
         # Tenta modelos em ordem de prioridade com fallback automático
-        # Modelos verificados como disponíveis na API generateContent do Gemini
         models_to_try = [
-            "gemini-2.5-flash",       # Mais recente e rápido
-            "gemini-2.0-flash",       # Boa performance geral
-            "gemini-1.5-pro",         # Maior capacidade de raciocínio
-            "gemini-1.5-flash",       # Rápido e confiável
+            "gemini-3.5-flash",       # Modelo rápido mais atual
+            "gemini-2.5-flash",       # Fallback seguro
+            "gemini-flash-latest",    # Ponteiro automático para a versão flash mais estável
         ]
         last_error = None
 
         for model_name in models_to_try:
             try:
+                print(f"[NanaSmart AI] Tentando modelo: {model_name}...")
                 config = types.GenerateContentConfig(
                     system_instruction=system_instruction,
-                    temperature=0.4,  # Baixo para respostas mais factuais e menos alucinação
+                    temperature=0.4,
                 )
 
                 response = client.models.generate_content(
@@ -270,7 +269,8 @@ class GeminiChatView(APIView):
                     contents=contents,
                     config=config,
                 )
-
+                
+                print(f"[NanaSmart AI] Sucesso com {model_name}!")
                 return Response({
                     "response": response.text,
                     "model_used": model_name,
@@ -278,25 +278,23 @@ class GeminiChatView(APIView):
 
             except Exception as e:
                 err_str = str(e)
-                # Erros recuperáveis: tenta o próximo modelo
-                # 404/NOT_FOUND = modelo não existe nesta versão da API
-                # 503/UNAVAILABLE = servidor temporariamente indisponível
-                # 429/ResourceExhausted = limite de taxa excedido
+                print(f"[NanaSmart AI] Erro no {model_name}: {err_str}")
+                
                 recoverable = (
                     "503" in err_str or "UNAVAILABLE" in err_str or
                     "ResourceExhausted" in err_str or "429" in err_str or
-                    "404" in err_str or "NOT_FOUND" in err_str
+                    "404" in err_str or "NOT_FOUND" in err_str or "not found" in err_str.lower()
                 )
                 if recoverable:
                     last_error = e
                     continue
-                # Erro não recuperável (auth, permissão, etc.) retorna imediatamente
+                # Erro não recuperável (ex: chave bloqueada)
                 return Response({
                     "response": f"Desculpe, ocorreu um erro na comunicação com o serviço da IA: {err_str}."
                 })
 
         # Todos os modelos falharam
+        print(f"[NanaSmart AI] TODOS os modelos falharam. Último erro: {last_error}")
         return Response({
-            "response": "Os servidores da IA do Google estão temporariamente indisponíveis. "
-                        "Por favor, aguarde alguns instantes e tente novamente."
+            "response": f"Os servidores da IA do Google estão indisponíveis no momento ou o limite de uso gratuito foi atingido (Rate Limit 429). Detalhe técnico: {str(last_error)}"
         })

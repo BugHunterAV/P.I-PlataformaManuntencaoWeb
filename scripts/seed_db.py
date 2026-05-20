@@ -265,32 +265,44 @@ def run_seed(num_empresas, equip_por_empresa):
         # data_conclusao explícita = abertura + tempo_reparo (2-72h).
         # Isso garante que o cálculo de MTBF (próxima_abertura - última_conclusão)
         # sempre produza valores positivos e o MTTR reflita a duração real do reparo.
-        for _ in range(random.randint(2, 6)): # Mais OS por conta do período maior
+        for _ in range(random.randint(3, 8)): # Mais OS por conta do período maior
             data_os = now - timedelta(days=random.randint(5, 115))
-            tipo_os = random.choice(['preventiva', 'corretiva'])
+            tipo_os = random.choice(['preventiva', 'corretiva', 'preditiva'])
+            
+            status_os = random.choices(['concluida', 'pendente', 'cancelada', 'andamento'], weights=[0.6, 0.2, 0.1, 0.1])[0]
+            
             # Tempo de reparo realista: 2h a 72h após a abertura
             horas_reparo = random.randint(2, 72)
-            data_conclusao_os = data_os + timedelta(hours=horas_reparo)
+            data_conclusao_os = data_os + timedelta(hours=horas_reparo) if status_os in ['concluida', 'cancelada'] else None
+            
             # Garante que a conclusão não ultrapasse o momento atual
-            if data_conclusao_os > now:
+            if data_conclusao_os and data_conclusao_os > now:
                 data_conclusao_os = now - timedelta(minutes=random.randint(5, 60))
 
+            # Se for pendente, tem 80% de chance de NÃO ter responsável (vazia/desalocada)
+            if status_os == 'pendente' and random.random() < 0.8:
+                responsavel_os = None
+            else:
+                responsavel_os = random.choice(tecnicos_empresa) if tecnicos_empresa else None
+
             os_obj = OrdemServico.objects.create(
-                equipamento=eq, responsavel=random.choice(tecnicos_empresa) if tecnicos_empresa else None,
+                equipamento=eq, responsavel=responsavel_os,
                 titulo=f"{tipo_os.capitalize()} - {eq.nome}", 
-                descricao=f"Atendimento de rotina para {eq.tipo}.",
-                status='concluida', tipo_os=tipo_os,
+                descricao=f"Atendimento de rotina para {eq.tipo}." if status_os != 'cancelada' else "OS Aberta indevidamente e cancelada.",
+                status=status_os if status_os != 'andamento' else 'em_andamento', tipo_os=tipo_os,
                 prioridade=random.choice(['baixo', 'medio', 'critico']),
                 data_abertura=data_os,
-                data_conclusao=data_conclusao_os  # FIX: define conclusão explícita
+                data_conclusao=data_conclusao_os
             )
             
-            HistoricoManutencao.objects.create(
-                ordem_servico=os_obj, data_execucao=data_os.date(),
-                descricao_servico=random.choice(ACOES_MANUTENCAO[tipo_os]),
-                custo_pecas=Decimal(random.uniform(100, 2500)),
-                custo_mao_de_obra=Decimal(random.uniform(200, 1500))
-            )
+            # Histórico só faz sentido se concluída (e 10% das concluídas deixaremos "vazias" sem histórico para testar falha humana)
+            if status_os == 'concluida' and random.random() < 0.9:
+                HistoricoManutencao.objects.create(
+                    ordem_servico=os_obj, data_execucao=data_os.date(),
+                    descricao_servico=random.choice(ACOES_MANUTENCAO.get(tipo_os, ACOES_MANUTENCAO['preventiva'])),
+                    custo_pecas=Decimal(random.uniform(100, 2500)),
+                    custo_mao_de_obra=Decimal(random.uniform(200, 1500))
+                )
 
         # Alertas e OS em aberto
         if eq.status == 'manutencao':
