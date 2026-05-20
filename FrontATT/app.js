@@ -590,7 +590,7 @@ createApp({
       empresa:     { title:'Empresa', endpoint:'/api/empresas/',
         defaults:{ nome:'', cnpj:'', telefone:'', email:'', cidade:'', estado:'', endereco:'' } },
       sensor:      { title:'Sensor', endpoint:'/api/telemetria/sensores/',
-        defaults:{ nome:'', tipo:'', unidade_medida:'', equipamento:null, ativo:true } },
+        defaults:{ nome:'', tipo:'', unidade_medida:'', equipamento:null, empresa:null, ativo:true } },
       leitura:     { title:'Leitura de Telemetria', endpoint:'/api/telemetria/leituras/',
         defaults:{ sensor:null, valor:'', timestamp:'' } },
       
@@ -654,6 +654,10 @@ createApp({
         ['empresa','equipamento','sensor','ordem_servico','responsavel'].forEach(k => {
           if (payload[k] === '' || payload[k] === 0) payload[k] = null;
         });
+
+        if (modal.type === 'leitura' && !payload.timestamp) {
+          payload.timestamp = new Date().toISOString();
+        }
 
         // DEBUG — remover após confirmar
         if (modal.type === 'ordem') console.log('PAYLOAD OS →', JSON.stringify(payload));
@@ -1019,6 +1023,18 @@ createApp({
       const u = lists.usuarios.find(x => x.id === id);
       return u ? u.username : '';
     }
+    function empresaNomeSensor(s) {
+      if (!s.equipamento) return '—';
+      const eq = lists.equipamentos.find(e => e.id === s.equipamento);
+      if (!eq || !eq.empresa) return '—';
+      return empresaNome(eq.empresa);
+    }
+    function sensorEquipNome(sensorId) {
+      if (!sensorId) return '—';
+      const s = lists.sensores.find(x => x.id === sensorId);
+      if (!s || !s.equipamento) return '—';
+      return eqNome(s.equipamento);
+    }
     function onGlobalEmpresaChange() {
       // Recarrega a aba atual ao mudar o filtro global
       // Também recarrega o dashboard se estiver nele
@@ -1184,6 +1200,7 @@ createApp({
       fmtDate, nivelBadge, nivelColor, statusBadge, eqStatusBadge,
       ordemStatusBadge, prioridadeBadge,
       eqNome, empresaNome, sensorNome, locSetor, custoTotal, countSensores, usuarioNome,
+      empresaNomeSensor, sensorEquipNome,
       onGlobalEmpresaChange,
       chartEquipStatus, chartAlertNivel, chartOrdens, chartTelemetria,
       chartHistoricoTipo, donutArcs,

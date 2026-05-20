@@ -650,14 +650,15 @@
                 <div v-if="loading" class="loading"><div class="spinner"></div></div>
                 <div v-else-if="lists.sensores.length===0" class="empty"><div class="empty-icon">⬡</div>Sem sensores</div>
                 <table v-else>
-                  <thead><tr><th>ID</th><th>Nome</th><th>Tipo</th><th>Unidade</th><th>Equipamento</th><th>Ativo</th><th>Ações</th></tr></thead>
+                  <thead><tr><th>ID</th><th>Equipamento</th><th>Sensor</th><th>Empresa</th><th>Tipo</th><th>Unidade</th><th>Status</th><th>Ações</th></tr></thead>
                   <tbody>
                     <tr v-for="s in lists.sensores" :key="s.id">
                       <td style="font-family:var(--mono);color:var(--t4)">#{{ s.id }}</td>
-                      <td style="font-weight:600;color:var(--t1)">{{ s.nome }}</td>
+                      <td style="font-size:11px; font-weight:600; color:var(--t1)">{{ eqNome(s.equipamento) }}</td>
+                      <td style="font-weight:600;color:var(--t2)">{{ s.nome }}</td>
+                      <td style="font-size:11px">{{ empresaNomeSensor(s) }}</td>
                       <td style="font-family:var(--mono);font-size:11px">{{ s.tipo }}</td>
                       <td style="color:var(--t3)">{{ s.unidade_medida || '—' }}</td>
-                      <td style="font-size:11px">{{ eqNome(s.equipamento) }}</td>
                       <td>
                         <span class="badge" :class="s.ativo ? 'badge-green' : 'badge-gray'">{{ s.ativo ? 'Ativo' : 'Inativo' }}</span>
                       </td>
@@ -699,11 +700,12 @@
                 <div v-if="loading" class="loading"><div class="spinner"></div></div>
                 <div v-else-if="lists.leituras.length===0" class="empty"><div class="empty-icon">⬡</div>Sem leituras</div>
                 <table v-else>
-                  <thead><tr><th>ID</th><th>Sensor</th><th>Valor</th><th>Data/Hora</th><th>Ações</th></tr></thead>
+                  <thead><tr><th>ID</th><th>Equipamento</th><th>Sensor</th><th>Valor</th><th>Data/Hora</th><th>Ações</th></tr></thead>
                   <tbody>
                     <tr v-for="l in lists.leituras.slice(0,30)" :key="l.id">
                       <td style="font-family:var(--mono);color:var(--t4)">#{{ l.id }}</td>
-                      <td style="font-size:11px">{{ sensorNome(l.sensor) }}</td>
+                      <td style="font-size:11px; font-weight:600; color:var(--t1)">{{ sensorEquipNome(l.sensor) }}</td>
+                      <td style="font-size:11px; color:var(--t3)">{{ sensorNome(l.sensor) }}</td>
                       <td style="font-weight:700;color:var(--acid);font-family:var(--mono)">{{ l.valor }}</td>
                       <td style="font-family:var(--mono);font-size:10px;color:var(--t4)">{{ fmtDate(l.timestamp) }}</td>
                       <td><div class="action-btns">
@@ -1101,6 +1103,14 @@
               <option v-for="e in lists.equipamentos" :key="e.id" :value="e.id">{{ e.nome }} (#{{ e.id }})</option>
             </select>
             <span v-if="formErrors.equipamento" class="field-error">{{ formErrors.equipamento }}</span>
+          </div>
+          <div class="field" :class="{hasError:formErrors.empresa}">
+            <label>Empresa</label>
+            <select v-model.number="fd.empresa">
+              <option :value="null">— Automático (da localização/equipamento) —</option>
+              <option v-for="emp in lists.empresas" :key="emp.id" :value="emp.id">{{ emp.nome }}</option>
+            </select>
+            <span v-if="formErrors.empresa" class="field-error">{{ formErrors.empresa }}</span>
           </div>
           <div class="field">
             <label>Ativo</label>
