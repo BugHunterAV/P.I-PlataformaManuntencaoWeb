@@ -261,16 +261,28 @@ def run_seed(num_empresas, equip_por_empresa):
         tecnicos_empresa = list(tecnicos.filter(empresa=eq.empresa))
         
         # Histórico de OS Concluídas
+        # As OS são geradas com datas de abertura espalhadas no passado e
+        # data_conclusao explícita = abertura + tempo_reparo (2-72h).
+        # Isso garante que o cálculo de MTBF (próxima_abertura - última_conclusão)
+        # sempre produza valores positivos e o MTTR reflita a duração real do reparo.
         for _ in range(random.randint(2, 6)): # Mais OS por conta do período maior
             data_os = now - timedelta(days=random.randint(5, 115))
             tipo_os = random.choice(['preventiva', 'corretiva'])
+            # Tempo de reparo realista: 2h a 72h após a abertura
+            horas_reparo = random.randint(2, 72)
+            data_conclusao_os = data_os + timedelta(hours=horas_reparo)
+            # Garante que a conclusão não ultrapasse o momento atual
+            if data_conclusao_os > now:
+                data_conclusao_os = now - timedelta(minutes=random.randint(5, 60))
+
             os_obj = OrdemServico.objects.create(
                 equipamento=eq, responsavel=random.choice(tecnicos_empresa) if tecnicos_empresa else None,
                 titulo=f"{tipo_os.capitalize()} - {eq.nome}", 
                 descricao=f"Atendimento de rotina para {eq.tipo}.",
                 status='concluida', tipo_os=tipo_os,
                 prioridade=random.choice(['baixo', 'medio', 'critico']),
-                data_abertura=data_os
+                data_abertura=data_os,
+                data_conclusao=data_conclusao_os  # FIX: define conclusão explícita
             )
             
             HistoricoManutencao.objects.create(

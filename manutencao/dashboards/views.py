@@ -25,12 +25,16 @@ class KpiService:
         mttr = mttr_data['avg_mttr'] if mttr_data['avg_mttr'] else timedelta(0)
 
         # MTBF — tempo médio entre falhas (intervalo entre fim de uma OS e início da próxima)
+        # Nota: apenas intervalos positivos são considerados. Intervalos negativos ou zero
+        # indicam dados inconsistentes (ex: data_conclusao carimbada errada) e são ignorados.
         inter_failure_times = []
         last_conclusao = None
         for os in os_eq:
             if os.data_conclusao:
                 if last_conclusao:
-                    inter_failure_times.append(os.data_abertura - last_conclusao)
+                    intervalo = os.data_abertura - last_conclusao
+                    if intervalo.total_seconds() > 0:  # ignora intervalos negativos/zerados
+                        inter_failure_times.append(intervalo)
                 last_conclusao = os.data_conclusao
 
         if inter_failure_times:

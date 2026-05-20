@@ -1255,10 +1255,24 @@
     <div class="ai-suggestions-container">
       <div class="ai-suggestions-title">💡 Perguntas Rápidas:</div>
       <div class="ai-suggestions-scroll">
-        <button class="ai-suggestion-chip" @click="sendSuggestion('Status Geral')">📊 Status Geral</button>
-        <button class="ai-suggestion-chip" @click="sendSuggestion('KPIs Medios')">📈 KPIs Médios</button>
-        <button class="ai-suggestion-chip" @click="sendSuggestion('Sugerir Preventivas')">🛡️ Sugerir Preventivas</button>
-        <button class="ai-suggestion-chip" @click="sendSuggestion('Quebras e MTBF')">⚠️ Quebras e MTBF</button>
+        <!-- TÉCNICO -->
+        <template v-if="me?.tipo_usuario === 'tecnico'">
+          <button class="ai-suggestion-chip" @click="sendSuggestion('Como Consertar')">🔧 Como Consertar</button>
+          <button class="ai-suggestion-chip" @click="sendSuggestion('O Que Fazer')">🛠️ O Que Fazer</button>
+          <button class="ai-suggestion-chip" @click="sendSuggestion('Sugerir Preventivas')">🛡️ Sugerir Preventivas</button>
+        </template>
+        <!-- GESTOR -->
+        <template v-else-if="me?.tipo_usuario === 'gestor'">
+          <button class="ai-suggestion-chip" @click="sendSuggestion('Status Empresa')">📊 Status da Empresa</button>
+          <button class="ai-suggestion-chip" @click="sendSuggestion('Gestão de Equipe')">👥 Gestão de Equipe</button>
+          <button class="ai-suggestion-chip" @click="sendSuggestion('Redução de Custos')">📉 Redução de Custos</button>
+        </template>
+        <!-- ADMIN -->
+        <template v-else>
+          <button class="ai-suggestion-chip" @click="sendSuggestion('Visão Global')">🌍 Visão Global</button>
+          <button class="ai-suggestion-chip" @click="sendSuggestion('Estratégia Sistêmica')">📈 Estratégia Sistêmica</button>
+          <button class="ai-suggestion-chip" @click="sendSuggestion('Alertas Críticos Globais')">⚠️ Alertas Críticos</button>
+        </template>
       </div>
     </div>
 

@@ -811,14 +811,30 @@ createApp({
 
     function sendSuggestion(type) {
       let promptText = '';
-      if (type === 'Status Geral') {
-        promptText = 'Qual é o status geral de funcionamento dos equipamentos e sensores hoje?';
-      } else if (type === 'KPIs Medios') {
-        promptText = 'Qual é o MTBF e o MTTR médio dos equipamentos cadastrados no sistema? Algum está crítico?';
+      
+      // Técnico
+      if (type === 'Como Consertar') {
+        promptText = 'Quais os passos recomendados para consertar e analisar a causa raiz dos alertas críticos mais recentes?';
+      } else if (type === 'O Que Fazer') {
+        promptText = 'O que devo fazer com as ordens de serviço pendentes e como priorizá-las em campo?';
       } else if (type === 'Sugerir Preventivas') {
-        promptText = 'Com base nos sensores de telemetria e ordens abertas, quais manutenções preditivas ou preventivas você sugere realizar?';
-      } else if (type === 'Quebras e MTBF') {
-        promptText = 'Quais são as médias de quebras de equipamentos e quais apresentam maior índice de falhas históricos?';
+        promptText = 'Com base nos sensores de telemetria e ordens abertas, quais manutenções preventivas você sugere realizar?';
+      } 
+      // Gestor
+      else if (type === 'Status Empresa') {
+        promptText = 'Qual é o status geral de funcionamento dos equipamentos e o resumo de custos da minha empresa?';
+      } else if (type === 'Gestão de Equipe') {
+        promptText = 'Quais são as melhores ferramentas ou práticas para otimizar a alocação da minha equipe de manutenção?';
+      } else if (type === 'Redução de Custos') {
+        promptText = 'Com base no histórico e nos KPIs, onde há maior oportunidade para reduzir custos de manutenção?';
+      }
+      // Admin
+      else if (type === 'Visão Global') {
+        promptText = 'Qual o desempenho comparativo, MTBF e MTTR médio de todas as empresas e ativos cadastrados?';
+      } else if (type === 'Estratégia Sistêmica') {
+        promptText = 'Quais ferramentas de alta gestão e estratégias sistêmicas você sugere para melhorar a confiabilidade de toda a plataforma?';
+      } else if (type === 'Alertas Críticos Globais') {
+        promptText = 'Quais são os alertas críticos globais que exigem intervenção macro ou escalonamento imediato?';
       }
       
       if (promptText) {
