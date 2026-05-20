@@ -57,6 +57,7 @@ createApp({
 
     // ─ Computed básicos ──────────────────────────────
     const isAdmin     = computed(() => me.value?.tipo_usuario === 'admin');
+    const isAdminOrGestor = computed(() => ['admin', 'gestor'].includes(me.value?.tipo_usuario));
     const userInitial = computed(() => (me.value?.username || 'U')[0].toUpperCase());
     const viewTitle   = computed(() => ({
       dashboard:'Dashboard', equipamentos:'Equipamentos', alertas:'Alertas',
@@ -412,6 +413,8 @@ createApp({
       // Busca localizações para mostrar o setor ao lado de cada equipamento
       const locRes = await api('/api/localizacao/?limit=999');
       lists.localizacoes = normList(locRes);
+      // Busca todos os sensores para exibir a contagem na tabela de equipamentos
+      await fetchSensoresAll();
     }); }
 
     async function fetchAlertas() { await withLoading(async () => {
@@ -582,7 +585,7 @@ createApp({
         defaults:{ tipo_alerta:'', nivel:'medio', descricao:'', status:'ativo', equipamento:null } },
       
       ordem:       { title:'Ordem de Serviço', endpoint:'/api/ordens-servico/',
-        defaults:{ titulo:'', tipo_os:'preventiva', prioridade:'medio', status:'pendente', equipamento:null, responsavel:null, descricao:'' } },
+        defaults:{ titulo:'', tipo_os:'preventiva', prioridade:'medio', status:'pendente', equipamento:null, responsavel:null, descricao:'', custo_pecas:null, custo_mao_de_obra:null } },
       
       empresa:     { title:'Empresa', endpoint:'/api/empresas/',
         defaults:{ nome:'', cnpj:'', telefone:'', email:'', cidade:'', estado:'', endereco:'' } },
@@ -665,10 +668,32 @@ createApp({
           if (!tiposValidos.includes(payload.tipo_os))          payload.tipo_os     = 'preventiva';
         }
 
+        let createdOsId = modal.editId;
         if (modal.editId) {
           await api(cfg.endpoint + modal.editId + '/', { method:'PUT', body:JSON.stringify(payload) });
         } else {
-          await api(cfg.endpoint, { method:'POST', body:JSON.stringify(payload) });
+          const res = await api(cfg.endpoint, { method:'POST', body:JSON.stringify(payload) });
+          if (modal.type === 'ordem' && res) createdOsId = res.id;
+        }
+
+        // Se for OS e foi marcada como concluída, e tiver custos preenchidos, cria histórico
+        if (modal.type === 'ordem' && payload.status === 'concluida') {
+          const cp = parseFloat(payload.custo_pecas) || 0;
+          const cmo = parseFloat(payload.custo_mao_de_obra) || 0;
+          if ((cp > 0 || cmo > 0) && createdOsId) {
+            const histPayload = {
+              ordem_servico: createdOsId,
+              custo_pecas: cp,
+              custo_mao_de_obra: cmo,
+              descricao_servico: payload.titulo ? (payload.titulo + ' (Conclusão)') : 'Conclusão da OS',
+              data_execucao: new Date().toISOString().slice(0, 10)
+            };
+            try {
+              await api('/api/historico/', { method: 'POST', body: JSON.stringify(histPayload) });
+            } catch(err) {
+              console.error('Erro ao salvar custos no histórico:', err);
+            }
+          }
         }
         modal.open = false;
         toast(modal.editId ? 'Atualizado com sucesso!' : 'Criado com sucesso!', 'success');
@@ -985,6 +1010,15 @@ createApp({
     function custoTotal(h) {
       return ((parseFloat(h.custo_pecas)||0) + (parseFloat(h.custo_mao_de_obra)||0)).toFixed(2);
     }
+    function countSensores(eqId) {
+      if (eqId == null) return 0;
+      return lists.sensores.filter(s => s.equipamento === eqId).length;
+    }
+    function usuarioNome(id) {
+      if (!id) return '';
+      const u = lists.usuarios.find(x => x.id === id);
+      return u ? u.username : '';
+    }
     function onGlobalEmpresaChange() {
       // Recarrega a aba atual ao mudar o filtro global
       // Também recarrega o dashboard se estiver nele
@@ -1142,14 +1176,14 @@ createApp({
       token, me, view, loading, loginLoading, loginError, loginForm,
       kpis, dashAlerts, alertCount, toasts, lists, pages, filters,
       modal, fd, formErrors, globalEmpresa,
-      isAdmin, userInitial, viewTitle,
+      isAdmin, isAdminOrGestor, userInitial, viewTitle,
       doLogin, logout, navigate, debouncedFetch,
       fetchEquipamentos, fetchAlertas, fetchOrdens, fetchTelemetria,
       fetchHistorico, fetchEmpresas, fetchUsuarios, fetchLocalizacoes, fetchPage, fetchDashboard,
       openModal, editItem, saveItem, deleteItem, exportData,
       fmtDate, nivelBadge, nivelColor, statusBadge, eqStatusBadge,
       ordemStatusBadge, prioridadeBadge,
-      eqNome, empresaNome, sensorNome, locSetor, custoTotal,
+      eqNome, empresaNome, sensorNome, locSetor, custoTotal, countSensores, usuarioNome,
       onGlobalEmpresaChange,
       chartEquipStatus, chartAlertNivel, chartOrdens, chartTelemetria,
       chartHistoricoTipo, donutArcs,

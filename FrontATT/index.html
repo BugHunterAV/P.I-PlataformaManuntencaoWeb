@@ -467,7 +467,7 @@
               <option value="">Todas as Empresas</option>
               <option v-for="emp in lists.empresas" :key="emp.id" :value="emp.id">{{ emp.nome }}</option>
             </select>
-            <button class="btn btn-primary" @click="openModal('equipamento')">+ Novo</button>
+            <button v-if="isAdminOrGestor" class="btn btn-primary" @click="openModal('equipamento')">+ Novo</button>
             <div class="export-btns">
               <span class="export-label">Exportar:</span>
               <button class="btn-export pdf" @click="exportData('equipamentos', 'pdf')">📄 PDF</button>
@@ -479,7 +479,7 @@
             <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
             <div v-else-if="lists.equipamentos.length===0" class="empty"><div class="empty-icon">⚙</div>Nenhum equipamento</div>
             <table v-else>
-              <thead><tr><th>ID</th><th>Nome</th><th>Modelo</th><th>Fabricante</th><th>Nº Série</th><th>Setor</th><th>Status</th><th>Empresa</th><th>Ações</th></tr></thead>
+              <thead><tr><th>ID</th><th>Nome</th><th>Modelo</th><th>Fabricante</th><th>Nº Série</th><th>Setor</th><th>Sensores</th><th>Status</th><th>Empresa</th><th>Ações</th></tr></thead>
               <tbody>
                 <tr v-for="e in lists.equipamentos" :key="e.id">
                   <td style="font-family:var(--mono);color:var(--t4)">#{{ e.id }}</td>
@@ -488,10 +488,11 @@
                   <td>{{ e.fabricante || '—' }}</td>
                   <td style="font-family:var(--mono);font-size:11px">{{ e.numero_serie || '—' }}</td>
                   <td style="font-family:var(--mono);font-size:11px;color:var(--acid)">{{ locSetor(e.id) }}</td>
+                  <td style="font-family:var(--mono);font-size:11px">{{ countSensores(e.id) }}</td>
                   <td><span class="badge" :class="eqStatusBadge(e.status)"><span class="badge-dot"></span>{{ e.status || '—' }}</span></td>
                   <td style="font-size:11px">{{ empresaNome(e.empresa) }}</td>
                   <td><div class="action-btns">
-                    <button class="btn btn-ghost btn-sm" @click="editItem('equipamento',e)">Editar</button>
+                    <button v-if="isAdminOrGestor" class="btn btn-ghost btn-sm" @click="editItem('equipamento',e)">Editar</button>
                     <button v-if="isAdmin" class="btn btn-danger btn-sm" @click="deleteItem('equipamentos',e.id)">✕</button>
                   </div></td>
                 </tr>
@@ -593,13 +594,16 @@
             <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
             <div v-else-if="lists.ordens.length===0" class="empty"><div class="empty-icon">✦</div>Nenhuma ordem</div>
             <table v-else>
-              <thead><tr><th>ID</th><th>Título</th><th>Tipo</th><th>Prioridade</th><th>Status</th><th>Equipamento</th><th>Abertura</th><th>Ações</th></tr></thead>
+              <thead><tr><th>ID</th><th>Título</th><th>Tipo</th><th>Prioridade</th><th>Responsável</th><th>Status</th><th>Equipamento</th><th>Abertura</th><th>Ações</th></tr></thead>
               <tbody>
                 <tr v-for="o in lists.ordens" :key="o.id">
                   <td style="font-family:var(--mono);color:var(--t4)">#{{ o.id }}</td>
                   <td style="font-weight:600;color:var(--t1);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ o.titulo }}</td>
                   <td style="font-family:var(--mono);font-size:11px">{{ o.tipo_os || '—' }}</td>
                   <td><span class="badge" :class="prioridadeBadge(o.prioridade)">{{ o.prioridade || '—' }}</span></td>
+                  <td style="font-size:11px; font-weight:600" :style="{color: o.responsavel ? 'var(--ice)' : 'var(--warn)'}">
+                    {{ usuarioNome(o.responsavel) || 'AGUARDANDO TÉCNICO' }}
+                  </td>
                   <td><span class="badge" :class="ordemStatusBadge(o.status)">{{ o.status || '—' }}</span></td>
                   <td style="font-size:11px">{{ eqNome(o.equipamento) }}</td>
                   <td style="font-family:var(--mono);font-size:10px;color:var(--t4)">{{ fmtDate(o.data_abertura || o.criado_em) }}</td>
@@ -1031,6 +1035,16 @@
               <option :value="null">— Sem responsável —</option>
               <option v-for="u in lists.usuarios" :key="u.id" :value="u.id">{{ u.username }} ({{ u.tipo_usuario }})</option>
             </select>
+          </div>
+          <div class="field-row" v-if="fd.status === 'concluida'">
+            <div class="field">
+              <label>Custo Peças (R$)</label>
+              <input type="number" step="0.01" v-model.number="fd.custo_pecas" placeholder="Ex: 150.00" />
+            </div>
+            <div class="field">
+              <label>Custo Mão de Obra (R$)</label>
+              <input type="number" step="0.01" v-model.number="fd.custo_mao_de_obra" placeholder="Ex: 80.00" />
+            </div>
           </div>
           <div class="field" :class="{hasError:formErrors.descricao}">
             <label>Descrição *</label>
