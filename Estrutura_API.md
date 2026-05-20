@@ -325,6 +325,24 @@ Retorna uma lista de KPIs focada em cada equipamento.
 
 ---
 
+## 🤖 Inteligência Artificial (Gemini API)
+
+**Endpoints:**
+- `POST /api/gemini/chat/`
+
+**Função:** Prover uma interface conversacional e de inteligência artificial generativa com suporte a regras de negócio e controle de acesso estrito (RBAC).
+
+### Detalhes da Integração
+
+A integração utiliza a biblioteca `google-generativeai` e exige a chave de API configurada no arquivo `.env` através da variável `GEMINI_API_KEY`. O modelo selecionado garante respostas precisas e rápidas para o tipo de prompt.
+
+O prompt base enviado para o Google Gemini é dinamicamente alterado dependendo do `tipo_usuario` extraído do Token JWT:
+- **Admin:** Recebe o contexto completo e acesso a respostas globais sobre o estado da aplicação.
+- **Gestor:** Recebe apenas os relatórios, alertas e O.S. da sua própria empresa. A IA é instruída a manter a privacidade (Multi-tenant).
+- **Técnico:** Recebe um contexto limitado a nível de execução. A IA atua como um conselheiro técnico focado em ajudar na resolução de problemas de O.S. e alertas locais de onde ele opera, e omite expressamente dados gerenciais se questionada.
+
+---
+
 ## 🛡️ Permissões e Segurança (RBAC)
 
 O sistema utiliza **Role-Based Access Control** para garantir a segurança dos dados:

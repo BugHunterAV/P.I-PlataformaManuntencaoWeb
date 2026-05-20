@@ -8,7 +8,7 @@
 
 Esta é uma API REST desenvolvida em Django que tem como objetivo centralizar e digitalizar toda a gestão de manutenção industrial de uma empresa. 
 
-O sistema permite que indústrias gerenciem de forma eficiente seus equipamentos, monitorem parâmetros em tempo real através de sensores IoT, recebam alertas automáticos quando algum parâmetro sai do normal, controlem todas as ordens de serviço desde a abertura até o fechamento, e tenham visibilidade gerencial através de dashboards com indicadores importantes como MTBF, MTTR e Disponibilidade dos ativos.
+O sistema permite que indústrias gerenciem de forma eficiente seus equipamentos, monitorem parâmetros em tempo real através de sensores IoT, recebam alertas automáticos quando algum parâmetro sai do normal, controlem todas as ordens de serviço desde a abertura até o fechamento, e tenham visibilidade gerencial através de dashboards com indicadores importantes como MTBF, MTTR e Disponibilidade dos ativos. O sistema conta ainda com uma integração com a Inteligência Artificial (Google Gemini) para auxiliar nas tomadas de decisões e fornecer suporte técnico avançado.
 
 O projeto foi construído com foco em modularidade, segurança, escalabilidade, isolamento de dados por empresa (multi-tenant) e fácil integração com o Front-end em Vue.js.
 
@@ -23,6 +23,8 @@ O projeto foi construído com foco em modularidade, segurança, escalabilidade, 
 - drf-spectacular para geração automática de documentação Swagger e ReDoc
 - django-cors-headers para permitir requisições do front-end
 - django-filter para filtros avançados nas listagens
+- python-dotenv para gerenciamento de variáveis de ambiente
+- google-generativeai para integração de Inteligência Artificial com o Google Gemini
 - Faker para geração de dados realistas durante o seed
 - SQLite (suportado para desenvolvimento rápido)
 - PostgreSQL (Banco de dados oficial de produção e desenvolvimento)
@@ -44,13 +46,21 @@ Siga os passos abaixo na ordem exata:
    - Crie um banco de dados chamado `manutencao`.
    - Ajuste o usuário e senha no arquivo `app/settings.py` se necessário.
 
-4. Execute as migrações para criar as tabelas no banco de dados:
+4. Crie o arquivo de variáveis de ambiente:
+   - Na raiz do projeto, crie um arquivo chamado `.env`
+   - Adicione sua chave da API do Gemini e outras configurações:
+     ```env
+     GEMINI_API_KEY="sua_chave_api_do_google_gemini_aqui"
+     ```
+     (Para obter a chave, acesse o [Google AI Studio](https://aistudio.google.com/))
+
+5. Execute as migrações para criar as tabelas no banco de dados:
    python manage.py migrate
 
-4. Popule o banco de dados com dados realistas. Veja a seção [Scripts de Utilidade](#-scripts-de-utilidade) para detalhes:
+6. Popule o banco de dados com dados realistas. Veja a seção [Scripts de Utilidade](#-scripts-de-utilidade) para detalhes:
    python scripts/seed_db.py
 
-5. Inicie o servidor de desenvolvimento com o comando:
+7. Inicie o servidor de desenvolvimento com o comando:
    python manage.py runserver
    Caso a porta 8000 esteja ocupada, utilize:
    python manage.py runserver 9000
@@ -127,6 +137,7 @@ P.I-PlataformaManuntencaoWeb/
 ├── telemetria/               # Sensores e Leituras IoT
 ├── alertas/                  # Sistema de Alertas automáticos
 ├── dashboards/               # KPIs e Dashboards executivos
+├── gemini_api/               # Integração com a Inteligência Artificial do Google Gemini
 ├── scripts/                  # Scripts de automação (seed)
 └── manage.py
 
@@ -139,6 +150,7 @@ P.I-PlataformaManuntencaoWeb/
 - **telemetria/** → Sensores IoT e Leituras de telemetria em tempo real
 - **alertas/** → Sistema de alertas automáticos gerados pela telemetria
 - **dashboards/** → Cálculo e retorno de KPIs (MTBF, MTTR, Disponibilidade, etc.)
+- **gemini_api/** → Comunicação direta com a API do Gemini, fornecendo suporte inteligente isolado por empresa e cargo.
 - **scripts/** → Scripts auxiliares como `seed_db.py` e `stress_telemetry.py`
 
 ---
@@ -212,6 +224,21 @@ Além dos sensores que detectam anomalias, o sistema conta com um motor preditiv
 4. **Ciclo Contínuo e Anti-Duplicação**:
    - Após o disparo, o plano é atualizado. O novo "carimbo" passa a ser 305h. O próximo disparo será projetado para 405h.
    - O sistema possui inteligência anti-duplicação: se o horímetro continuar subindo (ex: 310h), mas a O.S. Preditiva de "Troca de Óleo" ainda estiver aberta, ele **não** criará uma nova. Ele aguarda o fechamento do ciclo atual.
+
+---
+
+## 🤖 Inteligência Artificial (Gemini API)
+
+O sistema possui integração profunda com a API do Google Gemini, oferecendo um assistente inteligente com acesso baseado em papéis (RBAC).
+
+- **Respostas Contextualizadas:** O assistente sabe qual empresa o usuário pertence e responde apenas com dados relevantes daquela empresa.
+- **Acesso Hierárquico:**
+  - **Admin:** Pode fazer perguntas e gerenciar informações globais do sistema.
+  - **Gestor:** Visualiza e recebe conselhos estratégicos exclusivos dos dados da própria empresa, garantindo privacidade (Multi-tenant).
+  - **Técnico:** Restrito às suas manutenções e OS, a IA atua como um conselheiro técnico seguro, não expondo relatórios gerenciais, apenas informações ligadas à execução de suas tarefas.
+- **Como Funciona:** Tudo é isolado pelo sistema no back-end. A IA recebe as regras no prompt base de forma dinâmica dependendo do cargo do usuário autenticado no JWT.
+
+> **Importante:** Para o funcionamento da Inteligência Artificial, a variável de ambiente `GEMINI_API_KEY` deve estar configurada no arquivo `.env`.
 
 ---
 
@@ -369,5 +396,11 @@ Com o servidor rodando, acesse:
 | Método | Endpoint                          | Descrição |
 |--------|-----------------------------------|---------|
 | GET    | /api/dashboards/resumo/           | Retornar resumo geral e KPIs da empresa |
+
+### 🤖 Inteligência Artificial (Gemini)
+
+| Método | Endpoint                          | Descrição |
+|--------|-----------------------------------|---------|
+| POST   | /api/gemini/chat/                 | Enviar mensagem para a IA do Gemini, com contexto isolado por usuário |
 
 ---
