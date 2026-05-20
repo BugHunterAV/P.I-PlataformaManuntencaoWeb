@@ -1197,6 +1197,86 @@
     </div>
   </div>
 
+  <!-- ══════════════════════════════════════
+       CHAT FLOAT WIDGET (NanaSmart AI)
+  ══════════════════════════════════════ -->
+  <!-- Floating Button -->
+  <div class="ai-chat-trigger" @click="toggleChat" :class="{ open: chatOpen }">
+    <div class="ai-chat-trigger-icon">
+      <span class="ai-pulse-ring"></span>
+      <span class="ai-pulse-dot"></span>
+      💬
+    </div>
+    <span class="ai-trigger-label">NanaSmart AI</span>
+  </div>
+
+  <!-- Chat Window -->
+  <div v-if="chatOpen" class="ai-chat-window">
+    <!-- Window Header -->
+    <div class="ai-chat-header">
+      <div class="ai-header-info">
+        <div class="ai-avatar">AI</div>
+        <div>
+          <div class="ai-title">NanaSmart AI</div>
+          <div class="ai-subtitle">
+            <span class="ai-status-dot"></span>
+            Assistente Preditivo Online
+          </div>
+        </div>
+      </div>
+      <button class="ai-close-btn" @click="toggleChat">×</button>
+    </div>
+
+    <!-- Window Body / Chat area -->
+    <div class="ai-chat-body" ref="chatScrollContainer">
+      <div v-for="(msg, index) in chatMessages" :key="index" :class="['ai-msg-row', msg.role]">
+        <div class="ai-msg-avatar">{{ msg.role === 'ai' ? 'AI' : 'U' }}</div>
+        <div class="ai-msg-bubble-wrap">
+          <div class="ai-msg-bubble">
+            <div v-html="formatMarkdown(msg.text)"></div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Typing Indicator -->
+      <div v-if="chatLoading" class="ai-msg-row ai">
+        <div class="ai-msg-avatar">AI</div>
+        <div class="ai-msg-bubble-wrap">
+          <div class="ai-msg-bubble typing">
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Suggestions -->
+    <div class="ai-suggestions-container">
+      <div class="ai-suggestions-title">💡 Perguntas Rápidas:</div>
+      <div class="ai-suggestions-scroll">
+        <button class="ai-suggestion-chip" @click="sendSuggestion('Status Geral')">📊 Status Geral</button>
+        <button class="ai-suggestion-chip" @click="sendSuggestion('KPIs Medios')">📈 KPIs Médios</button>
+        <button class="ai-suggestion-chip" @click="sendSuggestion('Sugerir Preventivas')">🛡️ Sugerir Preventivas</button>
+        <button class="ai-suggestion-chip" @click="sendSuggestion('Quebras e MTBF')">⚠️ Quebras e MTBF</button>
+      </div>
+    </div>
+
+    <!-- Window Footer / Input -->
+    <div class="ai-chat-footer">
+      <input 
+        v-model="chatInput" 
+        type="text" 
+        placeholder="Pergunte sobre a planta, KPIs..." 
+        @keydown.enter="sendChatMessage" 
+        :disabled="chatLoading" 
+      />
+      <button @click="sendChatMessage" :disabled="chatLoading || !chatInput.trim()">
+        Enviar
+      </button>
+    </div>
+  </div>
+
 </div><!-- /#app -->
 <script src="app.js"></script>
 </body>

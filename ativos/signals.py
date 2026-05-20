@@ -2,8 +2,8 @@ from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from .models import Equipamento
 import os
-import dotenv import load_dotenv
-import gemini_api.client import get_media_quebras_equipamentos
+from dotenv import load_dotenv
+from gemini_api.cliente import get_media_quebras_equipamentos
 from manutencao.models import OrdemServico
 
 
@@ -61,11 +61,11 @@ def verificar_planos_por_horimetro(sender, instance, **kwargs):
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
 
-@receiver(pre_save,sender=OrdemServico)
-def verificar_manutencao(sender,instance,**kwargs):
-    if not instance.description:
-        if len(api_key) > 0:
+@receiver(pre_save, sender=OrdemServico)
+def verificar_manutencao(sender, instance, **kwargs):
+    if not instance.descricao:
+        if api_key and api_key != "CHAVEAQKUI" and len(api_key.strip()) > 0:
             texto = get_media_quebras_equipamentos(instance.equipamento.nome)
-            instance.description = texto
+            instance.descricao = texto
             
             

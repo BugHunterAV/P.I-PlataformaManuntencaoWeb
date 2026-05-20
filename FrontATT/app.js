@@ -1,4 +1,4 @@
-const { createApp, ref, reactive, computed, onMounted, watch } = Vue;
+const { createApp, ref, reactive, computed, onMounted, watch, nextTick } = Vue;
 const BASE = 'http://localhost:8000';
 
 createApp({
@@ -746,6 +746,122 @@ createApp({
       }
     });
 
+    // ─ Chat AI (NanaSmart AI) ────────────────────────
+    const chatOpen = ref(false);
+    const chatInput = ref('');
+    const chatLoading = ref(false);
+    const chatMessages = ref([
+      { 
+        role: 'ai', 
+        text: 'Olá! Sou a **NanaSmart AI**, assistente virtual especializada em confiabilidade e engenharia de manutenção preditiva da planta. Posso te ajudar a analisar métricas como MTBF, MTTR, disponibilidade, sensores IoT e o status das ordens de serviço. Como posso auxiliar você hoje?' 
+      }
+    ]);
+    const chatScrollContainer = ref(null);
+
+    function toggleChat() {
+      chatOpen.value = !chatOpen.value;
+      if (chatOpen.value) {
+        scrollToBottom();
+      }
+    }
+
+    function scrollToBottom() {
+      nextTick(() => {
+        if (chatScrollContainer.value) {
+          chatScrollContainer.value.scrollTop = chatScrollContainer.value.scrollHeight;
+        }
+      });
+    }
+
+    async function sendChatMessage() {
+      const msgText = chatInput.value.trim();
+      if (!msgText || chatLoading.value) return;
+
+      // Adiciona mensagem do usuário
+      chatMessages.value.push({ role: 'user', text: msgText });
+      chatInput.value = '';
+      chatLoading.value = true;
+      scrollToBottom();
+
+      try {
+        const res = await api('/api/gemini/chat/', {
+          method: 'POST',
+          body: JSON.stringify({
+            message: msgText,
+            history: chatMessages.value.slice(0, -1) // envia histórico anterior
+          })
+        });
+
+        if (res && res.response) {
+          chatMessages.value.push({ role: 'ai', text: res.response });
+        } else {
+          chatMessages.value.push({ role: 'ai', text: 'Desculpe, não consegui obter uma resposta válida da inteligência artificial.' });
+        }
+      } catch (err) {
+        console.error('Erro no chat da IA:', err);
+        chatMessages.value.push({ 
+          role: 'ai', 
+          text: 'Desculpe, ocorreu um erro ao conectar com o serviço da IA. Por favor, verifique a conectividade ou se a sua chave GEMINI_API_KEY no arquivo `.env` está correta.' 
+        });
+      } finally {
+        chatLoading.value = false;
+        scrollToBottom();
+      }
+    }
+
+    function sendSuggestion(type) {
+      let promptText = '';
+      if (type === 'Status Geral') {
+        promptText = 'Qual é o status geral de funcionamento dos equipamentos e sensores hoje?';
+      } else if (type === 'KPIs Medios') {
+        promptText = 'Qual é o MTBF e o MTTR médio dos equipamentos cadastrados no sistema? Algum está crítico?';
+      } else if (type === 'Sugerir Preventivas') {
+        promptText = 'Com base nos sensores de telemetria e ordens abertas, quais manutenções preditivas ou preventivas você sugere realizar?';
+      } else if (type === 'Quebras e MTBF') {
+        promptText = 'Quais são as médias de quebras de equipamentos e quais apresentam maior índice de falhas históricos?';
+      }
+      
+      if (promptText) {
+        chatInput.value = promptText;
+        sendChatMessage();
+      }
+    }
+
+    function formatMarkdown(text) {
+      if (!text) return '';
+      let lines = text.split('\n');
+      let insideList = false;
+      let result = [];
+
+      for (let line of lines) {
+        let trimmed = line.trim();
+        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+          if (!insideList) {
+            result.push('<ul>');
+            insideList = true;
+          }
+          let liContent = trimmed.substring(2);
+          liContent = liContent.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          result.push(`<li>${liContent}</li>`);
+        } else {
+          if (insideList) {
+            result.push('</ul>');
+            insideList = false;
+          }
+          let formattedLine = trimmed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+          if (formattedLine === '') {
+            result.push('<br>');
+          } else {
+            result.push(`<p>${formattedLine}</p>`);
+          }
+        }
+      }
+      if (insideList) {
+        result.push('</ul>');
+      }
+      return result.join('');
+    }
+
     return {
       token, me, view, loading, loginLoading, loginError, loginForm,
       kpis, dashAlerts, alertCount, toasts, lists, pages, filters,
@@ -762,6 +878,8 @@ createApp({
       chartEquipStatus, chartAlertNivel, chartOrdens, chartTelemetria,
       chartHistoricoTipo, donutArcs,
       availableSectors,
+      chatOpen, chatInput, chatLoading, chatMessages, chatScrollContainer,
+      toggleChat, sendChatMessage, sendSuggestion, formatMarkdown
     };
   }
 }).mount('#app');

@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'telemetria',
     'alertas',
     'exportacao',
+    'gemini_api',
 ]
 
 MIDDLEWARE = [
