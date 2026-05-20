@@ -225,8 +225,12 @@
             </div>
             <div class="kpi-mega col-3" style="--kpi-color:var(--acid)">
               <div class="kpi-mega-icon">⬡</div>
-              <div class="kpi-mega-label">Leituras Hoje</div>
-              <div class="kpi-mega-val">{{ kpis.leituras_hoje ?? lists.leituras.length }}</div>
+              <div class="kpi-mega-label">Leituras (Hoje / Total)</div>
+              <div class="kpi-mega-val kpi-mega-val-split">
+                {{ kpis.leituras_hoje ?? leiturasHoje.length }}
+                <span class="kpi-val-divider">/</span>
+                <span class="kpi-mega-val-secondary">{{ kpis.leituras_total ?? lists.leituras.length }}</span>
+              </div>
               <div class="kpi-mega-foot">pontos de telemetria</div>
             </div>
           </div>
@@ -312,8 +316,17 @@
           <div class="dash-grid" style="margin-bottom:16px">
             <div class="chart-card col-6">
               <div class="chart-head">
-                <div class="chart-title">Telemetria — Últimas Leituras <span class="live-dot" style="margin-left:6px"></span></div>
-                <div class="chart-sub">valores dos sensores</div>
+                <div class="chart-title">Telemetria <span class="live-dot" style="margin-left:6px"></span></div>
+                <div class="chart-filter-row">
+                  <select class="chart-filter-select" v-model="dashTelemetriaEquip">
+                    <option value="">Todos Equipamentos</option>
+                    <option v-for="eq in lists.equipamentos" :key="eq.id" :value="eq.id">{{ eq.nome }}</option>
+                  </select>
+                  <select class="chart-filter-select" v-model="dashTelemetriaSensor">
+                    <option value="">Todos Sensores</option>
+                    <option v-for="s in dashTelemetriaSensoresFiltrados" :key="s.id" :value="s.id">{{ s.nome }}</option>
+                  </select>
+                </div>
               </div>
               <div class="chart-body">
                 <div v-if="chartTelemetria.path" class="spark-wrap">
@@ -335,7 +348,7 @@
                   </svg>
                   <div class="spark-labels">
                     <span>min {{ chartTelemetria.min }}</span>
-                    <span>{{ lists.leituras.length }} pontos</span>
+                    <span>{{ chartTelemetria.count }} pontos</span>
                     <span>max {{ chartTelemetria.max }}</span>
                   </div>
                 </div>
@@ -345,8 +358,13 @@
 
             <div class="chart-card col-6">
               <div class="chart-head">
-                <div class="chart-title">Custo por Tipo de Manutenção</div>
-                <div class="chart-sub">histórico (R$)</div>
+                <div class="chart-title">Custo por Tipo</div>
+                <div class="chart-filter-row">
+                  <select class="chart-filter-select" v-model="dashCustoSetor">
+                    <option value="">Setor (Geral)</option>
+                    <option v-for="s in availableSectors" :key="s" :value="s">{{ s }}</option>
+                  </select>
+                </div>
               </div>
               <div class="chart-body">
                 <div v-if="chartHistoricoTipo.length" class="bar-list">

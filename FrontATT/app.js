@@ -17,6 +17,11 @@ createApp({
     const toasts       = ref([]);
     const globalEmpresa = ref('');  // Filtro global por empresa (admin)
 
+    // ─ Dashboard chart filters ──────────────────────
+    const dashTelemetriaEquip = ref('');
+    const dashTelemetriaSensor = ref('');
+    const dashCustoSetor = ref('');
+
     const lists = reactive({
       equipamentos:[], alertas:[], ordens:[],
       sensores:[], leituras:[], historico:[], empresas:[],
@@ -106,8 +111,39 @@ createApp({
       ];
     });
 
+    // ─ Leituras Hoje vs Total ─────────────────────────
+    const leiturasHoje = computed(() => {
+      const hoje = new Date();
+      const hojeStr = hoje.toISOString().slice(0, 10); // 'YYYY-MM-DD'
+      return lists.leituras.filter(l => {
+        if (!l.timestamp) return false;
+        return l.timestamp.slice(0, 10) === hojeStr;
+      });
+    });
+
+    // ─ Sensores filtrados pelo equipamento selecionado ─
+    const dashTelemetriaSensoresFiltrados = computed(() => {
+      if (!dashTelemetriaEquip.value) return lists.sensores;
+      const eqId = Number(dashTelemetriaEquip.value);
+      return lists.sensores.filter(s => s.equipamento === eqId);
+    });
+
     const chartTelemetria = computed(() => {
-      const raw = lists.leituras.slice(0, 20).reverse();
+      let leiturasSource = lists.leituras;
+
+      // Filtro por sensor específico
+      if (dashTelemetriaSensor.value) {
+        const sensorId = Number(dashTelemetriaSensor.value);
+        leiturasSource = leiturasSource.filter(l => l.sensor === sensorId);
+      }
+      // Filtro por equipamento (via sensores do equipamento)
+      else if (dashTelemetriaEquip.value) {
+        const eqId = Number(dashTelemetriaEquip.value);
+        const sensorIds = new Set(lists.sensores.filter(s => s.equipamento === eqId).map(s => s.id));
+        leiturasSource = leiturasSource.filter(l => sensorIds.has(l.sensor));
+      }
+
+      const raw = leiturasSource.slice(0, 20).reverse();
       if (raw.length < 2) return { path:'', dots:[], min:0, max:0 };
       const vals = raw.map(l => parseFloat(l.valor) || 0);
       const min = Math.min(...vals);
@@ -121,7 +157,7 @@ createApp({
       }));
       const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
       const area = path + ` L${W},${H} L0,${H} Z`;
-      return { path, area, dots: points, min: min.toFixed(1), max: max.toFixed(1) };
+      return { path, area, dots: points, min: min.toFixed(1), max: max.toFixed(1), count: leiturasSource.length };
     });
 
     function donutArcs(segments, r=52, cx=64, cy=64) {
@@ -145,6 +181,20 @@ createApp({
       // Ajustado para refletir os novos campos do Historico (custo_pecas + custo_mao_de_obra)
       const costs = {};
       lists.historico.forEach(h => {
+        // Se filtro de setor está ativo, filtra pelo setor do equipamento da OS
+        if (dashCustoSetor.value) {
+          const osId = typeof h.ordem_servico === 'object' ? h.ordem_servico?.id : h.ordem_servico;
+          const os = lists.ordens.find(o => o.id === osId);
+          if (os) {
+            const eqId = os.equipamento;
+            const loc = lists.localizacoes.find(l => l.equipamento === eqId);
+            const setor = loc ? loc.setor : null;
+            if (setor !== dashCustoSetor.value) return; // Pula se não é do setor
+          } else {
+            return; // Sem OS associada, pula
+          }
+        }
+
         // Tenta pegar o tipo_os pela Ordem de Serviço aninhada, ou agrupa como 'geral'
         const k = h.ordem_servico?.tipo_os || 'geral'; 
         const custoTotal = (parseFloat(h.custo_pecas) || 0) + (parseFloat(h.custo_mao_de_obra) || 0);
@@ -336,11 +386,15 @@ createApp({
           total_equipamentos: lists.equipamentos.length,
           alertas_ativos:     dashAlerts.value.length,
           ordens_abertas:     lists.ordens.filter(o => o.status === 'pendente' || o.status === 'andamento').length,
-          leituras_hoje:      lists.leituras.length,
+          leituras_hoje:      leiturasHoje.value.length,
+          leituras_total:     lists.leituras.length,
         };
 
         // Busca métricas MTTR/MTBF em paralelo (não bloqueia o dashboard)
         api('/api/dashboards/kpis/').then(d => { if (d) kpis.value._mtbf = d; }).catch(() => {});
+
+        // Busca localizações para filtro de setor no custo
+        api('/api/localizacao/?limit=999').then(d => { if (d) lists.localizacoes = normList(d); }).catch(() => {});
 
       } catch { toast('Erro ao carregar dashboard', 'error'); }
     }
@@ -1100,6 +1154,8 @@ createApp({
       chartEquipStatus, chartAlertNivel, chartOrdens, chartTelemetria,
       chartHistoricoTipo, donutArcs,
       availableSectors,
+      leiturasHoje, dashTelemetriaEquip, dashTelemetriaSensor,
+      dashTelemetriaSensoresFiltrados, dashCustoSetor,
       chatOpen, chatInput, chatLoading, chatMessages, chatScrollContainer,
       toggleChat, sendChatMessage, sendSuggestion, formatMarkdown
     };
