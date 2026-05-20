@@ -638,11 +638,198 @@ createApp({
       } catch { toast('Erro ao excluir', 'error'); }
     }
 
-    // ─ Exportação ────────────────────────────────────
+    // ─ Exportação (com fallback client-side) ─────────
+    function getExportData(resource) {
+      const now = new Date().toLocaleString('pt-BR');
+      switch (resource) {
+        case 'equipamentos':
+          return {
+            title: 'Equipamentos',
+            subtitle: `Gerado em: ${now}`,
+            columns: ['ID', 'Nome', 'Modelo', 'Fabricante', 'Nº Série', 'Setor', 'Status', 'Empresa'],
+            rows: lists.equipamentos.map(e => [
+              e.id, e.nome, e.modelo || '—', e.fabricante || '—',
+              e.numero_serie || '—', locSetor(e.id), e.status || '—', empresaNome(e.empresa)
+            ])
+          };
+        case 'alertas':
+          return {
+            title: 'Alertas',
+            subtitle: `Gerado em: ${now}`,
+            columns: ['ID', 'Tipo', 'Nível', 'Descrição', 'Equipamento', 'Status', 'Data'],
+            rows: lists.alertas.map(a => [
+              a.id, a.tipo_alerta, a.nivel, a.descricao || '—',
+              eqNome(a.equipamento), a.status, fmtDate(a.data_alerta)
+            ])
+          };
+        case 'ordens-servico':
+          return {
+            title: 'Ordens de Serviço',
+            subtitle: `Gerado em: ${now}`,
+            columns: ['ID', 'Título', 'Tipo', 'Prioridade', 'Status', 'Equipamento', 'Data Abertura'],
+            rows: lists.ordens.map(o => [
+              o.id, o.titulo, o.tipo_os || '—', o.prioridade || '—',
+              o.status || '—', eqNome(o.equipamento), fmtDate(o.data_abertura || o.criado_em)
+            ])
+          };
+        case 'historico':
+          return {
+            title: 'Histórico de Manutenção',
+            subtitle: `Gerado em: ${now}`,
+            columns: ['ID', 'OS', 'Descrição', 'Custo Peças (R$)', 'Custo M.O. (R$)', 'Total (R$)', 'Data Execução'],
+            rows: lists.historico.map(h => [
+              h.id, `#${h.ordem_servico}`, h.descricao_servico || '—',
+              h.custo_pecas != null ? Number(h.custo_pecas).toFixed(2) : '—',
+              h.custo_mao_de_obra != null ? Number(h.custo_mao_de_obra).toFixed(2) : '—',
+              custoTotal(h), h.data_execucao || '—'
+            ])
+          };
+        case 'telemetria':
+          return {
+            title: 'Telemetria — Leituras de Sensores',
+            subtitle: `Gerado em: ${now}`,
+            columns: ['ID', 'Sensor', 'Valor', 'Data/Hora'],
+            rows: lists.leituras.map(l => [
+              l.id, sensorNome(l.sensor), l.valor, fmtDate(l.timestamp)
+            ])
+          };
+        case 'dashboard': {
+          const k = kpis.value;
+          if (!k) return null;
+          const rows = [
+            ['Total de Equipamentos', k.total_equipamentos ?? '—'],
+            ['Alertas Ativos', k.alertas_ativos ?? '—'],
+            ['Ordens Abertas', k.ordens_abertas ?? '—'],
+            ['Leituras de Telemetria', k.leituras_hoje ?? '—'],
+          ];
+          if (chartEquipStatus.value.length) {
+            rows.push(['', '']);
+            rows.push(['── STATUS EQUIPAMENTOS ──', '']);
+            chartEquipStatus.value.forEach(s => rows.push([s.label, s.value]));
+          }
+          if (chartAlertNivel.value.length) {
+            rows.push(['', '']);
+            rows.push(['── ALERTAS POR NÍVEL ──', '']);
+            chartAlertNivel.value.forEach(a => rows.push([a.label, a.value]));
+          }
+          if (chartOrdens.value.length) {
+            rows.push(['', '']);
+            rows.push(['── ORDENS POR STATUS ──', '']);
+            chartOrdens.value.forEach(o => rows.push([o.label, o.value]));
+          }
+          return {
+            title: 'Dashboard — Resumo de KPIs',
+            subtitle: `Gerado em: ${now}`,
+            columns: ['Indicador', 'Valor'],
+            rows
+          };
+        }
+        default:
+          return null;
+      }
+    }
+
+    function triggerDownload(blob, filename) {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    }
+
+    function exportCSVClientSide(data, resource) {
+      const bom = '\uFEFF';
+      const csvContent = [data.columns, ...data.rows]
+        .map(row => row.map(cell => {
+          const str = String(cell == null ? '' : cell);
+          if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+            return '"' + str.replace(/"/g, '""') + '"';
+          }
+          return str;
+        }).join(','))
+        .join('\n');
+      const blob = new Blob([bom + csvContent], { type: 'text/csv;charset=utf-8;' });
+      triggerDownload(blob, `${resource}.csv`);
+    }
+
+    function exportExcelClientSide(data, resource) {
+      if (typeof XLSX === 'undefined') {
+        toast('Biblioteca Excel não carregada. Recarregue a página e tente novamente.', 'error');
+        return;
+      }
+      const wsData = [data.columns, ...data.rows];
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+      // Auto-width columns
+      ws['!cols'] = data.columns.map((col, i) => {
+        let maxLen = col.length;
+        data.rows.forEach(row => {
+          const cellLen = String(row[i] || '').length;
+          if (cellLen > maxLen) maxLen = cellLen;
+        });
+        return { wch: Math.min(maxLen + 4, 50) };
+      });
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, data.title.substring(0, 31));
+      XLSX.writeFile(wb, `${resource}.xlsx`);
+    }
+
+    function exportPDFClientSide(data, resource) {
+      if (typeof window.jspdf === 'undefined') {
+        toast('Biblioteca PDF não carregada. Recarregue a página e tente novamente.', 'error');
+        return;
+      }
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF('l', 'mm', 'a4');
+      // Header
+      doc.setFontSize(16);
+      doc.setTextColor(46, 64, 87);
+      doc.text(`NanaSmart \u2014 ${data.title}`, 14, 15);
+      doc.setFontSize(9);
+      doc.setTextColor(136, 136, 136);
+      doc.text(data.subtitle, 14, 22);
+      // Table
+      doc.autoTable({
+        head: [data.columns],
+        body: data.rows.map(row => row.map(cell => String(cell ?? '—'))),
+        startY: 28,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [46, 64, 87],
+          textColor: 255,
+          fontStyle: 'bold',
+          fontSize: 7,
+          cellPadding: 3,
+        },
+        bodyStyles: {
+          fontSize: 7,
+          cellPadding: 2,
+        },
+        alternateRowStyles: {
+          fillColor: [242, 246, 250],
+        },
+        styles: {
+          overflow: 'linebreak',
+          lineColor: [204, 204, 204],
+          lineWidth: 0.25,
+        },
+        margin: { left: 15, right: 15 },
+      });
+      // Footer
+      const pageHeight = doc.internal.pageSize.height;
+      doc.setFontSize(8);
+      doc.setTextColor(153, 153, 153);
+      doc.text(`Total de registros: ${data.rows.length}`, 15, pageHeight - 10);
+      doc.save(`${resource}.pdf`);
+    }
+
     async function exportData(resource, format) {
       toast(`Gerando exportação ${format.toUpperCase()}...`, 'success');
+
+      // Build query params for backend API
       const p = new URLSearchParams();
-      
       if (resource === 'equipamentos') {
         if (filters.equipamentos.status) p.set('status', filters.equipamentos.status);
         if (filters.equipamentos.empresa || globalEmpresa.value) p.set('empresa', filters.equipamentos.empresa || globalEmpresa.value);
@@ -660,31 +847,50 @@ createApp({
         if (globalEmpresa.value) p.set('empresa_id', globalEmpresa.value);
       }
 
+      // 1) Try backend API first
       try {
         const headers = {};
         if (token.value) headers['Authorization'] = `Bearer ${token.value}`;
-        
+
         const res = await fetch(BASE + `/api/exportar/${resource}/${format}/?` + p.toString(), { headers });
-        if (!res.ok) throw new Error('Erro na exportação');
-        
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
         const blob = await res.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        
+        // Check if the response is actually a file, not a JSON error
+        if (blob.size < 100 && blob.type && blob.type.includes('application/json')) {
+          throw new Error('Backend returned error JSON');
+        }
+
         let filename = `${resource}.${format === 'excel' ? 'xlsx' : format}`;
         const cd = res.headers.get('Content-Disposition');
         if (cd && cd.includes('filename=')) {
-          filename = cd.split('filename=')[1].replace(/"/g, '');
+          filename = cd.split('filename=')[1].replace(/"/g, '').trim();
         }
-        
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        window.URL.revokeObjectURL(url);
-      } catch (e) {
-        toast('Erro ao exportar dados', 'error');
+
+        triggerDownload(blob, filename);
+        return; // Backend export succeeded
+      } catch (backendErr) {
+        console.warn('Exportação via backend falhou, usando fallback client-side:', backendErr.message);
+      }
+
+      // 2) Fallback: client-side generation
+      try {
+        const data = getExportData(resource);
+        if (!data) {
+          toast('Recurso não suportado para exportação local', 'error');
+          return;
+        }
+
+        if (format === 'csv') {
+          exportCSVClientSide(data, resource);
+        } else if (format === 'excel') {
+          exportExcelClientSide(data, resource);
+        } else if (format === 'pdf') {
+          exportPDFClientSide(data, resource);
+        }
+      } catch (clientErr) {
+        console.error('Exportação client-side falhou:', clientErr);
+        toast('Erro ao exportar dados: ' + clientErr.message, 'error');
       }
     }
 
