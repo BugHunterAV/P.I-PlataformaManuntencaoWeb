@@ -47,11 +47,11 @@ createApp({
       historico:{ search:'', data_de:'', data_ate:'', custo_min:'', custo_max:'' },
       empresas:{ search:'' },
       usuarios:{ search:'' },
-      localizacoes:{ search:'' },
+      localizacoes:{ search:'', setor:'' },
     });
 
     // ─ Modal ─────────────────────────────────────────
-    const modal      = reactive({ open:false, type:'', title:'', editId:null, saving:false });
+    const modal      = reactive({ open:false, type:'', title:'', editId:null, saving:false, oldStatus:null });
     const fd         = reactive({});
     const formErrors = ref({});
 
@@ -536,6 +536,7 @@ createApp({
     async function fetchLocalizacoes() { await withLoading(async () => {
       const p = new URLSearchParams();
       if (filters.localizacoes.search) p.set('search', filters.localizacoes.search);
+      if (filters.localizacoes.setor) p.set('setor__icontains', filters.localizacoes.setor);
       const d = await api('/api/localizacao/?'+p);
       lists.localizacoes = normList(d);
       Object.assign(pages.localizacoes, normPages(d));
@@ -615,7 +616,7 @@ createApp({
     async function openModal(type) {
       const cfg = modalConfig[type];
       modal.type = type; modal.title = 'Novo ' + cfg.title;
-      modal.editId = null; formErrors.value = {};
+      modal.editId = null; modal.oldStatus = null; formErrors.value = {};
       resetForm(cfg.defaults); modal.open = true;
       
       if (['equipamento','alerta','ordem','sensor','localizacao','leitura'].includes(type)) {
@@ -631,7 +632,7 @@ createApp({
     async function editItem(type, item) {
       const cfg = modalConfig[type];
       modal.type = type; modal.title = 'Editar ' + cfg.title;
-      modal.editId = item.id; formErrors.value = {};
+      modal.editId = item.id; modal.oldStatus = item.status; formErrors.value = {};
       resetForm({ ...cfg.defaults, ...item }); modal.open = true;
       
       if (['equipamento','alerta','ordem','sensor','localizacao','leitura'].includes(type)) {
@@ -680,11 +681,11 @@ createApp({
           if (modal.type === 'ordem' && res) createdOsId = res.id;
         }
 
-        // Se for OS e foi marcada como concluída, e tiver custos preenchidos, cria histórico
-        if (modal.type === 'ordem' && payload.status === 'concluida') {
+        // Se for OS e foi marcada como concluída, cria histórico (apenas se mudou para concluída agora ou foi criada como concluída)
+        if (modal.type === 'ordem' && payload.status === 'concluida' && modal.oldStatus !== 'concluida') {
           const cp = parseFloat(payload.custo_pecas) || 0;
           const cmo = parseFloat(payload.custo_mao_de_obra) || 0;
-          if ((cp > 0 || cmo > 0) && createdOsId) {
+          if (createdOsId) {
             const histPayload = {
               ordem_servico: createdOsId,
               custo_pecas: cp,
@@ -695,7 +696,7 @@ createApp({
             try {
               await api('/api/historico/', { method: 'POST', body: JSON.stringify(histPayload) });
             } catch(err) {
-              console.error('Erro ao salvar custos no histórico:', err);
+              console.error('Erro ao salvar no histórico:', err);
             }
           }
         }
@@ -1023,6 +1024,12 @@ createApp({
       const u = lists.usuarios.find(x => x.id === id);
       return u ? u.username : '';
     }
+    function eqEmpresaNome(eqId) {
+      if (!eqId) return '—';
+      const eq = lists.equipamentos.find(e => e.id === eqId);
+      if (!eq || !eq.empresa) return '—';
+      return empresaNome(eq.empresa);
+    }
     function empresaNomeSensor(s) {
       if (!s.equipamento) return '—';
       const eq = lists.equipamentos.find(e => e.id === s.equipamento);
@@ -1199,7 +1206,7 @@ createApp({
       openModal, editItem, saveItem, deleteItem, exportData,
       fmtDate, nivelBadge, nivelColor, statusBadge, eqStatusBadge,
       ordemStatusBadge, prioridadeBadge,
-      eqNome, empresaNome, sensorNome, locSetor, custoTotal, countSensores, usuarioNome,
+      eqNome, eqEmpresaNome, empresaNome, sensorNome, locSetor, custoTotal, countSensores, usuarioNome,
       empresaNomeSensor, sensorEquipNome,
       onGlobalEmpresaChange,
       chartEquipStatus, chartAlertNivel, chartOrdens, chartTelemetria,

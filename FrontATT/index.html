@@ -786,6 +786,7 @@
         <div v-if="view==='localizacoes'">
           <div class="filter-bar">
             <input class="filter-input" v-model="filters.localizacoes.search" placeholder="Buscar localização..." @input="debouncedFetch('loc',fetchLocalizacoes)" />
+            <input class="filter-input" v-model="filters.localizacoes.setor" placeholder="Filtrar por setor..." @input="debouncedFetch('locS',fetchLocalizacoes)" />
             <button class="btn btn-primary" @click="openModal('localizacao')">+ Localização</button>
           </div>
           <div class="table-wrap">
@@ -796,7 +797,10 @@
               <tbody>
                 <tr v-for="loc in lists.localizacoes" :key="loc.id">
                   <td style="font-family:var(--mono);color:var(--t4)">#{{ loc.id }}</td>
-                  <td style="font-size:11px">{{ eqNome(loc.equipamento) }}</td>
+                  <td style="font-size:11px; font-weight:600; color:var(--t1)">
+                    {{ eqNome(loc.equipamento) }} 
+                    <span style="font-weight:normal; color:var(--t4)">({{ eqEmpresaNome(loc.equipamento) }})</span>
+                  </td>
                   <td style="font-family:var(--mono);font-size:11px;color:var(--acid)">{{ loc.setor ?? '—' }}</td>
                   <td style="font-family:var(--mono);font-size:10px;color:var(--t4)">{{ fmtDate(loc.atualizado_em || loc.criado_em) }}</td>
                   <td><div class="action-btns">
