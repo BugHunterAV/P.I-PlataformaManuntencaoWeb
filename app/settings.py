@@ -88,7 +88,7 @@ WSGI_APPLICATION = 'app.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
+""" DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
@@ -96,19 +96,24 @@ DATABASES = {
             'timeout': 20,  
         }
     }
-}
+} 
+"""
 
 # Configuração PostgreSQL
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': 'manutencao',        
-#         'USER': 'postgres',     
-#         'PASSWORD': 'segredo',   
-#         'HOST': 'localhost',                
-#         'PORT': '5432',                     
-#     }
-# }
+DATABASES = {
+     'default': {
+         'ENGINE': 'django.db.backends.postgresql',
+         'NAME': 'manutencao',        
+         'USER': 'postgres',     
+         'PASSWORD': 'segredo',   
+         'HOST': 'localhost',                
+         'PORT': '5432',
+         'CONN_MAX_AGE': 60,  # reutiliza conexões por 60s em vez de abrir uma nova por request
+         'OPTIONS': {
+             'connect_timeout': 10,
+         },
+     }
+ }
 
 
 # Password validation
@@ -164,6 +169,10 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    # PAGINAÇÃO GLOBAL — impede que qualquer endpoint retorne a tabela inteira sem limite
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 50,          # padrão por request
+    'MAX_PAGINATE_BY': 200,   # teto absoluto — nenhum ?limit= passa disso
 }
 
 from datetime import timedelta

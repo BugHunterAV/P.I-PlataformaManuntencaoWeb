@@ -40,9 +40,11 @@ class TelemetriaViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+        # [:200] garante que o ORM nunca carrega a tabela inteira na memória
+        # A paginação global do DRF fatia isso ainda mais (50 por página)
         qs = Telemetria.objects.select_related('sensor', 'sensor__equipamento').order_by('-timestamp')
         if user.tipo_usuario == 'admin':
-            return qs.all()
+            return qs[:200]
         if user.empresa:
-            return qs.filter(sensor__equipamento__empresa=user.empresa)
+            return qs.filter(sensor__equipamento__empresa=user.empresa)[:200]
         return qs.none()

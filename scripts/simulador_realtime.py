@@ -100,14 +100,14 @@ def run_simulator():
 
                     # Travas matemáticas para garantir o regime quente, sem estourar o limite por erro randômico
                     if novo_valor > alvo_maximo:
-                        novo_valor -= random.uniform(0.2, 0.5)  # Força descer se passar de 68%
+                        novo_valor -= random.uniform(0.2, 0.5)
                     elif novo_valor < alvo_minimo:
-                        novo_valor += random.uniform(0.2, 0.5)  # Força subir se cair de 62%
+                        novo_valor += random.uniform(0.2, 0.5)
 
                     novo_valor = round(max(0.1, novo_valor), 2)
                     memoria_valores[sensor.id] = novo_valor
 
-                    # Gravação no Banco de Dados via Django ORM (Engatilha os Signals automaticamente!)
+                    # Gravação no Banco de Dados via Django ORM
                     Telemetria.objects.create(sensor=sensor, valor=novo_valor)
 
                     print(f"   + [{sensor.equipamento.nome}] {sensor.get_tipo_display()}: {novo_valor} {sensor.unidade_medida} (Alvo < {round(limite * 0.7, 1)})")
