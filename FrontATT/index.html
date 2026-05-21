@@ -159,6 +159,11 @@
         </div>
       </template>
 
+      <div class="sidebar-group-label">Conta</div>
+      <div class="nav-item" :class="{active:view==='perfil'}" @click="navigate('perfil')">
+        <span class="nav-icon">👤</span> Meu Perfil
+      </div>
+
       <div class="sidebar-footer">
         <div class="user-ava">{{ userInitial }}</div>
         <div>
@@ -184,6 +189,12 @@
               <option value="">🏢 Todas as Empresas</option>
               <option v-for="emp in lists.empresas" :key="emp.id" :value="emp.id">{{ emp.nome }}</option>
             </select>
+          </template>
+          <!-- NOME DA EMPRESA PARA TÉCNICO/GESTOR -->
+          <template v-else-if="me?.empresa">
+            <div style="font-size: 13px; font-weight: 600; color: var(--ice); padding: 4px 12px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid var(--border);">
+              🏢 {{ empresaNome(me.empresa) }}
+            </div>
           </template>
           <div class="topbar-meta">
             <template v-if="view==='dashboard'">
@@ -325,7 +336,7 @@
                   </select>
                   <select class="chart-filter-select" v-model="dashTelemetriaSensor">
                     <option value="">Todos Sensores</option>
-                    <option v-for="s in dashTelemetriaSensoresFiltrados" :key="s.id" :value="s.id">{{ s.nome }}</option>
+                    <option v-for="s in dashTelemetriaSensoresFiltrados" :key="s.id" :value="s.id">{{ s.nome }} ({{ s.tipo }})</option>
                   </select>
                 </div>
               </div>
@@ -523,7 +534,7 @@
               <option value="resolvido">Resolvido</option>
               <option value="ignorado">Ignorado</option>
             </select>
-            <button class="btn btn-primary" @click="openModal('alerta')">+ Novo</button>
+            <button v-if="isAdmin" class="btn btn-primary" @click="openModal('alerta')">+ Novo</button>
             <div class="export-btns">
               <span class="export-label">Exportar:</span>
               <button class="btn-export pdf" @click="exportData('alertas', 'pdf')">📄 PDF</button>
@@ -535,7 +546,7 @@
             <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
             <div v-else-if="lists.alertas.length===0" class="empty"><div class="empty-icon">◉</div>Nenhum alerta</div>
             <table v-else>
-              <thead><tr><th>ID</th><th>Tipo</th><th>Nível</th><th>Descrição</th><th>Equipamento</th><th>Status</th><th>Data</th><th>Ações</th></tr></thead>
+              <thead><tr><th>ID</th><th>Tipo</th><th>Nível</th><th>Descrição</th><th>Equipamento</th><th>Local/Setor</th><th>Status</th><th>Data</th><th>Ações</th></tr></thead>
               <tbody>
                 <tr v-for="a in lists.alertas" :key="a.id">
                   <td style="font-family:var(--mono);color:var(--t4)">#{{ a.id }}</td>
@@ -543,10 +554,12 @@
                   <td><span class="badge" :class="nivelBadge(a.nivel)"><span class="badge-dot"></span>{{ a.nivel }}</span></td>
                   <td style="font-size:11px;color:var(--t3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ a.descricao || '—' }}</td>
                   <td style="font-size:11px">{{ eqNome(a.equipamento) }}</td>
+                  <td style="font-family:var(--mono);font-size:11px;color:var(--acid)">{{ locSetor(a.equipamento) }}</td>
                   <td><span class="badge" :class="statusBadge(a.status)">{{ a.status }}</span></td>
                   <td style="font-family:var(--mono);font-size:10px;color:var(--t4)">{{ fmtDate(a.data_alerta) }}</td>
                   <td><div class="action-btns">
-                    <button class="btn btn-ghost btn-sm" @click="editItem('alerta',a)">Editar</button>
+                    <button v-if="isAdmin" class="btn btn-ghost btn-sm" @click="editItem('alerta',a)">Editar</button>
+                    <button v-if="isTecnico" class="btn btn-primary btn-sm" @click="assumirOSFromAlerta(a)" title="Assumir O.S. do equipamento deste alerta">Assumir O.S</button>
                     <button v-if="isAdmin" class="btn btn-danger btn-sm" @click="deleteItem('alertas',a.id)">✕</button>
                   </div></td>
                 </tr>
@@ -741,15 +754,17 @@
               <label style="font-size:11px;color:var(--t4);white-space:nowrap">Até:</label>
               <input type="date" class="filter-input" style="width:140px" v-model="filters.historico.data_ate" @change="fetchHistorico" />
             </div>
-            <div style="display:flex;align-items:center;gap:6px">
-              <label style="font-size:11px;color:var(--t4);white-space:nowrap">R$ Min:</label>
-              <input type="number" class="filter-input" style="width:100px" v-model="filters.historico.custo_min" placeholder="0" @input="debouncedFetch('hic',fetchHistorico)" />
-            </div>
-            <div style="display:flex;align-items:center;gap:6px">
-              <label style="font-size:11px;color:var(--t4);white-space:nowrap">R$ Max:</label>
-              <input type="number" class="filter-input" style="width:100px" v-model="filters.historico.custo_max" placeholder="999999" @input="debouncedFetch('hic2',fetchHistorico)" />
-            </div>
-            <button class="btn btn-primary" @click="openModal('historico')">+ Registro</button>
+            <template v-if="isAdmin">
+              <div style="display:flex;align-items:center;gap:6px">
+                <label style="font-size:11px;color:var(--t4);white-space:nowrap">R$ Min:</label>
+                <input type="number" class="filter-input" style="width:100px" v-model="filters.historico.custo_min" placeholder="0" @input="debouncedFetch('hic',fetchHistorico)" />
+              </div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <label style="font-size:11px;color:var(--t4);white-space:nowrap">R$ Max:</label>
+                <input type="number" class="filter-input" style="width:100px" v-model="filters.historico.custo_max" placeholder="999999" @input="debouncedFetch('hic2',fetchHistorico)" />
+              </div>
+            </template>
+            <button v-if="isAdmin" class="btn btn-primary" @click="openModal('historico')">+ Registro</button>
             <div class="export-btns">
               <span class="export-label">Exportar:</span>
               <button class="btn-export pdf" @click="exportData('historico', 'pdf')">📄 PDF</button>
@@ -761,18 +776,23 @@
             <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
             <div v-else-if="lists.historico.length===0" class="empty"><div class="empty-icon">☰</div>Nenhum histórico</div>
             <table v-else>
-              <thead><tr><th>ID</th><th>OS</th><th>Descrição</th><th>Custo Peças</th><th>Custo M.O.</th><th>Total</th><th>Data Execução</th><th>Ações</th></tr></thead>
+              <thead><tr><th>ID</th><th>OS</th><th>Descrição</th><th v-if="isAdmin">Custo Peças</th><th v-if="isAdmin">Custo M.O.</th><th v-if="isAdmin">Total</th><th>Data Execução</th><th>Ações</th></tr></thead>
               <tbody>
                 <tr v-for="h in lists.historico" :key="h.id">
                   <td style="font-family:var(--mono);color:var(--t4)">#{{ h.id }}</td>
-                  <td><span class="badge badge-blue">#{{ h.ordem_servico }}</span></td>
+                  <td>
+                    <a href="#" class="os-link" @click.prevent="navigate('ordens')" 
+                       style="color:var(--ice);text-decoration:underline;cursor:pointer;font-weight:600;font-family:var(--mono)">
+                      #{{ h.ordem_servico }}
+                    </a>
+                  </td>
                   <td style="font-size:11px;color:var(--t3);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ h.descricao_servico || '—' }}</td>
-                  <td style="font-family:var(--mono);color:var(--mint)">{{ h.custo_pecas!=null?'R$ '+Number(h.custo_pecas).toFixed(2):'—' }}</td>
-                  <td style="font-family:var(--mono);color:var(--mint)">{{ h.custo_mao_de_obra!=null?'R$ '+Number(h.custo_mao_de_obra).toFixed(2):'—' }}</td>
-                  <td style="font-family:var(--mono);font-weight:700;color:var(--acid)">R$ {{ custoTotal(h) }}</td>
+                  <td v-if="isAdmin" style="font-family:var(--mono);color:var(--mint)">{{ h.custo_pecas!=null?'R$ '+Number(h.custo_pecas).toFixed(2):'—' }}</td>
+                  <td v-if="isAdmin" style="font-family:var(--mono);color:var(--mint)">{{ h.custo_mao_de_obra!=null?'R$ '+Number(h.custo_mao_de_obra).toFixed(2):'—' }}</td>
+                  <td v-if="isAdmin" style="font-family:var(--mono);font-weight:700;color:var(--acid)">R$ {{ custoTotal(h) }}</td>
                   <td style="font-family:var(--mono);font-size:10px;color:var(--t4)">{{ h.data_execucao || '—' }}</td>
                   <td><div class="action-btns">
-                    <button class="btn btn-ghost btn-sm" @click="editItem('historico',h)">Editar</button>
+                    <button v-if="isAdmin" class="btn btn-ghost btn-sm" @click="editItem('historico',h)">Editar</button>
                     <button v-if="isAdmin" class="btn btn-danger btn-sm" @click="deleteItem('historico',h.id)">✕</button>
                   </div></td>
                 </tr>
@@ -889,6 +909,56 @@
             <button class="page-btn" :disabled="!pages.usuarios.prev" @click="fetchPage('usuarios',pages.usuarios.prev)">← Anterior</button>
             <span class="page-info">{{ lists.usuarios.length }} registros</span>
             <button class="page-btn" :disabled="!pages.usuarios.next" @click="fetchPage('usuarios',pages.usuarios.next)">Próxima →</button>
+          </div>
+        </div>
+
+        <!-- ══════════ PERFIL ══════════ -->
+        <div v-if="view==='perfil'">
+          <div class="profile-container" style="background: var(--bg2); padding: 24px; border-radius: 12px; border: 1px solid var(--border); display: flex; gap: 24px; align-items: flex-start; max-width: 600px; margin: 0 auto; margin-top: 24px;">
+            
+            <div class="profile-avatar-wrap" style="text-align: center;">
+              <div class="profile-avatar" style="width: 100px; height: 100px; border-radius: 50%; background: var(--acid); color: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: 700; margin-bottom: 12px;">
+                {{ userInitial }}
+              </div>
+              <div class="badge" :class="me?.tipo_usuario==='admin'?'badge-red':me?.tipo_usuario==='tecnico'?'badge-blue':'badge-green'">
+                {{ me?.tipo_usuario || 'Usuário' }}
+              </div>
+            </div>
+
+            <div class="profile-details" style="flex: 1;">
+              <h2 style="margin: 0 0 16px 0; color: var(--ice); font-family: var(--mono);">Dados da Conta</h2>
+              
+              <div class="profile-info-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="info-box">
+                  <div style="font-size: 11px; color: var(--t4); margin-bottom: 4px;">Usuário (Login)</div>
+                  <div style="font-size: 14px; font-weight: 600; color: var(--t1);">{{ me?.username || '—' }}</div>
+                </div>
+                <div class="info-box">
+                  <div style="font-size: 11px; color: var(--t4); margin-bottom: 4px;">Email</div>
+                  <div style="font-size: 14px; font-weight: 600; color: var(--t1);">{{ me?.email || '—' }}</div>
+                </div>
+                <div class="info-box">
+                  <div style="font-size: 11px; color: var(--t4); margin-bottom: 4px;">Nome</div>
+                  <div style="font-size: 14px; font-weight: 600; color: var(--t1);">{{ [me?.first_name, me?.last_name].filter(Boolean).join(' ') || '—' }}</div>
+                </div>
+                <div class="info-box">
+                  <div style="font-size: 11px; color: var(--t4); margin-bottom: 4px;">Cargo</div>
+                  <div style="font-size: 14px; font-weight: 600; color: var(--t1);">{{ me?.cargo || '—' }}</div>
+                </div>
+                <div class="info-box">
+                  <div style="font-size: 11px; color: var(--t4); margin-bottom: 4px;">Telefone</div>
+                  <div style="font-size: 14px; font-weight: 600; color: var(--t1);">{{ me?.telefone || '—' }}</div>
+                </div>
+                <div class="info-box">
+                  <div style="font-size: 11px; color: var(--t4); margin-bottom: 4px;">Empresa Vinculada</div>
+                  <div style="font-size: 14px; font-weight: 600; color: var(--t1);">{{ empresaNome(me?.empresa) }}</div>
+                </div>
+              </div>
+              
+              <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);">
+                <p style="font-size: 12px; color: var(--t4);">* A edição do perfil é gerenciada pelo administrador do sistema. Entre em contato caso precise alterar dados de acesso.</p>
+              </div>
+            </div>
           </div>
         </div>
 

@@ -65,7 +65,8 @@ createApp({
       dashboard: 'Dashboard', equipamentos: 'Equipamentos', alertas: 'Alertas',
       ordens: 'Ordens de Serviço', telemetria: 'Telemetria',
       historico: 'Histórico de Manutenção', empresas: 'Empresas',
-      usuarios: 'Usuários', localizacoes: 'Localizações'
+      usuarios: 'Usuários', localizacoes: 'Localizações',
+      perfil: 'Meu Perfil'
     }[view.value] || ''));
 
     // ═══════════════════════════════════════════════
@@ -162,6 +163,32 @@ createApp({
       const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
       const area = path + ` L${W},${H} L0,${H} Z`;
       return { path, area, dots: points, min: min.toFixed(1), max: max.toFixed(1), count: leiturasSource.length };
+    });
+
+    watch([dashTelemetriaEquip, dashTelemetriaSensor], async ([eq, sen]) => {
+      // Quando muda o filtro no gráfico, busca as leituras focadas para alimentar o array
+      let url = '/api/telemetria/leituras/?limit=50&ordering=-timestamp';
+      if (sen) {
+        url += '&sensor=' + sen;
+      } else if (eq) {
+        const sensorIds = lists.sensores.filter(s => s.equipamento === Number(eq)).map(s => s.id);
+        if (sensorIds.length > 0) {
+          url += '&sensor__in=' + sensorIds.join(',');
+        } else {
+          // Equipamento sem sensores
+          lists.leituras = [];
+          return;
+        }
+      }
+      
+      try {
+        const res = await api(url);
+        if (res) {
+          lists.leituras = normList(res);
+        }
+      } catch (err) {
+        console.error("Erro ao buscar leituras filtradas no dashboard", err);
+      }
     });
 
     function donutArcs(segments, r = 52, cx = 64, cy = 64) {
@@ -442,6 +469,11 @@ createApp({
         }
         lists.alertas = items;
         Object.assign(pages.alertas, normPages(d));
+        // Busca localizações para mostrar o setor/local de cada equipamento
+        const locRes = await api('/api/localizacao/?limit=999');
+        if (locRes) lists.localizacoes = normList(locRes);
+        // Busca ordens para o botão 'Assumir O.S.' do técnico
+        await fetchOrdensAll();
       });
     }
 
@@ -785,6 +817,21 @@ createApp({
       modal.type = 'encerrar_os';
       modal.title = 'Encerrar Ordem de Serviço';
       fd.status = 'concluida';
+    }
+
+    async function assumirOSFromAlerta(alerta) {
+      // Busca uma OS pendente/andamento para o mesmo equipamento deste alerta
+      const os = lists.ordens.find(o => 
+        o.equipamento === alerta.equipamento && 
+        !o.responsavel && 
+        o.status !== 'concluida' && o.status !== 'cancelada'
+      );
+      if (os) {
+        await assumirOS(os);
+        navigate(view.value); // Recarrega a tela atual
+      } else {
+        toast('Nenhuma O.S. pendente encontrada para este equipamento', 'error');
+      }
     }
 
     // ─ Exportação (com fallback client-side) ─────────
@@ -1155,8 +1202,13 @@ createApp({
               lists.leituras = normList(res);
             }
             else if (view.value === 'alertas') {
-              const res = await api('/api/alertas/?status=ativo&limit=50&ordering=-criado_em');
-              lists.alertas = normList(res);
+              // Atualização silenciosa — reutiliza os filtros ativos do usuário
+              const p = new URLSearchParams();
+              if (filters.alertas.search) p.set('search', filters.alertas.search);
+              if (filters.alertas.nivel) p.set('nivel', filters.alertas.nivel);
+              if (filters.alertas.status) p.set('status', filters.alertas.status);
+              const res = await api('/api/alertas/?' + p);
+              if (res) lists.alertas = normList(res);
             }
           } catch (e) {
             console.warn("Pequeno atraso na sincronização, tentando no próximo ciclo...");
@@ -1305,7 +1357,7 @@ createApp({
       doLogin, logout, navigate, debouncedFetch,
       fetchEquipamentos, fetchAlertas, fetchOrdens, fetchTelemetria,
       fetchHistorico, fetchEmpresas, fetchUsuarios, fetchLocalizacoes, fetchPage, fetchDashboard,
-      openModal, editItem, saveItem, deleteItem, exportData, assumirOS, openEncerrarOS,
+      openModal, editItem, saveItem, deleteItem, exportData, assumirOS, openEncerrarOS, assumirOSFromAlerta,
       fmtDate, nivelBadge, nivelColor, statusBadge, eqStatusBadge,
       ordemStatusBadge, prioridadeBadge,
       eqNome, eqEmpresaNome, empresaNome, sensorNome, locSetor, custoTotal, countSensores, usuarioNome,
