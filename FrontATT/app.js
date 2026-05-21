@@ -58,6 +58,8 @@ createApp({
     // ─ Computed básicos ──────────────────────────────
     const isAdmin = computed(() => me.value?.tipo_usuario === 'admin');
     const isAdminOrGestor = computed(() => ['admin', 'gestor'].includes(me.value?.tipo_usuario));
+    const isTecnico = computed(() => me.value?.tipo_usuario === 'tecnico');
+    const osSemTecnicoCount = computed(() => lists.ordens.filter(o => !o.responsavel && o.status !== 'concluida' && o.status !== 'cancelada').length);
     const userInitial = computed(() => (me.value?.username || 'U')[0].toUpperCase());
     const viewTitle = computed(() => ({
       dashboard: 'Dashboard', equipamentos: 'Equipamentos', alertas: 'Alertas',
@@ -610,6 +612,10 @@ createApp({
         title: 'Ordem de Serviço', endpoint: '/api/ordens-servico/',
         defaults: { titulo: '', tipo_os: 'preventiva', prioridade: 'medio', status: 'pendente', equipamento: null, responsavel: null, descricao: '', custo_pecas: null, custo_mao_de_obra: null }
       },
+      encerrar_os: {
+        title: 'Encerrar O.S.', endpoint: '/api/ordens-servico/',
+        defaults: { titulo: '', tipo_os: 'preventiva', prioridade: 'medio', status: 'concluida', equipamento: null, responsavel: null, descricao: '', custo_pecas: null, custo_mao_de_obra: null }
+      },
 
       empresa: {
         title: 'Empresa', endpoint: '/api/empresas/',
@@ -696,10 +702,13 @@ createApp({
         }
 
         // DEBUG — remover após confirmar
-        if (modal.type === 'ordem') console.log('PAYLOAD OS →', JSON.stringify(payload));
+        if (modal.type === 'ordem' || modal.type === 'encerrar_os') console.log('PAYLOAD OS →', JSON.stringify(payload));
 
         // Garante valores válidos para campos choice da OS
-        if (modal.type === 'ordem') {
+        if (modal.type === 'ordem' || modal.type === 'encerrar_os') {
+          if (payload.status === 'concluida' && !payload.responsavel && me.value?.id) {
+            payload.responsavel = me.value.id;
+          }
           const prioridadesValidas = ['baixo', 'medio', 'critico'];
           const statusValidos = ['pendente', 'andamento', 'concluida', 'cancelada'];
           const tiposValidos = ['preventiva', 'corretiva', 'preditiva'];
@@ -713,11 +722,11 @@ createApp({
           await api(cfg.endpoint + modal.editId + '/', { method: 'PUT', body: JSON.stringify(payload) });
         } else {
           const res = await api(cfg.endpoint, { method: 'POST', body: JSON.stringify(payload) });
-          if (modal.type === 'ordem' && res) createdOsId = res.id;
+          if ((modal.type === 'ordem' || modal.type === 'encerrar_os') && res) createdOsId = res.id;
         }
 
         // Se for OS e foi marcada como concluída, cria histórico (apenas se mudou para concluída agora ou foi criada como concluída)
-        if (modal.type === 'ordem' && payload.status === 'concluida' && modal.oldStatus !== 'concluida') {
+        if ((modal.type === 'ordem' || modal.type === 'encerrar_os') && payload.status === 'concluida' && modal.oldStatus !== 'concluida') {
           const cp = parseFloat(payload.custo_pecas) || 0;
           const cmo = parseFloat(payload.custo_mao_de_obra) || 0;
           if (createdOsId) {
@@ -755,6 +764,27 @@ createApp({
         toast('Excluído com sucesso!', 'success');
         navigate(view.value);
       } catch { toast('Erro ao excluir', 'error'); }
+    }
+
+    async function assumirOS(o) {
+      if (!me.value?.id) return;
+      if (!confirm('Deseja assumir esta Ordem de Serviço?')) return;
+      const payload = { ...o, responsavel: me.value.id, status: (o.status === 'pendente' ? 'andamento' : o.status) };
+      try {
+        await api('/api/ordens-servico/' + o.id + '/', { method: 'PUT', body: JSON.stringify(payload) });
+        toast('O.S. assumida com sucesso!', 'success');
+        o.responsavel = me.value.id;
+        o.status = payload.status;
+      } catch(e) {
+        toast('Erro ao assumir O.S.', 'error');
+      }
+    }
+
+    async function openEncerrarOS(item) {
+      await editItem('ordem', item);
+      modal.type = 'encerrar_os';
+      modal.title = 'Encerrar Ordem de Serviço';
+      fd.status = 'concluida';
     }
 
     // ─ Exportação (com fallback client-side) ─────────
@@ -1271,11 +1301,11 @@ createApp({
       token, me, view, loading, loginLoading, loginError, loginForm,
       kpis, dashAlerts, alertCount, toasts, lists, pages, filters,
       modal, fd, formErrors, globalEmpresa,
-      isAdmin, isAdminOrGestor, userInitial, viewTitle,
+      isAdmin, isAdminOrGestor, isTecnico, userInitial, viewTitle, osSemTecnicoCount,
       doLogin, logout, navigate, debouncedFetch,
       fetchEquipamentos, fetchAlertas, fetchOrdens, fetchTelemetria,
       fetchHistorico, fetchEmpresas, fetchUsuarios, fetchLocalizacoes, fetchPage, fetchDashboard,
-      openModal, editItem, saveItem, deleteItem, exportData,
+      openModal, editItem, saveItem, deleteItem, exportData, assumirOS, openEncerrarOS,
       fmtDate, nivelBadge, nivelColor, statusBadge, eqStatusBadge,
       ordemStatusBadge, prioridadeBadge,
       eqNome, eqEmpresaNome, empresaNome, sensorNome, locSetor, custoTotal, countSensores, usuarioNome,
