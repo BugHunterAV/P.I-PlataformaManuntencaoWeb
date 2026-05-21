@@ -14,7 +14,7 @@ class AlertaViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = Alerta.objects.select_related('equipamento')
+        qs = Alerta.objects.select_related('equipamento').order_by('-data_alerta')
         if user.tipo_usuario == 'admin':
             return qs.all()
         if user.empresa:
