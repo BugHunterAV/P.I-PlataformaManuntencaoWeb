@@ -1,4 +1,5 @@
 # Python / Django
+.env
 __pycache__/
 *.py[cod]
 *$py.class
@@ -6,6 +7,7 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
+
 
 # Ambientes virtuais
 .venv/
