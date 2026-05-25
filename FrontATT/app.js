@@ -62,9 +62,11 @@ createApp({
       selectedSensor: null,
       readings: [],
       loading: false,
+      refreshing: false,
       error: '',
       lastRefresh: null,
     });
+    let equipModalPollTimer = null;
 
     const selectedEquipSensor = computed(() => {
       return equipModal.sensors.find(s => s.id === equipModal.selectedSensor) || null;
@@ -1226,19 +1228,25 @@ createApp({
 
     function makeLineChart(readings, W = 360, H = 180) {
       const raw = Array.isArray(readings) ? readings.slice(0, 20).reverse() : [];
-      if (!raw.length) return { path: '', area: '', dots: [], min: 0, max: 0 };
+      if (!raw.length) return { path: '', area: '', dots: [], ticks: [], min: 0, max: 0 };
       const values = raw.map(l => parseFloat(l.valor) || 0);
       const min = Math.min(...values);
       const max = Math.max(...values);
       const range = max - min || 1;
       const points = values.map((v, i) => ({
         x: (i / (values.length - 1 || 1)) * W,
-        y: H - ((v - min) / range) * H * 0.85 - H * 0.05,
+        y: H - ((v - min) / range) * H * 0.8 - H * 0.1,
         v,
+        label: v.toFixed(2),
       }));
       const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
       const area = points.length ? `${path} L${W},${H} L0,${H} Z` : '';
-      return { path, area, dots: points, min: min.toFixed(1), max: max.toFixed(1) };
+      const ticks = [0, 1 / 3, 2 / 3, 1].map(f => {
+        const y = H - f * H * 0.8 - H * 0.1;
+        const value = (min + f * (max - min)).toFixed(2);
+        return { y, label: value };
+      });
+      return { path, area, dots: points, ticks, min: min.toFixed(2), max: max.toFixed(2) };
     }
 
     async function fetchEquipamentoSensors(eqId) {
@@ -1256,35 +1264,65 @@ createApp({
       }
     }
 
-    async function fetchEquipamentoReadings(sensorId = equipModal.selectedSensor) {
+    async function fetchEquipamentoReadings(sensorId = equipModal.selectedSensor, options = { silent: false }) {
       if (!sensorId) {
         equipModal.readings = [];
         return;
       }
-      equipModal.loading = true;
+      const { silent } = options;
+      if (!silent || !equipModal.readings.length) {
+        equipModal.loading = true;
+      } else {
+        equipModal.refreshing = true;
+      }
+      equipModal.error = '';
       try {
         const res = await api(`/api/telemetria/leituras/?sensor=${sensorId}&limit=50&ordering=-timestamp`);
+        if (res == null) {
+          throw new Error('Resposta vazia da API de leituras.');
+        }
         equipModal.readings = normList(res);
         equipModal.lastRefresh = new Date().toISOString();
       } catch (err) {
-        equipModal.readings = [];
-        equipModal.error = 'Falha ao carregar leituras do sensor.';
+        if (!silent) {
+          equipModal.readings = [];
+        }
+        equipModal.error = `Falha ao carregar leituras do sensor. ${err?.message || ''}`.trim();
         console.error('Erro fetchEquipamentoReadings:', err);
       } finally {
         equipModal.loading = false;
+        equipModal.refreshing = false;
+      }
+    }
+
+    async function pollEquipamentoReadings() {
+      if (!equipModal.open || !equipModal.selectedSensor) return;
+      await fetchEquipamentoReadings(equipModal.selectedSensor, { silent: true });
+      if (equipModal.open && equipModal.selectedSensor) {
+        equipModalPollTimer = window.setTimeout(pollEquipamentoReadings, 5000);
+      }
+    }
+
+    function stopEquipModalPolling() {
+      if (equipModalPollTimer) {
+        window.clearTimeout(equipModalPollTimer);
+        equipModalPollTimer = null;
       }
     }
 
     async function openEquipamentoDetails(eq) {
+      stopEquipModalPolling();
       equipModal.open = true;
       equipModal.equipamento = eq;
       equipModal.selectedSensor = null;
       equipModal.readings = [];
       equipModal.error = '';
+      equipModal.refreshing = false;
       await fetchEquipamentoSensors(eq.id);
       if (equipModal.sensors.length) {
         equipModal.selectedSensor = equipModal.sensors[0].id;
       }
+      pollEquipamentoReadings();
     }
 
     function closeEquipModal() {
@@ -1295,11 +1333,16 @@ createApp({
       equipModal.readings = [];
       equipModal.error = '';
       equipModal.lastRefresh = null;
+      equipModal.loading = false;
+      equipModal.refreshing = false;
+      stopEquipModalPolling();
     }
 
     watch(() => equipModal.selectedSensor, async (sensorId) => {
       if (sensorId && equipModal.open) {
         await fetchEquipamentoReadings(sensorId);
+        stopEquipModalPolling();
+        pollEquipamentoReadings();
       }
     });
 
@@ -1402,9 +1445,6 @@ createApp({
               // Atualiza a tabela de leituras sem disparar a tela de loading global
               const res = await api('/api/telemetria/leituras/?limit=50&ordering=-timestamp');
               lists.leituras = normList(res);
-            }
-            if (equipModal.open && equipModal.selectedSensor) {
-              await fetchEquipamentoReadings(equipModal.selectedSensor);
             }
             else if (view.value === 'alertas') {
               // Atualização silenciosa — reutiliza os filtros ativos do usuário

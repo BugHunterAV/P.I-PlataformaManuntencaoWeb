@@ -1483,6 +1483,11 @@ tbody tr:last-child td {
   display: block;
 }
 
+.equip-chart-svg text {
+  font-family: Inter, system-ui, sans-serif;
+  pointer-events: none;
+}
+
 .detail-stats-row {
   display: grid;
   grid-template-columns: repeat(4, minmax(120px, 1fr));
