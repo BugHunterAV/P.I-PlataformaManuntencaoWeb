@@ -2061,37 +2061,6 @@ tbody tr:last-child td {
   animation-delay: -0.16s;
 }
 
-/* Mode selector */
-.ai-mode-selector {
-  padding: 10px 16px 6px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border-top: 1px solid rgba(31, 45, 61, 0.5);
-  background: rgba(5, 7, 10, 0.38);
-}
-.ai-mode-selector label {
-  font-size: 10px;
-  color: var(--t3);
-  white-space: nowrap;
-}
-.ai-mode-selector select {
-  flex: 1;
-  min-width: 0;
-  background: rgba(0, 0, 0, 0.25);
-  border: 1px solid var(--wire);
-  border-radius: 6px;
-  color: var(--t1);
-  font-size: 11px;
-  padding: 7px 10px;
-}
-.ai-mode-selector .ai-mode-info {
-  font-size: 10px;
-  color: var(--t2);
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
 /* Suggestions Box */
 .ai-suggestions-container {
   padding: 8px 16px;

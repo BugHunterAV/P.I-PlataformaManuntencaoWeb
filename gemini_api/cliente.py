@@ -40,14 +40,14 @@ def generate_content(system_instruction, user_prompt, history=None, model_candid
             contents.append(
                 types.Content(
                     role=role,
-                    parts=[types.Part.from_text(item.get("text", ""))]
+                    parts=[types.Part.from_text(text=item.get("text", ""))]
                 )
             )
 
     contents.append(
         types.Content(
             role="user",
-            parts=[types.Part.from_text(user_prompt)]
+            parts=[types.Part.from_text(text=user_prompt)]
         )
     )
 

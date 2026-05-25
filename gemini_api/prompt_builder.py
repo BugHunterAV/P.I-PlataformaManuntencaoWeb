@@ -40,7 +40,7 @@ def build_system_instruction(user, purpose):
     )
 
 
-def build_chat_prompt(message, context):
+def build_chat_prompt(user, context, message):
     blocks = [
         "CONTEXTUALIZAÇÃO RÁPIDA:",
         f"- Empresa: {context['company_name']}",
@@ -92,7 +92,7 @@ def build_os_analysis_prompt(user, context, message):
     return "\n".join(blocks)
 
 
-def build_unassigned_orders_prompt(context, message):
+def build_unassigned_orders_prompt(user, context, message):
     blocks = [
         "CONTEXTUALIZAÇÃO DE ORDENS NÃO ATRIBUÍDAS:",
         f"- Total de ordens sem atribuição: {context['unassigned_orders'].count()}",

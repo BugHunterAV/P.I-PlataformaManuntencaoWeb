@@ -40,7 +40,8 @@ class GeminiBaseView(APIView):
     def get_prompt(self, user, context, message):
         if self.prompt_builder is None:
             return message
-        return self.prompt_builder(user, context, message)
+        prompt_fn = type(self).prompt_builder
+        return prompt_fn(user, context, message)
 
     def run_gemini(self, system_instruction, user_prompt, history):
         return generate_content(
@@ -110,7 +111,7 @@ class GeminiUnassignedOrdersView(GeminiBaseView):
     system_purpose = "avaliar ordens sem atribuição e sugerir prioridades"
 
     def get_prompt(self, user, context, message):
-        return build_unassigned_orders_prompt(context, message)
+        return build_unassigned_orders_prompt(user, context, message)
 
     @extend_schema(
         request=GeminiMessageSerializer,

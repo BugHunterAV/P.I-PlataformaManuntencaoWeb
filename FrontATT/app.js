@@ -294,13 +294,31 @@ createApp({
 
       if (res.status === 401) { logout(); return null; }
       if (res.status === 204) return null;
-      const body = await res.json();
+
+      const contentType = (res.headers.get('content-type') || '').toLowerCase();
+      if (contentType.includes('application/json')) {
+        const body = await res.json();
+        if (!res.ok) {
+          const err = new Error(`API error ${res.status}`);
+          err.fieldErrors = body;
+          err.status = res.status;
+          throw err;
+        }
+        return body;
+      }
+
+      const text = await res.text();
       if (!res.ok) {
-        const err = new Error('API error');
-        err.fieldErrors = body;
+        const err = new Error(`API error ${res.status}`);
+        err.status = res.status;
+        err.rawText = text;
         throw err;
       }
-      return body;
+      try {
+        return JSON.parse(text);
+      } catch {
+        return text;
+      }
     }
 
     function parseDjangoErrors(raw) {
@@ -1219,18 +1237,11 @@ createApp({
 
     // ─ Chat AI (NanaSmart AI) ────────────────────────
     // Este widget usa o token JWT armazenado em localStorage e o usuário atual
-    // carregado via /api/auth/me/. Dessa forma, o backend sabe exatamente
-    // quem está falando e gera o contexto correto por empresa e papel.
+    // carregado via /api/auth/me/. Assim o backend escolhe o contexto correto
+    // e encaminha a requisição ao endpoint de Gemini apropriado para o papel.
     const chatOpen = ref(false);
     const chatInput = ref('');
     const chatLoading = ref(false);
-    const chatMode = ref('chat');
-    const chatModes = [
-      { id: 'chat', label: 'Chat Geral', endpoint: '/api/gemini/chat/' },
-      { id: 'os_analysis', label: 'Análise de OS', endpoint: '/api/gemini/ordens/analise/' },
-      { id: 'unassigned', label: 'Ordens sem Atribuição', endpoint: '/api/gemini/ordens/sem-atribuicao/' },
-      { id: 'finance', label: 'Gestão Financeira', endpoint: '/api/gemini/gestao/financeira/' },
-    ];
     const chatMessages = ref([
       {
         role: 'ai',
@@ -1239,21 +1250,24 @@ createApp({
     ]);
     const chatScrollContainer = ref(null);
 
-    const chatModeLabel = computed(() => {
-      const mode = chatModes.find(m => m.id === chatMode.value);
-      return mode ? mode.label : 'Chat Geral';
+    const chatMode = computed(() => {
+      if (!me.value || !me.value.tipo_usuario) return 'chat';
+      if (me.value.tipo_usuario === 'tecnico') return 'os_analysis';
+      if (me.value.tipo_usuario === 'gestor') return 'finance';
+      if (me.value.tipo_usuario === 'admin') return 'chat';
+      return 'chat';
     });
 
     const chatPlaceholder = computed(() => {
-      if (chatMode.value === 'os_analysis') return 'Pergunte sobre ordens de serviço e prioridades...';
-      if (chatMode.value === 'unassigned') return 'Solicite critérios de alocação para ordens sem responsável...';
-      if (chatMode.value === 'finance') return 'Peça orientação financeira de manutenção para gestores/admin...';
-      return 'Pergunte sobre a planta, KPIs ou manutenção...';
+      if (chatMode.value === 'os_analysis') return 'Descreva a situação da ordem de serviço ou problema do equipamento...';
+      if (chatMode.value === 'finance') return 'Peça orientação de gestão de manutenção e redução de custos...';
+      return 'Pergunte sobre o parque, alertas ou desempenho da manutenção...';
     });
 
     function getChatEndpointPath() {
-      const mode = chatModes.find(m => m.id === chatMode.value);
-      return mode ? mode.endpoint : '/api/gemini/chat/';
+      if (chatMode.value === 'os_analysis') return '/api/gemini/ordens/analise/';
+      if (chatMode.value === 'finance') return '/api/gemini/gestao/financeira/';
+      return '/api/gemini/chat/';
     }
 
     function toggleChat() {
@@ -1290,12 +1304,17 @@ createApp({
       chatLoading.value = true;
       scrollToBottom();
 
+      const history = chatMessages.value.slice(0, -1).map(item => ({
+        role: item.role === 'ai' ? 'model' : item.role,
+        text: item.text
+      }));
+
       try {
         const res = await api(getChatEndpointPath(), {
           method: 'POST',
           body: JSON.stringify({
             message: msgText,
-            history: chatMessages.value.slice(0, -1)
+            history
           })
         });
 
@@ -1306,7 +1325,7 @@ createApp({
         }
       } catch (err) {
         console.error('Erro no chat da IA:', err);
-        const backendMessage = err.fieldErrors?.response || err.message || 'Erro desconhecido';
+        const backendMessage = err.fieldErrors?.response || err.rawText || err.message || 'Erro desconhecido';
         chatMessages.value.push({
           role: 'ai',
           text: `Desculpe, ocorreu um erro ao conectar com o serviço da IA. ${backendMessage}`
@@ -1406,7 +1425,7 @@ createApp({
       leiturasHoje, dashTelemetriaEquip, dashTelemetriaSensor,
       dashTelemetriaSensoresFiltrados, dashCustoSetor,
       chatOpen, chatInput, chatLoading, chatMessages, chatScrollContainer,
-      chatMode, chatModes, chatModeLabel, chatPlaceholder,
+      chatPlaceholder,
       toggleChat, sendChatMessage, sendSuggestion, formatMarkdown
     };
   }
