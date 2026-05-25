@@ -11,6 +11,18 @@ class IsOwnerOrGestorOrUnassigned(permissions.BasePermission):
        - NÃO podem atribuir uma O.S. para outra pessoa (apenas para si mesmos).
     """
 
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+
+        if request.method == 'POST' and user.tipo_usuario == 'tecnico':
+            novo_responsavel_id = request.data.get('responsavel')
+            if novo_responsavel_id and int(novo_responsavel_id) != user.id:
+                return False
+
+        return True
+
     def has_object_permission(self, request, view, obj):
         user = request.user
 

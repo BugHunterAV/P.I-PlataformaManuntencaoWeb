@@ -1137,12 +1137,18 @@
               <span v-if="formErrors.status" class="field-error">{{ formErrors.status }}</span>
             </div>
           </div>
-          <div class="field">
+          <div class="field" v-if="isAdminOrGestor">
             <label>Responsável</label>
             <select v-model.number="fd.responsavel">
               <option :value="null">— Sem responsável —</option>
               <option v-for="u in lists.usuarios" :key="u.id" :value="u.id">{{ u.username }} ({{ u.tipo_usuario }})</option>
             </select>
+          </div>
+          <div class="field" v-else>
+            <label>Responsável</label>
+            <div style="padding:0.75rem; background:#111; border:1px solid #333; border-radius:8px; color:var(--ice);">
+              {{ usuarioNome(fd.responsavel) || usuarioNome(me?.id) || '— Sem responsável —' }}
+            </div>
           </div>
           <div class="field-row" v-if="fd.status === 'concluida'">
             <div class="field">
@@ -1163,6 +1169,12 @@
 
         <!-- ══════════ MODAL: ENCERRAR O.S ══════════ -->
         <template v-if="modal.type==='encerrar_os'">
+          <div class="field">
+            <label>Responsável</label>
+            <div style="padding:0.75rem; border:1px solid #333; border-radius:8px; background:#111; color:var(--ice);">
+              {{ usuarioNome(fd.responsavel) || me?.username || '— Sem responsável —' }}
+            </div>
+          </div>
           <div class="field" :class="{hasError:formErrors.descricao}">
             <label>Feedback / Descrição do Serviço *</label>
             <textarea v-model="fd.descricao" rows="4" placeholder="Descreva o que foi feito..."></textarea>

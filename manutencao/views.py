@@ -27,6 +27,24 @@ class OrdemServicoViewSet(viewsets.ModelViewSet):
     ordering_fields = ['data_abertura', 'prioridade', 'status']
     ordering = ['-data_abertura']
 
+    def perform_create(self, serializer):
+        validated = serializer.validated_data
+        status = validated.get('status')
+        responsavel = validated.get('responsavel')
+        if status == 'concluida' and responsavel is None:
+            serializer.save(responsavel=self.request.user)
+        else:
+            serializer.save()
+
+    def perform_update(self, serializer):
+        validated = serializer.validated_data
+        status = validated.get('status', serializer.instance.status)
+        responsavel = validated.get('responsavel', serializer.instance.responsavel)
+        if status == 'concluida' and responsavel is None:
+            serializer.save(responsavel=self.request.user)
+        else:
+            serializer.save()
+
     def get_queryset(self):
         user = self.request.user
         qs = OrdemServico.objects.select_related('equipamento', 'responsavel')

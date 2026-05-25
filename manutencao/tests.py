@@ -20,7 +20,7 @@ class OSTests(APITestCase):
         self.motor = Equipamento.objects.create(
             nome="Motor OS", tipo="Motor", numero_serie="OS-001", empresa=self.empresa
         )
-        self.os_url = reverse('ordemservico-list')
+        self.os_url = reverse('ordens-servico-list')
 
     def test_tecnico_visibility(self):
         """Testa se o técnico vê apenas O.S. sem responsável ou atribuídas a ele."""
@@ -40,10 +40,11 @@ class OSTests(APITestCase):
         # Autentica como Tecnico 1
         self.client.force_authenticate(user=self.tecnico1)
         response = self.client.get(self.os_url)
-        
+        items = response.data.get('results', response.data)
+
         # Deve ver a "Livre" e a "Tec 1", mas NÃO a "Tec 2"
-        self.assertEqual(len(response.data), 2)
-        titulos = [item['titulo'] for item in response.data]
+        self.assertEqual(len(items), 2)
+        titulos = [item['titulo'] for item in items]
         self.assertIn("OS Livre", titulos)
         self.assertIn("OS Tec 1", titulos)
         self.assertNotIn("OS Tec 2", titulos)
@@ -54,6 +55,62 @@ class OSTests(APITestCase):
             equipamento=self.motor, titulo="OS Protegida", descricao="Teste"
         )
         self.client.force_authenticate(user=self.tecnico1)
-        url = reverse('ordemservico-detail', args=[os.id])
+        url = reverse('ordens-servico-detail', args=[os.id])
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_tecnico_cannot_assign_other_user_on_create(self):
+        """Técnicos não podem atribuir outra pessoa ao criar uma O.S."""
+        self.client.force_authenticate(user=self.tecnico1)
+        payload = {
+            'equipamento': self.motor.id,
+            'titulo': 'OS Atribuida a Outro',
+            'descricao': 'Teste',
+            'responsavel': self.tecnico2.id,
+        }
+        response = self.client.post(self.os_url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_concluir_os_sem_responsavel_atribui_usuario(self):
+        """Ao concluir uma O.S. sem responsável, ela deve ser atribuída ao usuário que encerra."""
+        os = OrdemServico.objects.create(
+            equipamento=self.motor,
+            titulo='OS para Concluir',
+            descricao='Teste',
+            status='andamento',
+            responsavel=None,
+        )
+        self.client.force_authenticate(user=self.tecnico1)
+        url = reverse('ordens-servico-detail', args=[os.id])
+        response = self.client.patch(url, {'status': 'concluida'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['responsavel'], self.tecnico1.id)
+
+    def test_tecnico_assume_os_backend_assigns_responsavel(self):
+        """Ao assumir uma O.S. sem responsável, o backend deve atribuir o técnico automaticamente."""
+        os = OrdemServico.objects.create(
+            equipamento=self.motor,
+            titulo='OS para Assumir',
+            descricao='Teste',
+            status='pendente',
+            responsavel=None,
+        )
+        self.client.force_authenticate(user=self.tecnico1)
+        url = reverse('ordens-servico-detail', args=[os.id])
+        response = self.client.patch(url, {'status': 'andamento'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['responsavel'], self.tecnico1.id)
+
+    def test_tecnico_create_os_andamento_assigns_self(self):
+        """Ao criar uma O.S. em andamento, o backend deve atribuir o técnico automaticamente."""
+        self.client.force_authenticate(user=self.tecnico1)
+        payload = {
+            'equipamento': self.motor.id,
+            'titulo': 'OS Criada Andamento',
+            'descricao': 'Teste',
+            'status': 'andamento',
+            'responsavel': None,
+        }
+        response = self.client.post(self.os_url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['responsavel'], self.tecnico1.id)

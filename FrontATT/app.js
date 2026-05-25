@@ -559,6 +559,7 @@ createApp({
           items = items.filter(o => eqIds.has(o.equipamento));
         }
         lists.ordens = items;
+        if (!lists.usuarios.length) await fetchUsuariosAll();
         Object.assign(pages.ordens, normPages(d));
       });
     }
@@ -674,6 +675,7 @@ createApp({
       lists.sensores = normList(d);
     }
     async function fetchOrdensAll() {
+      if (!lists.usuarios.length) await fetchUsuariosAll();
       if (lists.ordens.length) return;
       const d = await api('/api/ordens-servico/?limit=999');
       lists.ordens = normList(d);
@@ -872,6 +874,9 @@ createApp({
         toast('O.S. assumida com sucesso!', 'success');
         o.responsavel = me.value.id;
         o.status = payload.status;
+        if (!lists.usuarios.length) {
+          await fetchUsuariosAll();
+        }
       } catch(e) {
         toast('Erro ao assumir O.S.', 'error');
       }
@@ -882,6 +887,9 @@ createApp({
       modal.type = 'encerrar_os';
       modal.title = 'Encerrar Ordem de Serviço';
       fd.status = 'concluida';
+      if (!fd.responsavel && me.value?.id) {
+        fd.responsavel = me.value.id;
+      }
     }
 
     async function assumirOSFromAlerta(alerta) {
@@ -1198,8 +1206,11 @@ createApp({
     }
     function usuarioNome(id) {
       if (!id) return '';
-      const u = lists.usuarios.find(x => x.id === id);
-      return u ? u.username : '';
+      const userId = typeof id === 'object' ? id.id : id;
+      const u = lists.usuarios.find(x => x.id === userId);
+      if (u) return u.username;
+      if (me.value?.id === userId) return me.value.username;
+      return '';
     }
     function eqEmpresaNome(eqId) {
       if (!eqId) return '—';
