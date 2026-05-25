@@ -521,7 +521,7 @@
             <table v-else>
               <thead><tr><th>ID</th><th>Nome</th><th>Modelo</th><th>Fabricante</th><th>Nº Série</th><th>Setor</th><th>Sensores</th><th>Status</th><th>Empresa</th><th>Ações</th></tr></thead>
               <tbody>
-                <tr v-for="e in lists.equipamentos" :key="e.id">
+                <tr v-for="e in lists.equipamentos" :key="e.id" class="clickable-row" @click="openEquipamentoDetails(e)">
                   <td style="font-family:var(--mono);color:var(--t4)">#{{ e.id }}</td>
                   <td style="font-weight:600;color:var(--t1)">{{ e.nome }}</td>
                   <td style="font-family:var(--mono);font-size:11px">{{ e.modelo || '—' }}</td>
@@ -532,8 +532,8 @@
                   <td><span class="badge" :class="eqStatusBadge(e.status)"><span class="badge-dot"></span>{{ e.status || '—' }}</span></td>
                   <td style="font-size:11px">{{ empresaNome(e.empresa) }}</td>
                   <td><div class="action-btns">
-                    <button v-if="isAdminOrGestor" class="btn btn-ghost btn-sm" @click="editItem('equipamento',e)">Editar</button>
-                    <button v-if="isAdmin" class="btn btn-danger btn-sm" @click="deleteItem('equipamentos',e.id)">✕</button>
+                    <button v-if="isAdminOrGestor" class="btn btn-ghost btn-sm" @click.stop="editItem('equipamento',e)">Editar</button>
+                    <button v-if="isAdmin" class="btn btn-danger btn-sm" @click.stop="deleteItem('equipamentos',e.id)">✕</button>
                   </div></td>
                 </tr>
               </tbody>
@@ -543,6 +543,109 @@
             <button class="page-btn" :disabled="!pages.equipamentos.prev" @click="fetchPage('equipamentos',pages.equipamentos.prev)">← Anterior</button>
             <span class="page-info">{{ lists.equipamentos.length }} registros</span>
             <button class="page-btn" :disabled="!pages.equipamentos.next" @click="fetchPage('equipamentos',pages.equipamentos.next)">Próxima →</button>
+          </div>
+
+          <div v-if="equipModal.open" class="modal-backdrop" @click.self="closeEquipModal">
+            <div class="modal modal-wide">
+              <div class="modal-header">
+                <div>
+                  <div class="modal-title">Detalhes do Equipamento</div>
+                  <div style="margin-top:8px;font-size:18px;font-weight:700;color:var(--t1);">{{ equipModal.equipamento?.nome }}</div>
+                </div>
+                <button class="modal-close" @click="closeEquipModal">×</button>
+              </div>
+              <div class="modal-body">
+                <div class="detail-top-row">
+                  <div class="detail-card">
+                    <div class="detail-card-label">ID</div>
+                    <div class="detail-card-value">#{{ equipModal.equipamento?.id }}</div>
+                  </div>
+                  <div class="detail-card">
+                    <div class="detail-card-label">Status</div>
+                    <div class="detail-card-value">{{ equipModal.equipamento?.status || '—' }}</div>
+                  </div>
+                  <div class="detail-card">
+                    <div class="detail-card-label">Setor</div>
+                    <div class="detail-card-value">{{ locSetor(equipModal.equipamento?.id) }}</div>
+                  </div>
+                  <div class="detail-card">
+                    <div class="detail-card-label">Sensores</div>
+                    <div class="detail-card-value">{{ equipModal.sensors.length }}</div>
+                  </div>
+                </div>
+
+                <div class="detail-filter-row">
+                  <label class="filter-label">Sensor</label>
+                  <select class="filter-select" v-model="equipModal.selectedSensor">
+                    <option v-if="!equipModal.sensors.length" value="">Nenhum sensor disponível</option>
+                    <option v-for="s in equipModal.sensors" :key="s.id" :value="s.id">{{ s.nome }}{{ s.tipo ? ' (' + s.tipo + ')' : '' }}</option>
+                  </select>
+                  <span class="detail-refresh">Atualizado em: {{ equipModal.lastRefresh ? (new Date(equipModal.lastRefresh)).toLocaleTimeString('pt-BR') : '—' }}</span>
+                </div>
+
+                <div v-if="equipModal.loading" class="loading"><div class="spinner"></div>Carregando detalhes...</div>
+                <div v-else>
+                  <div v-if="equipModal.error" class="field-error-global">{{ equipModal.error }}</div>
+
+                  <template v-if="equipModal.sensors.length">
+                    <div class="equip-graph-card">
+                      <div class="chart-head" style="margin-bottom: 14px;">
+                        <div>
+                          <div class="chart-title">Histórico do {{ selectedSensorLabel }}</div>
+                          <div class="chart-sub">Últimas {{ equipModal.readings.length }} leituras</div>
+                        </div>
+                      </div>
+                      <div class="equip-graph-wrap">
+                        <svg viewBox="0 0 360 180" preserveAspectRatio="none" class="equip-chart-svg">
+                          <path v-if="equipModalChart.area" :d="equipModalChart.area" fill="rgba(0, 212, 170, 0.12)" />
+                          <path v-if="equipModalChart.path" :d="equipModalChart.path" fill="none" stroke="#00d4aa" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+                          <circle v-for="(dot, idx) in equipModalChart.dots" :key="idx"
+                            :cx="dot.x" :cy="dot.y" r="3" fill="#00d4aa" stroke="#0f172a" stroke-width="1" />
+                        </svg>
+                      </div>
+                      <div class="detail-stats-row">
+                        <div class="detail-stat">
+                          <div class="detail-stat-label">Último valor</div>
+                          <div class="detail-stat-value">{{ equipModalStats.last }}</div>
+                        </div>
+                        <div class="detail-stat">
+                          <div class="detail-stat-label">Mínimo</div>
+                          <div class="detail-stat-value">{{ equipModalStats.min }}</div>
+                        </div>
+                        <div class="detail-stat">
+                          <div class="detail-stat-label">Máximo</div>
+                          <div class="detail-stat-value">{{ equipModalStats.max }}</div>
+                        </div>
+                        <div class="detail-stat">
+                          <div class="detail-stat-label">Pontos</div>
+                          <div class="detail-stat-value">{{ equipModalStats.count }}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="detail-table-wrap">
+                      <div class="detail-table-title">Últimas leituras</div>
+                      <table>
+                        <thead>
+                          <tr><th>Data/Hora</th><th>Valor</th><th>Sensor</th></tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="read in equipModal.readings.slice(0, 10)" :key="read.id">
+                            <td>{{ fmtDate(read.timestamp) }}</td>
+                            <td>{{ read.valor }}</td>
+                            <td>{{ selectedSensorLabel }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </template>
+                  <div v-else class="empty" style="margin-top:16px;">
+                    <div class="empty-icon">⚠</div>
+                    Este equipamento não possui sensores ativos cadastrados.
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

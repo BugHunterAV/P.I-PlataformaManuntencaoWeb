@@ -55,6 +55,42 @@ createApp({
     const fd = reactive({});
     const formErrors = ref({});
 
+    const equipModal = reactive({
+      open: false,
+      equipamento: null,
+      sensors: [],
+      selectedSensor: null,
+      readings: [],
+      loading: false,
+      error: '',
+      lastRefresh: null,
+    });
+
+    const selectedEquipSensor = computed(() => {
+      return equipModal.sensors.find(s => s.id === equipModal.selectedSensor) || null;
+    });
+
+    const selectedSensorLabel = computed(() => {
+      if (!selectedEquipSensor.value) return 'sensor';
+      return `${selectedEquipSensor.value.nome}${selectedEquipSensor.value.tipo ? ` (${selectedEquipSensor.value.tipo})` : ''}`;
+    });
+
+    const equipModalChart = computed(() => {
+      return makeLineChart(equipModal.readings, 360, 180);
+    });
+
+    const equipModalStats = computed(() => {
+      const values = equipModal.readings.map(r => parseFloat(r.valor) || 0);
+      if (!values.length) return { min: '—', max: '—', last: '—', count: 0 };
+      const last = values[0];
+      return {
+        min: Math.min(...values).toFixed(2),
+        max: Math.max(...values).toFixed(2),
+        last: last.toFixed(2),
+        count: values.length,
+      };
+    });
+
     // ─ Computed básicos ──────────────────────────────
     const isAdmin = computed(() => me.value?.tipo_usuario === 'admin');
     const isAdminOrGestor = computed(() => ['admin', 'gestor'].includes(me.value?.tipo_usuario));
@@ -1188,6 +1224,85 @@ createApp({
     // AJUSTE: Classes baseadas nas novas prioridades do Django
     function prioridadeBadge(p) { return { critico: 'badge-red', medio: 'badge-yellow', baixo: 'badge-green' }[p] || 'badge-gray'; }
 
+    function makeLineChart(readings, W = 360, H = 180) {
+      const raw = Array.isArray(readings) ? readings.slice(0, 20).reverse() : [];
+      if (!raw.length) return { path: '', area: '', dots: [], min: 0, max: 0 };
+      const values = raw.map(l => parseFloat(l.valor) || 0);
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const range = max - min || 1;
+      const points = values.map((v, i) => ({
+        x: (i / (values.length - 1 || 1)) * W,
+        y: H - ((v - min) / range) * H * 0.85 - H * 0.05,
+        v,
+      }));
+      const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      const area = points.length ? `${path} L${W},${H} L0,${H} Z` : '';
+      return { path, area, dots: points, min: min.toFixed(1), max: max.toFixed(1) };
+    }
+
+    async function fetchEquipamentoSensors(eqId) {
+      equipModal.loading = true;
+      equipModal.error = '';
+      try {
+        const res = await api(`/api/telemetria/sensores/?equipamento=${eqId}&limit=100`);
+        equipModal.sensors = normList(res);
+      } catch (err) {
+        equipModal.sensors = [];
+        equipModal.error = 'Falha ao carregar sensores do equipamento.';
+        console.error('Erro fetchEquipamentoSensors:', err);
+      } finally {
+        equipModal.loading = false;
+      }
+    }
+
+    async function fetchEquipamentoReadings(sensorId = equipModal.selectedSensor) {
+      if (!sensorId) {
+        equipModal.readings = [];
+        return;
+      }
+      equipModal.loading = true;
+      try {
+        const res = await api(`/api/telemetria/leituras/?sensor=${sensorId}&limit=50&ordering=-timestamp`);
+        equipModal.readings = normList(res);
+        equipModal.lastRefresh = new Date().toISOString();
+      } catch (err) {
+        equipModal.readings = [];
+        equipModal.error = 'Falha ao carregar leituras do sensor.';
+        console.error('Erro fetchEquipamentoReadings:', err);
+      } finally {
+        equipModal.loading = false;
+      }
+    }
+
+    async function openEquipamentoDetails(eq) {
+      equipModal.open = true;
+      equipModal.equipamento = eq;
+      equipModal.selectedSensor = null;
+      equipModal.readings = [];
+      equipModal.error = '';
+      await fetchEquipamentoSensors(eq.id);
+      if (equipModal.sensors.length) {
+        equipModal.selectedSensor = equipModal.sensors[0].id;
+      }
+    }
+
+    function closeEquipModal() {
+      equipModal.open = false;
+      equipModal.equipamento = null;
+      equipModal.sensors = [];
+      equipModal.selectedSensor = null;
+      equipModal.readings = [];
+      equipModal.error = '';
+      equipModal.lastRefresh = null;
+    }
+
+    watch(() => equipModal.selectedSensor, async (sensorId) => {
+      if (sensorId && equipModal.open) {
+        await fetchEquipamentoReadings(sensorId);
+      }
+    });
+
     function eqNome(id) {
       if (id == null) return '—';
       const eq = lists.equipamentos.find(e => e.id === id);
@@ -1287,6 +1402,9 @@ createApp({
               // Atualiza a tabela de leituras sem disparar a tela de loading global
               const res = await api('/api/telemetria/leituras/?limit=50&ordering=-timestamp');
               lists.leituras = normList(res);
+            }
+            if (equipModal.open && equipModal.selectedSensor) {
+              await fetchEquipamentoReadings(equipModal.selectedSensor);
             }
             else if (view.value === 'alertas') {
               // Atualização silenciosa — reutiliza os filtros ativos do usuário
@@ -1493,6 +1611,8 @@ createApp({
       availableSectors,
       leiturasHoje, dashTelemetriaEquip, dashTelemetriaSensor,
       dashTelemetriaSensoresFiltrados, dashCustoSetor,
+      equipModal, selectedSensorLabel, equipModalChart, equipModalStats,
+      openEquipamentoDetails, closeEquipModal, fetchEquipamentoReadings,
       chatOpen, chatInput, chatLoading, chatMessages, chatScrollContainer,
       chatPlaceholder,
       toggleChat, sendChatMessage, sendSuggestion, formatMarkdown
