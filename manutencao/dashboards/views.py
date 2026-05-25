@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Avg, F, ExpressionWrapper, DurationField, Count, Sum
+from django.db.models import Avg, F, ExpressionWrapper, DurationField, Count, Sum, Q
 from django.utils import timezone
 from manutencao.models import OrdemServico, HistoricoManutencao
 from ativos.models import Equipamento
@@ -92,15 +92,70 @@ class DashboardSummaryView(APIView):
 
         # Filtro base por empresa (isolamento multi-tenant)
         eq_filter = {}
+        visible_orders = None
         if user.tipo_usuario == 'admin':
             if empresa_id:
                 eq_filter['empresa_id'] = empresa_id
+            equipamentos = Equipamento.objects.filter(**eq_filter)
+        elif user.tipo_usuario == 'tecnico':
+            if not user.empresa:
+                return Response({'error': 'Usuário sem empresa vinculada.'}, status=400)
+            visible_orders = OrdemServico.objects.filter(
+                equipamento__empresa=user.empresa
+            ).select_related('equipamento', 'responsavel').filter(
+                Q(responsavel=user) | Q(responsavel__isnull=True)
+            )
+            equipamento_ids = visible_orders.values_list('equipamento_id', flat=True).distinct()
+            equipamentos = Equipamento.objects.filter(id__in=equipamento_ids)
         elif user.empresa:
             eq_filter['empresa'] = user.empresa
+            equipamentos = Equipamento.objects.filter(**eq_filter)
         else:
             return Response({'error': 'Usuário sem empresa vinculada.'}, status=400)
 
-        equipamentos = Equipamento.objects.filter(**eq_filter)
+        if user.tipo_usuario == 'tecnico':
+            status_counts = equipamentos.values('status').annotate(total=Count('status'))
+            resumo_status = {'total': equipamentos.count(), 'ativo': 0, 'manutencao': 0, 'inativo': 0}
+            for item in status_counts:
+                resumo_status[item['status']] = item['total']
+
+            alertas_ativos = Alerta.objects.filter(
+                equipamento__in=equipamentos,
+                status='ativo'
+            ).values('nivel').annotate(total=Count('nivel'))
+            resumo_alertas = {'critico': 0, 'medio': 0, 'baixo': 0, 'total': 0}
+            for a in alertas_ativos:
+                resumo_alertas[a['nivel']] = a['total']
+                resumo_alertas['total'] += a['total']
+
+            ordens_abertas = visible_orders.filter(status__in=['pendente', 'andamento']).count()
+            ordens_sem_tecnico = visible_orders.filter(status__in=['pendente', 'andamento'], responsavel__isnull=True).count()
+            minhas_ordens = visible_orders.filter(responsavel=user).count()
+            ordens_recentes = [
+                {
+                    'id': os.id,
+                    'titulo': os.titulo,
+                    'status': os.status,
+                    'equipamento': os.equipamento.nome if os.equipamento else None,
+                    'responsavel': os.responsavel.username if os.responsavel else None,
+                    'data_abertura': os.data_abertura,
+                }
+                for os in visible_orders.order_by('-data_abertura')[:5]
+            ]
+
+            return Response({
+                'resumo_status': resumo_status,
+                'alertas_ativos': resumo_alertas,
+                'ordens_abertas': ordens_abertas,
+                'ordens_sem_tecnico': ordens_sem_tecnico,
+                'minhas_ordens': minhas_ordens,
+                'total_equipamentos': equipamentos.count(),
+                'equipamentos': [
+                    {'id': eq.id, 'nome': eq.nome, 'status': eq.status}
+                    for eq in equipamentos
+                ],
+                'ordens_recentes': ordens_recentes,
+            })
 
         # 1. Contagens de Status dos equipamentos
         status_counts = equipamentos.values('status').annotate(total=Count('status'))

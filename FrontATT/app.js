@@ -74,7 +74,7 @@ createApp({
     // ═══════════════════════════════════════════════
 
     const chartEquipStatus = computed(() => {
-      const eq = lists.equipamentos;
+      const eq = isTecnico.value ? dashboardEquipamentos.value : lists.equipamentos;
       if (!eq.length && kpis.value) {
         const op = kpis.value.equipamentos_operacionais ?? kpis.value.equipamentos_ativos ?? 0;
         const tot = kpis.value.total_equipamentos ?? 0;
@@ -115,6 +115,20 @@ createApp({
       ];
     });
 
+    const dashboardEquipamentos = computed(() => {
+      if (!isTecnico.value) return lists.equipamentos;
+      const allowedIds = new Set(lists.ordens.map(o => o.equipamento).filter(Boolean));
+      return lists.equipamentos.filter(eq => allowedIds.has(eq.id));
+    });
+
+    const dashboardAllowedEquipamentoIds = computed(() => new Set(dashboardEquipamentos.value.map(eq => eq.id)));
+
+    const dashboardSensors = computed(() => {
+      if (!isTecnico.value) return lists.sensores;
+      const allowedEqIds = dashboardAllowedEquipamentoIds.value;
+      return lists.sensores.filter(s => allowedEqIds.has(s.equipamento));
+    });
+
     // ─ Leituras Hoje vs Total ─────────────────────────
     const leiturasHoje = computed(() => {
       const hoje = new Date();
@@ -127,9 +141,10 @@ createApp({
 
     // ─ Sensores filtrados pelo equipamento selecionado ─
     const dashTelemetriaSensoresFiltrados = computed(() => {
-      if (!dashTelemetriaEquip.value) return lists.sensores;
+      const source = isTecnico.value ? dashboardSensors.value : lists.sensores;
+      if (!dashTelemetriaEquip.value) return source;
       const eqId = Number(dashTelemetriaEquip.value);
-      return lists.sensores.filter(s => s.equipamento === eqId);
+      return source.filter(s => s.equipamento === eqId);
     });
 
     const chartTelemetria = computed(() => {
@@ -166,25 +181,20 @@ createApp({
     });
 
     watch([dashTelemetriaEquip, dashTelemetriaSensor], async ([eq, sen]) => {
-      // Quando muda o filtro no gráfico, busca as leituras focadas para alimentar o array
-      let url = '/api/telemetria/leituras/?limit=50&ordering=-timestamp';
+      let url = '/api/telemetria/leituras/?limit=200&ordering=-timestamp';
       if (sen) {
         url += '&sensor=' + sen;
-      } else if (eq) {
-        const sensorIds = lists.sensores.filter(s => s.equipamento === Number(eq)).map(s => s.id);
-        if (sensorIds.length > 0) {
-          url += '&sensor__in=' + sensorIds.join(',');
-        } else {
-          // Equipamento sem sensores
-          lists.leituras = [];
-          return;
-        }
       }
-      
+
       try {
         const res = await api(url);
         if (res) {
-          lists.leituras = normList(res);
+          let readings = normList(res);
+          if (eq && !sen) {
+            const sensorIds = new Set(lists.sensores.filter(s => s.equipamento === Number(eq)).map(s => s.id));
+            readings = readings.filter(l => sensorIds.has(l.sensor));
+          }
+          lists.leituras = readings;
         }
       } catch (err) {
         console.error("Erro ao buscar leituras filtradas no dashboard", err);
@@ -401,46 +411,83 @@ createApp({
     async function fetchDashboard() {
       try {
         const empParam = globalEmpresa.value ? '&empresa=' + globalEmpresa.value : '';
-        const [eqRes, alertRes, ordRes, telRes, histRes] = await Promise.allSettled([
+        const [eqRes, alertRes, ordRes, histRes] = await Promise.allSettled([
           api('/api/equipamentos/?limit=200' + empParam),
           api('/api/alertas/?status=ativo&limit=100&ordering=-criado_em'),
           api('/api/ordens-servico/?limit=100'),
-          api('/api/telemetria/leituras/?limit=50&ordering=-timestamp'),
           api('/api/historico/?limit=50'),
         ]);
 
         if (eqRes.status === 'fulfilled' && eqRes.value) lists.equipamentos = normList(eqRes.value);
+        if (ordRes.status === 'fulfilled' && ordRes.value) lists.ordens = normList(ordRes.value);
+        if (histRes.status === 'fulfilled' && histRes.value) lists.historico = normList(histRes.value);
 
-        // IDs dos equipamentos da empresa filtrada (para filtrar alertas, ordens, etc.)
         const eqIds = globalEmpresa.value
           ? new Set(lists.equipamentos.map(eq => eq.id))
           : null;
 
+        if (eqIds) {
+          lists.ordens = lists.ordens.filter(o => eqIds.has(o.equipamento));
+        }
+
+        const allowedEqIds = isTecnico.value
+          ? new Set(lists.ordens.map(o => o.equipamento).filter(Boolean))
+          : eqIds;
+
+        if (isTecnico.value && allowedEqIds && allowedEqIds.size) {
+          lists.equipamentos = lists.equipamentos.filter(eq => allowedEqIds.has(eq.id));
+        }
+
         if (alertRes.status === 'fulfilled' && alertRes.value) {
           let alerts = normList(alertRes.value);
-          if (eqIds) alerts = alerts.filter(a => eqIds.has(a.equipamento));
+          if (allowedEqIds) {
+            alerts = alerts.filter(a => allowedEqIds.has(a.equipamento));
+          }
           dashAlerts.value = alerts;
           alertCount.value = alerts.length;
         }
-        if (ordRes.status === 'fulfilled' && ordRes.value) {
-          let ordens = normList(ordRes.value);
-          if (eqIds) ordens = ordens.filter(o => eqIds.has(o.equipamento));
-          lists.ordens = ordens;
+
+        const sensorFilter = allowedEqIds && allowedEqIds.size
+          ? '&equipamento__in=' + [...allowedEqIds].join(',')
+          : '';
+        const sensorRes = await api('/api/telemetria/sensores/?limit=999' + sensorFilter);
+        if (sensorRes) lists.sensores = normList(sensorRes);
+
+        const telRes = await api('/api/telemetria/leituras/?limit=50&ordering=-timestamp');
+        if (telRes) {
+          let leituras = normList(telRes);
+          if (isTecnico.value && lists.sensores.length) {
+            const sensorIds = new Set(lists.sensores.map(s => s.id));
+            leituras = leituras.filter(l => sensorIds.has(l.sensor));
+          }
+          lists.leituras = leituras;
         }
-        if (telRes.status === 'fulfilled' && telRes.value) lists.leituras = normList(telRes.value);
+
         if (histRes.status === 'fulfilled' && histRes.value) lists.historico = normList(histRes.value);
 
-        // Monta KPIs a partir dos dados reais
-        kpis.value = {
-          total_equipamentos: lists.equipamentos.length,
-          alertas_ativos: dashAlerts.value.length,
-          ordens_abertas: lists.ordens.filter(o => o.status === 'pendente' || o.status === 'andamento').length,
-          leituras_hoje: leiturasHoje.value.length,
-          leituras_total: lists.leituras.length,
-        };
+        if (isTecnico.value) {
+          const ordensAbertas = lists.ordens.filter(o => o.status === 'pendente' || o.status === 'andamento');
+          const minhasOrdens = lists.ordens.filter(o => o.responsavel === me.value?.id).length;
+          const ordensSemTecnico = ordensAbertas.filter(o => !o.responsavel).length;
 
-        // Busca métricas MTTR/MTBF em paralelo (não bloqueia o dashboard)
-        api('/api/dashboards/kpis/').then(d => { if (d) kpis.value._mtbf = d; }).catch(() => { });
+          kpis.value = {
+            total_equipamentos: lists.equipamentos.length,
+            alertas_ativos: dashAlerts.value.length,
+            ordens_abertas: ordensAbertas.length,
+            ordens_sem_tecnico: ordensSemTecnico,
+            minhas_ordens: minhasOrdens,
+          };
+        } else {
+          kpis.value = {
+            total_equipamentos: lists.equipamentos.length,
+            alertas_ativos: dashAlerts.value.length,
+            ordens_abertas: lists.ordens.filter(o => o.status === 'pendente' || o.status === 'andamento').length,
+            leituras_hoje: leiturasHoje.value.length,
+            leituras_total: lists.leituras.length,
+          };
+
+          api('/api/dashboards/kpis/').then(d => { if (d) kpis.value._mtbf = d; }).catch(() => { });
+        }
 
         // Busca localizações para filtro de setor no custo
         api('/api/localizacao/?limit=999').then(d => { if (d) lists.localizacoes = normList(d); }).catch(() => { });

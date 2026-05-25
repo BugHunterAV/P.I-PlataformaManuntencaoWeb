@@ -217,34 +217,62 @@
 
           <!-- KPI Row -->
           <div class="dash-grid" style="margin-bottom:16px" v-if="kpis">
-            <div class="kpi-mega col-3" style="--kpi-color:var(--ice)">
-              <div class="kpi-mega-icon">⚙</div>
-              <div class="kpi-mega-label">Equipamentos</div>
-              <div class="kpi-mega-val">{{ kpis.total_equipamentos ?? '—' }}</div>
-              <div class="kpi-mega-foot">total cadastrado</div>
-            </div>
-            <div class="kpi-mega col-3" style="--kpi-color:var(--danger)">
-              <div class="kpi-mega-icon">◉</div>
-              <div class="kpi-mega-label">Alertas Ativos</div>
-              <div class="kpi-mega-val">{{ kpis.alertas_ativos ?? dashAlerts.length }}</div>
-              <div class="kpi-mega-foot">requerem atenção</div>
-            </div>
-            <div class="kpi-mega col-3" style="--kpi-color:var(--warn)">
-              <div class="kpi-mega-icon">✦</div>
-              <div class="kpi-mega-label">Ordens Abertas</div>
-              <div class="kpi-mega-val">{{ kpis.ordens_abertas ?? '—' }}</div>
-              <div class="kpi-mega-foot">em andamento</div>
-            </div>
-            <div class="kpi-mega col-3" style="--kpi-color:var(--acid)">
-              <div class="kpi-mega-icon">⬡</div>
-              <div class="kpi-mega-label">Leituras (Hoje / Total)</div>
-              <div class="kpi-mega-val kpi-mega-val-split">
-                {{ kpis.leituras_hoje ?? leiturasHoje.length }}
-                <span class="kpi-val-divider">/</span>
-                <span class="kpi-mega-val-secondary">{{ kpis.leituras_total ?? lists.leituras.length }}</span>
+            <template v-if="isTecnico">
+              <div class="kpi-mega col-3" style="--kpi-color:var(--warn)">
+                <div class="kpi-mega-icon">⚡</div>
+                <div class="kpi-mega-label">Ordens Abertas</div>
+                <div class="kpi-mega-val">{{ kpis.ordens_abertas ?? '—' }}</div>
+                <div class="kpi-mega-foot">para resolver</div>
               </div>
-              <div class="kpi-mega-foot">pontos de telemetria</div>
-            </div>
+              <div class="kpi-mega col-3" style="--kpi-color:var(--acid)">
+                <div class="kpi-mega-icon">👤</div>
+                <div class="kpi-mega-label">Minhas Ordens</div>
+                <div class="kpi-mega-val">{{ kpis.minhas_ordens ?? '—' }}</div>
+                <div class="kpi-mega-foot">atribuídas a mim</div>
+              </div>
+              <div class="kpi-mega col-3" style="--kpi-color:var(--danger)">
+                <div class="kpi-mega-icon">⚠</div>
+                <div class="kpi-mega-label">Sem Técnico</div>
+                <div class="kpi-mega-val">{{ kpis.ordens_sem_tecnico ?? '—' }}</div>
+                <div class="kpi-mega-foot">aguardam atribuição</div>
+              </div>
+              <div class="kpi-mega col-3" style="--kpi-color:var(--ice)">
+                <div class="kpi-mega-icon">⚙</div>
+                <div class="kpi-mega-label">Equipamentos</div>
+                <div class="kpi-mega-val">{{ kpis.total_equipamentos ?? '—' }}</div>
+                <div class="kpi-mega-foot">da minha área</div>
+              </div>
+            </template>
+            <template v-else>
+              <div class="kpi-mega col-3" style="--kpi-color:var(--ice)">
+                <div class="kpi-mega-icon">⚙</div>
+                <div class="kpi-mega-label">Equipamentos</div>
+                <div class="kpi-mega-val">{{ kpis.total_equipamentos ?? '—' }}</div>
+                <div class="kpi-mega-foot">total cadastrado</div>
+              </div>
+              <div class="kpi-mega col-3" style="--kpi-color:var(--danger)">
+                <div class="kpi-mega-icon">◉</div>
+                <div class="kpi-mega-label">Alertas Ativos</div>
+                <div class="kpi-mega-val">{{ kpis.alertas_ativos ?? dashAlerts.length }}</div>
+                <div class="kpi-mega-foot">requerem atenção</div>
+              </div>
+              <div class="kpi-mega col-3" style="--kpi-color:var(--warn)">
+                <div class="kpi-mega-icon">✦</div>
+                <div class="kpi-mega-label">Ordens Abertas</div>
+                <div class="kpi-mega-val">{{ kpis.ordens_abertas ?? '—' }}</div>
+                <div class="kpi-mega-foot">em andamento</div>
+              </div>
+              <div class="kpi-mega col-3" style="--kpi-color:var(--acid)">
+                <div class="kpi-mega-icon">⬡</div>
+                <div class="kpi-mega-label">Leituras (Hoje / Total)</div>
+                <div class="kpi-mega-val kpi-mega-val-split">
+                  {{ kpis.leituras_hoje ?? leiturasHoje.length }}
+                  <span class="kpi-val-divider">/</span>
+                  <span class="kpi-mega-val-secondary">{{ kpis.leituras_total ?? lists.leituras.length }}</span>
+                </div>
+                <div class="kpi-mega-foot">pontos de telemetria</div>
+              </div>
+            </template>
           </div>
           <div v-else-if="!kpis" class="loading" style="height:120px"><div class="spinner"></div></div>
 
@@ -332,7 +360,7 @@
                 <div class="chart-filter-row">
                   <select class="chart-filter-select" v-model="dashTelemetriaEquip">
                     <option value="">Todos Equipamentos</option>
-                    <option v-for="eq in lists.equipamentos" :key="eq.id" :value="eq.id">{{ eq.nome }}</option>
+                    <option v-for="eq in dashboardEquipamentos" :key="eq.id" :value="eq.id">{{ eq.nome }}</option>
                   </select>
                   <select class="chart-filter-select" v-model="dashTelemetriaSensor">
                     <option value="">Todos Sensores</option>
@@ -368,7 +396,7 @@
               </div>
             </div>
 
-            <div class="chart-card col-6">
+            <div class="chart-card col-6" v-if="!isTecnico">
               <div class="chart-head">
                 <div class="chart-title">Custo por Tipo</div>
                 <div class="chart-filter-row">
