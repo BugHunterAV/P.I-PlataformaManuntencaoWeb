@@ -867,18 +867,29 @@ createApp({
 
     async function assumirOS(o) {
       if (!me.value?.id) return;
+      if (o._assumindo) return;
       if (!confirm('Deseja assumir esta Ordem de Serviço?')) return;
-      const payload = { ...o, responsavel: me.value.id, status: (o.status === 'pendente' ? 'andamento' : o.status) };
+      o._assumindo = true;
+      const payload = { responsavel: me.value.id };
+      if (o.status === 'pendente') payload.status = 'andamento';
       try {
-        await api('/api/ordens-servico/' + o.id + '/', { method: 'PUT', body: JSON.stringify(payload) });
+        await api('/api/ordens-servico/' + o.id + '/', { method: 'PATCH', body: JSON.stringify(payload) });
         toast('O.S. assumida com sucesso!', 'success');
         o.responsavel = me.value.id;
-        o.status = payload.status;
-        if (!lists.usuarios.length) {
-          await fetchUsuariosAll();
-        }
+        if (payload.status) o.status = payload.status;
       } catch(e) {
         toast('Erro ao assumir O.S.', 'error');
+        return;
+      } finally {
+        o._assumindo = false;
+      }
+
+      if (!lists.usuarios.length) {
+        try {
+          await fetchUsuariosAll();
+        } catch (err) {
+          console.warn('Falha ao carregar usuários:', err);
+        }
       }
     }
 
