@@ -1218,9 +1218,19 @@ createApp({
     });
 
     // ─ Chat AI (NanaSmart AI) ────────────────────────
+    // Este widget usa o token JWT armazenado em localStorage e o usuário atual
+    // carregado via /api/auth/me/. Dessa forma, o backend sabe exatamente
+    // quem está falando e gera o contexto correto por empresa e papel.
     const chatOpen = ref(false);
     const chatInput = ref('');
     const chatLoading = ref(false);
+    const chatMode = ref('chat');
+    const chatModes = [
+      { id: 'chat', label: 'Chat Geral', endpoint: '/api/gemini/chat/' },
+      { id: 'os_analysis', label: 'Análise de OS', endpoint: '/api/gemini/ordens/analise/' },
+      { id: 'unassigned', label: 'Ordens sem Atribuição', endpoint: '/api/gemini/ordens/sem-atribuicao/' },
+      { id: 'finance', label: 'Gestão Financeira', endpoint: '/api/gemini/gestao/financeira/' },
+    ];
     const chatMessages = ref([
       {
         role: 'ai',
@@ -1228,6 +1238,23 @@ createApp({
       }
     ]);
     const chatScrollContainer = ref(null);
+
+    const chatModeLabel = computed(() => {
+      const mode = chatModes.find(m => m.id === chatMode.value);
+      return mode ? mode.label : 'Chat Geral';
+    });
+
+    const chatPlaceholder = computed(() => {
+      if (chatMode.value === 'os_analysis') return 'Pergunte sobre ordens de serviço e prioridades...';
+      if (chatMode.value === 'unassigned') return 'Solicite critérios de alocação para ordens sem responsável...';
+      if (chatMode.value === 'finance') return 'Peça orientação financeira de manutenção para gestores/admin...';
+      return 'Pergunte sobre a planta, KPIs ou manutenção...';
+    });
+
+    function getChatEndpointPath() {
+      const mode = chatModes.find(m => m.id === chatMode.value);
+      return mode ? mode.endpoint : '/api/gemini/chat/';
+    }
 
     function toggleChat() {
       chatOpen.value = !chatOpen.value;
@@ -1248,6 +1275,15 @@ createApp({
       const msgText = chatInput.value.trim();
       if (!msgText || chatLoading.value) return;
 
+      if (chatMode.value === 'finance' && me.value?.tipo_usuario === 'tecnico') {
+        chatMessages.value.push({
+          role: 'ai',
+          text: 'O modo de gestão financeira está disponível apenas para gestores e administradores. Use o chat geral ou análise de ordens.'
+        });
+        chatInput.value = '';
+        return;
+      }
+
       // Adiciona mensagem do usuário
       chatMessages.value.push({ role: 'user', text: msgText });
       chatInput.value = '';
@@ -1255,11 +1291,11 @@ createApp({
       scrollToBottom();
 
       try {
-        const res = await api('/api/gemini/chat/', {
+        const res = await api(getChatEndpointPath(), {
           method: 'POST',
           body: JSON.stringify({
             message: msgText,
-            history: chatMessages.value.slice(0, -1) // envia histórico anterior
+            history: chatMessages.value.slice(0, -1)
           })
         });
 
@@ -1270,9 +1306,10 @@ createApp({
         }
       } catch (err) {
         console.error('Erro no chat da IA:', err);
+        const backendMessage = err.fieldErrors?.response || err.message || 'Erro desconhecido';
         chatMessages.value.push({
           role: 'ai',
-          text: 'Desculpe, ocorreu um erro ao conectar com o serviço da IA. Por favor, verifique a conectividade ou se a sua chave GEMINI_API_KEY no arquivo `.env` está correta.'
+          text: `Desculpe, ocorreu um erro ao conectar com o serviço da IA. ${backendMessage}`
         });
       } finally {
         chatLoading.value = false;
@@ -1369,6 +1406,7 @@ createApp({
       leiturasHoje, dashTelemetriaEquip, dashTelemetriaSensor,
       dashTelemetriaSensoresFiltrados, dashCustoSetor,
       chatOpen, chatInput, chatLoading, chatMessages, chatScrollContainer,
+      chatMode, chatModes, chatModeLabel, chatPlaceholder,
       toggleChat, sendChatMessage, sendSuggestion, formatMarkdown
     };
   }

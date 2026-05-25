@@ -1398,6 +1398,17 @@
       </div>
     </div>
 
+    <!-- Mode Selector -->
+    <div class="ai-mode-selector">
+      <label for="ai-mode-select">Modo:</label>
+      <select id="ai-mode-select" v-model="chatMode" :disabled="chatLoading">
+        <option v-for="mode in chatModes" :key="mode.id" :value="mode.id">
+          {{ mode.label }}
+        </option>
+      </select>
+      <span class="ai-mode-info">{{ chatModeLabel }}</span>
+    </div>
+
     <!-- Quick Suggestions -->
     <div class="ai-suggestions-container">
       <div class="ai-suggestions-title">💡 Perguntas Rápidas:</div>
@@ -1428,7 +1439,7 @@
       <input 
         v-model="chatInput" 
         type="text" 
-        placeholder="Pergunte sobre a planta, KPIs..." 
+        :placeholder="chatPlaceholder" 
         @keydown.enter="sendChatMessage" 
         :disabled="chatLoading" 
       />

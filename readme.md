@@ -53,6 +53,7 @@ Siga os passos abaixo na ordem exata:
      GEMINI_API_KEY="sua_chave_api_do_google_gemini_aqui"
      ```
      (Para obter a chave, acesse o [Google AI Studio](https://aistudio.google.com/))
+   - Observação: `.env` já está listado em `.gitignore`, portanto não deve ser commitado ao repositório.
 
 5. Execute as migrações para criar as tabelas no banco de dados:
    python manage.py migrate
@@ -237,8 +238,48 @@ O sistema possui integração profunda com a API do Google Gemini, oferecendo um
   - **Gestor:** Visualiza e recebe conselhos estratégicos exclusivos dos dados da própria empresa, garantindo privacidade (Multi-tenant).
   - **Técnico:** Restrito às suas manutenções e OS, a IA atua como um conselheiro técnico seguro, não expondo relatórios gerenciais, apenas informações ligadas à execução de suas tarefas.
 - **Como Funciona:** Tudo é isolado pelo sistema no back-end. A IA recebe as regras no prompt base de forma dinâmica dependendo do cargo do usuário autenticado no JWT.
+- **Endpoints Gemini disponíveis:**
+  - `POST /api/gemini/chat/` → Chat geral com contexto de ativos e manutenção.
+  - `POST /api/gemini/ordens/analise/` → Análise de ordens de serviço abertas e recomendações práticas.
+  - `POST /api/gemini/ordens/sem-atribuicao/` → Priorização e atribuição de ordens sem responsável.
+  - `POST /api/gemini/gestao/financeira/` → Orientação financeira para gestores e administradores.
 
-> **Importante:** Para o funcionamento da Inteligência Artificial, a variável de ambiente `GEMINI_API_KEY` deve estar configurada no arquivo `.env`.
+### 🧭 Front-end: Assistente de IA no painel
+
+O `FrontATT` já conta com um widget de chat flutuante que consome o endpoint `POST /api/gemini/chat/`.
+
+- O front-end usa o token JWT salvo em `localStorage` para autenticação.
+- O usuário atual é carregado pelo endpoint `/api/auth/me/`, garantindo que a IA saiba quem está logado.
+- A interface envia o histórico de conversas para o backend, permitindo que a IA mantenha contexto entre perguntas.
+- O widget exibe sugestões rápidas diferentes para técnicos, gestores e admins, ajudando a direcionar perguntas relevantes.
+
+### 📌 Plano de melhoria do front-end para o chat da IA
+
+1. **Gaming o widget atual**
+   - Manter o chat flutuante disponível em todas as telas.
+   - Mostrar o perfil atual (`me.tipo_usuario`) para ajustar as opções rápidas.
+   - Usar o `Authorization: Bearer <token>` já configurado no `api()` global.
+
+2. **Usar o histórico corretamente**
+   - O front-end já envia `history` com as mensagens anteriores.
+   - Cada item usa `role: 'user'` ou `role: 'ai'`, e o backend converte corretamente para o modelo Gemini.
+
+3. **Separar endpoints por tipo de demanda**
+   - Chat geral: `POST /api/gemini/chat/`
+   - Análise de OS: `POST /api/gemini/ordens/analise/`
+   - Ordens sem atribuição: `POST /api/gemini/ordens/sem-atribuicao/`
+   - Gestão financeira: `POST /api/gemini/gestao/financeira/`
+
+4. **Evoluir para um assistente contextual**
+   - Adicionar botões rápidos que usem endpoints específicos quando necessário.
+   - Exibir avisos claros se a chave `GEMINI_API_KEY` não estiver configurada.
+   - Registrar o último contexto enviado para depuração e possível replay.
+
+5. **Melhorar a interface com Markdown**
+   - O front-end já interpreta listas, negritos e parágrafos no texto retornado.
+   - Futuramente, pode ser estendida para links clicáveis, tabelas simples e código formatado.
+
+> O objetivo é que a IA não seja um chat genérico, mas sim um assistente de manutenção com identidade do usuário, cargo e empresa.
 
 ---
 
