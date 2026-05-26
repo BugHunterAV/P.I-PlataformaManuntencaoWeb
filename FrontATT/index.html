@@ -424,20 +424,28 @@
                       <strong>{{ telemetriaSummary.latest_equip }}</strong>
                     </div>
                     <div class="spark-summary-item">
-                      <span>Crítico / Alerta</span>
+                      <span>Registros Crítico / Alerta</span>
                       <strong>{{ telemetriaSummary.criticos }} / {{ telemetriaSummary.acima_alerta }}</strong>
                     </div>
-                    <div class="spark-summary-item" v-if="telemetriaSummary.thresholds">
-                      <span>Alerta Baixo ({{ telemetriaSummary.thresholds.lowPct }}%)</span>
-                      <strong>{{ telemetriaSummary.thresholds.lowValue }} {{ telemetriaSummary.unit }}</strong>
+                    <div class="spark-summary-item" v-if="telemetriaSummary.limit !== '—'">
+                      <span>Limite Crítico</span>
+                      <strong>{{ telemetriaSummary.limit }} {{ telemetriaSummary.unit }}</strong>
+                    </div>
+                    <div class="spark-summary-item" v-if="telemetriaSummary.open_orders !== undefined">
+                      <span>O.S. abertas</span>
+                      <strong>{{ telemetriaSummary.open_orders }}</strong>
                     </div>
                     <div class="spark-summary-item" v-if="telemetriaSummary.thresholds">
-                      <span>Alerta Médio ({{ telemetriaSummary.thresholds.medPct }}%)</span>
-                      <strong>{{ telemetriaSummary.thresholds.medValue }} {{ telemetriaSummary.unit }}</strong>
+                      <span>Alerta Baixo ({{ telemetriaSummary.lowPct }}%)</span>
+                      <strong>{{ telemetriaSummary.lowValue }} {{ telemetriaSummary.unit }}</strong>
                     </div>
                     <div class="spark-summary-item" v-if="telemetriaSummary.thresholds">
-                      <span>Alerta Crítico ({{ telemetriaSummary.thresholds.critPct }}%)</span>
-                      <strong>{{ telemetriaSummary.thresholds.critValue }} {{ telemetriaSummary.unit }}</strong>
+                      <span>Alerta Médio ({{ telemetriaSummary.medPct }}%)</span>
+                      <strong>{{ telemetriaSummary.medValue }} {{ telemetriaSummary.unit }}</strong>
+                    </div>
+                    <div class="spark-summary-item" v-if="telemetriaSummary.thresholds">
+                      <span>Alerta Crítico ({{ telemetriaSummary.critPct }}%)</span>
+                      <strong>{{ telemetriaSummary.critValue }} {{ telemetriaSummary.unit }}</strong>
                     </div>
                   </div>
                 </div>

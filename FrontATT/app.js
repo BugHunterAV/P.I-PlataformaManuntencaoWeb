@@ -215,16 +215,24 @@ createApp({
       if (raw.length < 2) return { path: '', dots: [], min: 0, max: 0, count: raw.length, xLabels: [], yTicks: [] };
       const sensorMap = new Map(lists.sensores.map(s => [s.id, s]));
       const vals = raw.map(l => parseFloat(l.valor) || 0);
-      const min = Math.min(...vals);
-      const max = Math.max(...vals);
-      const range = max - min || 1;
+      const thresholdSensor = dashTelemetriaSensor.value ? sensorMap.get(Number(dashTelemetriaSensor.value)) : null;
+      const thresholdValues = thresholdSensor && thresholdSensor.limite_alerta ? [
+        Number((thresholdSensor.limite_alerta_baixo_pct || 70) * thresholdSensor.limite_alerta / 100),
+        Number((thresholdSensor.limite_alerta_medio_pct || 85) * thresholdSensor.limite_alerta / 100),
+        Number((thresholdSensor.limite_alerta_critico_pct || 100) * thresholdSensor.limite_alerta / 100),
+      ] : [];
+      const extendedVals = vals.concat(thresholdValues.filter(v => Number.isFinite(v)));
+      const min = Math.min(...extendedVals);
+      const max = Math.max(...extendedVals);
+      const chartRange = Math.max(max - min, 1);
       const W = 320, H = 80;
+      const padding = 14;
       const points = raw.map((l, i) => {
         const v = parseFloat(l.valor) || 0;
         const sensor = sensorMap.get(l.sensor) || {};
         return {
           x: (i / (raw.length - 1)) * W,
-          y: H - ((v - min) / range) * H * 0.85 - H * 0.05,
+          y: padding + (1 - ((v - min) / chartRange)) * (H - padding * 2),
           v,
           timestamp: l.timestamp,
           label: sensor.nome || `Sensor ${l.sensor}`,
@@ -235,8 +243,8 @@ createApp({
       const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
       const area = path + ` L${W},${H} L0,${H} Z`;
       const yTicks = Array.from({ length: 4 }, (_, idx) => {
-        const value = min + ((max - min) * idx / 3);
-        return { y: H - ((value - min) / range) * H * 0.85 - H * 0.05, label: value.toFixed(1) };
+        const value = min + ((chartRange) * idx / 3);
+        return { y: padding + (1 - ((value - min) / chartRange)) * (H - padding * 2), label: value.toFixed(1) };
       });
       const xLabels = [
         { x: 0, label: formatChartTimestamp(raw[0].timestamp) },
@@ -259,7 +267,7 @@ createApp({
         thresholds.push(...rawThresholds.map(th => ({
           ...th,
           unit: t.unit,
-          y: H - ((th.value - min) / range) * H * 0.85 - H * 0.05,
+          y: padding + (1 - ((th.value - min) / chartRange)) * (H - padding * 2),
         })));
       }
 
@@ -279,7 +287,7 @@ createApp({
     const telemetriaSummary = computed(() => {
       if (!lists.leituras.length) {
         return {
-          min: '—', max: '—', avg: '—', latest: '—', latest_sensor: '—', latest_equip: '—', limit: '—', criticos: 0, acima_alerta: 0
+          min: '—', max: '—', avg: '—', latest: '—', latest_sensor: '—', latest_equip: '—', limit: '—', criticos: 0, acima_alerta: 0, thresholds: null
         };
       }
 
@@ -289,13 +297,16 @@ createApp({
       const min = Math.min(...values).toFixed(2);
       const max = Math.max(...values).toFixed(2);
       const latest = lists.leituras[0];
-      const activeSensor = dashTelemetriaSensor.value
-        ? sensorMap.get(Number(dashTelemetriaSensor.value))
-        : sensorMap.get(latest.sensor);
+      const selectedSensor = dashTelemetriaSensor.value ? sensorMap.get(Number(dashTelemetriaSensor.value)) : null;
+      const activeSensor = selectedSensor || sensorMap.get(latest.sensor);
       const latestSensor = sensorMap.get(latest.sensor) || {};
-      const limit = latestSensor.limite_alerta || 0;
-      const latestEquip = lists.equipamentos.find(eq => eq.id === latestSensor.equipamento) || {};
+      const limit = activeSensor?.limite_alerta || latestSensor.limite_alerta || 0;
+      const latestEquip = lists.equipamentos.find(eq => eq.id === (selectedSensor?.equipamento || latestSensor.equipamento)) || {};
       const thresholds = computeSensorThresholds(activeSensor);
+      const openOrders = lists.ordens.filter(o => {
+        if (!activeSensor || !activeSensor.equipamento) return false;
+        return String(o.equipamento) === String(activeSensor.equipamento) && ['pendente', 'andamento'].includes(o.status);
+      }).length;
       const criticos = lists.leituras.filter(l => {
         const sensor = sensorMap.get(l.sensor);
         if (!sensor || !sensor.limite_alerta) return false;
@@ -312,12 +323,19 @@ createApp({
         max,
         avg,
         latest: parseFloat(latest.valor).toFixed(2),
-        latest_sensor: latestSensor.nome || 'Sensor',
+        latest_sensor: activeSensor?.nome || latestSensor.nome || 'Sensor',
         latest_equip: latestEquip.nome || 'Equipamento',
-        unit: latestSensor.unidade_medida || '',
+        unit: activeSensor?.unidade_medida || latestSensor.unidade_medida || '',
         limit: limit ? limit.toFixed(2) : '—',
         criticos,
         acima_alerta,
+        open_orders: openOrders,
+        lowPct: thresholds?.lowPct,
+        medPct: thresholds?.medPct,
+        critPct: thresholds?.critPct,
+        lowValue: thresholds?.lowValue,
+        medValue: thresholds?.medValue,
+        critValue: thresholds?.critValue,
         thresholds,
       };
     });
