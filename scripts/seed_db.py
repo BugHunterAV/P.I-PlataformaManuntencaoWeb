@@ -64,10 +64,10 @@ SETORES = [
 ]
 
 CONFIG_SENSORES = {
-    'temperatura': ('°C', 35.0, 85.0),
-    'vibracao': ('mm/s RMS', 0.2, 7.0),
-    'pressao': ('bar', 2.0, 12.0),
-    'corrente': ('A', 10.0, 150.0),
+    'temperatura': ('°C', 35.0, 85.0, 70.0, 85.0, 100.0),
+    'vibracao': ('mm/s RMS', 0.2, 7.0, 65.0, 80.0, 95.0),
+    'pressao': ('bar', 2.0, 12.0, 60.0, 85.0, 98.0),
+    'corrente': ('A', 10.0, 150.0, 75.0, 90.0, 100.0),
 }
 
 ACOES_MANUTENCAO = {
@@ -214,11 +214,16 @@ def run_seed(num_empresas, equip_por_empresa):
 
             # Sensores
             for s_tipo in sensores_list:
-                unidade, min_v, max_v = CONFIG_SENSORES.get(s_tipo, ('un', 0, 100))
+                unidade, min_v, max_v, low_pct, med_pct, crit_pct = CONFIG_SENSORES.get(
+                    s_tipo, ('un', 0, 100, 70.0, 85.0, 100.0)
+                )
                 sensor = Sensor.objects.create(
-                    equipamento=eq, tipo=s_tipo, unidade_medida=unidade, 
+                    equipamento=eq, tipo=s_tipo, unidade_medida=unidade,
                     nome=f"Sensor {s_tipo.capitalize()}",
-                    limite_alerta=max_v
+                    limite_alerta=max_v,
+                    limite_alerta_baixo_pct=low_pct,
+                    limite_alerta_medio_pct=med_pct,
+                    limite_alerta_critico_pct=crit_pct,
                 )
                 todos_sensores.append((sensor, min_v, max_v))
             

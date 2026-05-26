@@ -18,9 +18,13 @@ class TelemetriaAlertTests(APITestCase):
             nome="Motor Telemetria", tipo="Motor Elétrico", numero_serie="TEL-001", empresa=self.empresa
         )
         self.sensor = Sensor.objects.create(
-            equipamento=self.motor, tipo_sensor="temperatura", unidade_medida="°C", limite_alerta=100.0
+            equipamento=self.motor,
+            nome="Sensor Temp",
+            tipo="temperatura",
+            unidade_medida="°C",
+            limite_alerta=100.0
         )
-        self.leitura_url = reverse('telemetria-list')
+        self.leitura_url = reverse('leituras-list')
 
     def test_alert_escalation(self):
         """Testa se os alertas e O.S. são gerados e escalados conforme o valor da leitura."""
@@ -52,3 +56,31 @@ class TelemetriaAlertTests(APITestCase):
         
         os.refresh_from_db()
         self.assertEqual(os.prioridade, 'critico')
+
+    def test_custom_alert_thresholds(self):
+        sensor = Sensor.objects.create(
+            equipamento=self.motor,
+            nome="Sensor Temp Custom",
+            tipo="temperatura",
+            unidade_medida="°C",
+            limite_alerta=120.0,
+            limite_alerta_baixo_pct=60.0,
+            limite_alerta_medio_pct=90.0,
+            limite_alerta_critico_pct=95.0,
+        )
+
+        # Alerta baixo quando atingir 72.0 (60% de 120)
+        self.client.post(self.leitura_url, {"sensor": sensor.id, "valor": 72.0})
+        alerta = Alerta.objects.filter(equipamento=self.motor, tipo_alerta=f"Alerta de {sensor.get_tipo_display()}", status='ativo').first()
+        self.assertIsNotNone(alerta)
+        self.assertEqual(alerta.nivel, 'baixo')
+
+        # Escalada para médio aos 108.0 (90% de 120)
+        self.client.post(self.leitura_url, {"sensor": sensor.id, "valor": 108.0})
+        alerta.refresh_from_db()
+        self.assertEqual(alerta.nivel, 'medio')
+
+        # Escalada para crítico aos 114.0 (95% de 120)
+        self.client.post(self.leitura_url, {"sensor": sensor.id, "valor": 114.0})
+        alerta.refresh_from_db()
+        self.assertEqual(alerta.nivel, 'critico')

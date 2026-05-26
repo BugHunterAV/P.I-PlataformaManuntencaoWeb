@@ -25,14 +25,19 @@ def checar_limites_telemetria(sender, instance, created, **kwargs):
     if limite is None or limite <= 0:
         return
 
-    percentual = valor / limite
+    percentual = (valor / limite) * 100
+
+    # Usa percentuais configuráveis do sensor, com fallback para os valores padrão.
+    limite_baixo = sensor.limite_alerta_baixo_pct if sensor.limite_alerta_baixo_pct is not None else 70.0
+    limite_medio = sensor.limite_alerta_medio_pct if sensor.limite_alerta_medio_pct is not None else 85.0
+    limite_critico = sensor.limite_alerta_critico_pct if sensor.limite_alerta_critico_pct is not None else 100.0
 
     # Determina o nível pelo percentual do limite atingido
-    if percentual >= 1.0:
+    if percentual >= limite_critico:
         nivel = 'critico'
-    elif percentual >= 0.85:
+    elif percentual >= limite_medio:
         nivel = 'medio'
-    elif percentual >= 0.70:
+    elif percentual >= limite_baixo:
         nivel = 'baixo'
     else:
         return  # Valor normal — nenhum alerta necessário

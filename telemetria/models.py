@@ -15,8 +15,50 @@ class Sensor(models.Model):
     tipo = models.CharField(max_length=50, choices=TIPO_SENSOR_CHOICES)
     unidade_medida = models.CharField(max_length=20, help_text="Ex: °C, mm/s, bar, A")
     limite_alerta = models.FloatField(help_text="Limite máximo para gerar alerta crítico")
+    limite_alerta_baixo_pct = models.FloatField(
+        blank=True,
+        null=True,
+        help_text="Percentual do limite crítico que dispara alerta baixo (0-100).",
+        verbose_name="Alerta Baixo (%)"
+    )
+    limite_alerta_medio_pct = models.FloatField(
+        blank=True,
+        null=True,
+        help_text="Percentual do limite crítico que dispara alerta médio (0-100).",
+        verbose_name="Alerta Médio (%)"
+    )
+    limite_alerta_critico_pct = models.FloatField(
+        blank=True,
+        null=True,
+        help_text="Percentual do limite crítico que dispara alerta crítico (0-100).",
+        verbose_name="Alerta Crítico (%)"
+    )
     descricao = models.TextField(blank=True, null=True)
     ativo = models.BooleanField(default=True)
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        low = self.limite_alerta_baixo_pct if self.limite_alerta_baixo_pct is not None else 70.0
+        medium = self.limite_alerta_medio_pct if self.limite_alerta_medio_pct is not None else 85.0
+        critical = self.limite_alerta_critico_pct if self.limite_alerta_critico_pct is not None else 100.0
+
+        for name, value in [
+            ('limite_alerta_baixo_pct', low),
+            ('limite_alerta_medio_pct', medium),
+            ('limite_alerta_critico_pct', critical),
+        ]:
+            if value is not None and not (0 <= value <= 100):
+                raise ValidationError({name: 'Deve ser um percentual entre 0 e 100.'})
+
+        if not (0 <= low < medium < critical <= 100):
+            raise ValidationError(
+                'Os valores de alerta devem obedecer: baixo < médio < crítico e estar entre 0 e 100.'
+            )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.get_tipo_display()} - {self.nome} ({self.equipamento.nome})"
