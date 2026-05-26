@@ -391,6 +391,24 @@
                     <span>{{ chartTelemetria.count }} pontos</span>
                     <span>max {{ chartTelemetria.max }}</span>
                   </div>
+                  <div class="spark-summary">
+                    <div class="spark-summary-item">
+                      <span>Última leitura</span>
+                      <strong>{{ telemetriaSummary.latest }} {{ telemetriaSummary.unit }}</strong>
+                    </div>
+                    <div class="spark-summary-item">
+                      <span>Sensor</span>
+                      <strong>{{ telemetriaSummary.latest_sensor }}</strong>
+                    </div>
+                    <div class="spark-summary-item">
+                      <span>Equipamento</span>
+                      <strong>{{ telemetriaSummary.latest_equip }}</strong>
+                    </div>
+                    <div class="spark-summary-item">
+                      <span>Crítico / Alerta</span>
+                      <strong>{{ telemetriaSummary.criticos }} / {{ telemetriaSummary.acima_alerta }}</strong>
+                    </div>
+                  </div>
                 </div>
                 <div v-else class="spark-no-data">Sem leituras de telemetria</div>
               </div>

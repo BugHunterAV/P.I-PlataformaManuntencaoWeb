@@ -202,7 +202,7 @@ createApp({
 
       // API retorna ordenado por -timestamp (mais recente primeiro); revertemos para exibir cronologicamente no gráfico
       const raw = leiturasSource.slice(0, 20).reverse();
-      if (raw.length < 2) return { path: '', dots: [], min: 0, max: 0 };
+      if (raw.length < 2) return { path: '', dots: [], min: 0, max: 0, count: raw.length };
       const vals = raw.map(l => parseFloat(l.valor) || 0);
       const min = Math.min(...vals);
       const max = Math.max(...vals);
@@ -218,6 +218,47 @@ createApp({
       return { path, area, dots: points, min: min.toFixed(1), max: max.toFixed(1), count: leiturasSource.length };
     });
 
+    const telemetriaSummary = computed(() => {
+      if (!lists.leituras.length) {
+        return {
+          min: '—', max: '—', avg: '—', latest: '—', latest_sensor: '—', latest_equip: '—', limit: '—', criticos: 0, acima_alerta: 0
+        };
+      }
+
+      const sensorMap = new Map(lists.sensores.map(s => [s.id, s]));
+      const values = lists.leituras.map(l => parseFloat(l.valor) || 0);
+      const avg = (values.reduce((sum, v) => sum + v, 0) / values.length).toFixed(2);
+      const min = Math.min(...values).toFixed(2);
+      const max = Math.max(...values).toFixed(2);
+      const latest = lists.leituras[0];
+      const latestSensor = sensorMap.get(latest.sensor) || {};
+      const limit = latestSensor.limite_alerta || 0;
+      const latestEquip = lists.equipamentos.find(eq => eq.id === latestSensor.equipamento) || {};
+      const criticos = lists.leituras.filter(l => {
+        const sensor = sensorMap.get(l.sensor);
+        if (!sensor || !sensor.limite_alerta) return false;
+        return parseFloat(l.valor) >= sensor.limite_alerta * 0.9;
+      }).length;
+      const acima_alerta = lists.leituras.filter(l => {
+        const sensor = sensorMap.get(l.sensor);
+        if (!sensor || !sensor.limite_alerta) return false;
+        return parseFloat(l.valor) >= sensor.limite_alerta * 0.7;
+      }).length;
+
+      return {
+        min,
+        max,
+        avg,
+        latest: parseFloat(latest.valor).toFixed(2),
+        latest_sensor: latestSensor.nome || 'Sensor',
+        latest_equip: latestEquip.nome || 'Equipamento',
+        unit: latestSensor.unidade_medida || '',
+        limit: limit ? limit.toFixed(2) : '—',
+        criticos,
+        acima_alerta,
+      };
+    });
+
     watch([dashTelemetriaEquip, dashTelemetriaSensor], async ([eq, sen]) => {
       let url = '/api/telemetria/leituras/?limit=200&ordering=-timestamp';
       if (sen) {
@@ -231,6 +272,10 @@ createApp({
           if (eq && !sen) {
             const sensorIds = new Set(lists.sensores.filter(s => s.equipamento === Number(eq)).map(s => s.id));
             readings = readings.filter(l => sensorIds.has(l.sensor));
+          }
+          if (globalEmpresa.value) {
+            const filterIds = new Set(lists.sensores.map(s => s.id));
+            readings = readings.filter(l => filterIds.has(l.sensor));
           }
           lists.leituras = readings;
         }
@@ -494,7 +539,7 @@ createApp({
         const telRes = await api('/api/telemetria/leituras/?limit=50&ordering=-timestamp');
         if (telRes) {
           let leituras = normList(telRes);
-          if (isTecnico.value && lists.sensores.length) {
+          if (lists.sensores.length) {
             const sensorIds = new Set(lists.sensores.map(s => s.id));
             leituras = leituras.filter(l => sensorIds.has(l.sensor));
           }

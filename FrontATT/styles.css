@@ -840,6 +840,36 @@ body {
   letter-spacing: .5px;
 }
 
+.spark-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.spark-summary-item {
+  background: rgba(255,255,255,.06);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 11px;
+  color: var(--t3);
+}
+
+.spark-summary-item span {
+  display: block;
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--t5);
+}
+
+.spark-summary-item strong {
+  display: block;
+  font-size: 14px;
+  color: var(--text);
+}
+
 .spark-no-data {
   display: flex;
   align-items: center;
