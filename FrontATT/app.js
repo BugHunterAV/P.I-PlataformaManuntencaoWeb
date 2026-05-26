@@ -1483,6 +1483,16 @@ createApp({
       const eq = lists.equipamentos.find(e => e.id === id);
       return eq ? `${eq.nome} (#${eq.id})` : `#${id}`;
     }
+    function osTitulo(id) {
+      if (id == null) return '—';
+      const os = lists.ordens.find(o => o.id === id);
+      return os ? os.titulo : '—';
+    }
+    function osEquipNome(id) {
+      if (id == null) return '—';
+      const os = lists.ordens.find(o => o.id === id);
+      return os ? eqNome(os.equipamento) : '—';
+    }
     function empresaNome(id) {
       if (id == null) return '—';
       const e = lists.empresas.find(e => e.id === id);
@@ -1812,7 +1822,7 @@ createApp({
       openModal, editItem, saveItem, deleteItem, exportData, assumirOS, openEncerrarOS, assumirOSFromAlerta,
       fmtDate, nivelBadge, nivelColor, statusBadge, eqStatusBadge,
       ordemStatusBadge, prioridadeBadge,
-      eqNome, eqEmpresaNome, empresaNome, sensorNome, locSetor, custoTotal, countSensores, usuarioNome,
+      eqNome, osTitulo, osEquipNome, eqEmpresaNome, empresaNome, sensorNome, locSetor, custoTotal, countSensores, usuarioNome,
       empresaNomeSensor, sensorEquipNome,
       onGlobalEmpresaChange,
       chartEquipStatus, chartAlertNivel, chartOrdens, chartTelemetria,
