@@ -835,15 +835,39 @@ body {
   justify-content: space-between;
   font-family: var(--mono);
   font-size: 9px;
-  color: var(--t4);
+  color: var(--t1);
   margin-top: 8px;
   letter-spacing: .5px;
+}
+
+.spark-threshold-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--t1);
+}
+.spark-threshold-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.12);
+}
+.spark-threshold-line {
+  display: inline-block;
+  width: 28px;
+  height: 2px;
+  border-radius: 1px;
 }
 
 .spark-axis-text {
   font-family: var(--mono);
   font-size: 9px;
-  fill: var(--t4);
+  fill: var(--t1);
 }
 
 .spark-summary {
@@ -854,12 +878,12 @@ body {
 }
 
 .spark-summary-item {
-  background: rgba(255,255,255,.06);
-  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.10);
+  border: 1px solid rgba(255,255,255,.12);
   border-radius: 12px;
   padding: 10px 12px;
   font-size: 11px;
-  color: var(--t3);
+  color: var(--t1);
 }
 
 .spark-summary-item span {

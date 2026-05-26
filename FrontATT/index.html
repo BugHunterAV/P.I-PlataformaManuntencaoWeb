@@ -380,14 +380,16 @@
                     <line x1="0" y1="0"  x2="320" y2="0"  stroke="var(--edge)" stroke-width="0.5"/>
                     <line x1="0" y1="48" x2="320" y2="48" stroke="var(--edge)" stroke-width="0.5"/>
                     <line x1="0" y1="96" x2="320" y2="96" stroke="var(--edge)" stroke-width="0.5"/>
+                    <line v-for="t in chartTelemetria.thresholds" :key="t.name" x1="0" :y1="t.y" x2="320" :y2="t.y"
+                          :stroke="t.color" stroke-width="1.2" stroke-linecap="round" stroke-opacity=".75" :stroke-dasharray="t.dash" />
                     <path :d="chartTelemetria.area" fill="url(#spark-grad)"/>
                     <path :d="chartTelemetria.path" fill="none" stroke="var(--acid)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <g class="spark-axis-labels">
                       <g v-for="tick in chartTelemetria.yTicks" :key="tick.label">
-                        <text x="6" :y="tick.y + 4" class="spark-axis-text">{{ tick.label }}</text>
+                        <text x="6" :y="tick.y + 8" class="spark-axis-text">{{ tick.label }}</text>
                       </g>
                       <g v-for="label in chartTelemetria.xLabels" :key="label.label">
-                        <text :x="label.x" y="92" class="spark-axis-text" :text-anchor="label.x === 0 ? 'start' : label.x === 320 ? 'end' : 'middle'">{{ label.label }}</text>
+                        <text :x="label.x" y="94" class="spark-axis-text" :text-anchor="label.x === 0 ? 'start' : label.x === 320 ? 'end' : 'middle'">{{ label.label }}</text>
                       </g>
                     </g>
                     <circle v-for="(dot,i) in chartTelemetria.dots" :key="i"
@@ -401,6 +403,12 @@
                     <span>min {{ chartTelemetria.min }}</span>
                     <span>{{ chartTelemetria.count }} pontos</span>
                     <span>max {{ chartTelemetria.max }}</span>
+                  </div>
+                  <div class="spark-threshold-legend" v-if="chartTelemetria.thresholds?.length">
+                    <span class="spark-threshold-chip" v-for="t in chartTelemetria.thresholds" :key="t.name">
+                      <span class="spark-threshold-line" :style="{background: t.color}"></span>
+                      {{ t.name }} ({{ t.pct }}%) {{ t.display }} {{ t.unit }}
+                    </span>
                   </div>
                   <div class="spark-summary">
                     <div class="spark-summary-item">
@@ -418,6 +426,18 @@
                     <div class="spark-summary-item">
                       <span>Crítico / Alerta</span>
                       <strong>{{ telemetriaSummary.criticos }} / {{ telemetriaSummary.acima_alerta }}</strong>
+                    </div>
+                    <div class="spark-summary-item" v-if="telemetriaSummary.thresholds">
+                      <span>Alerta Baixo ({{ telemetriaSummary.thresholds.lowPct }}%)</span>
+                      <strong>{{ telemetriaSummary.thresholds.lowValue }} {{ telemetriaSummary.unit }}</strong>
+                    </div>
+                    <div class="spark-summary-item" v-if="telemetriaSummary.thresholds">
+                      <span>Alerta Médio ({{ telemetriaSummary.thresholds.medPct }}%)</span>
+                      <strong>{{ telemetriaSummary.thresholds.medValue }} {{ telemetriaSummary.unit }}</strong>
+                    </div>
+                    <div class="spark-summary-item" v-if="telemetriaSummary.thresholds">
+                      <span>Alerta Crítico ({{ telemetriaSummary.thresholds.critPct }}%)</span>
+                      <strong>{{ telemetriaSummary.thresholds.critValue }} {{ telemetriaSummary.unit }}</strong>
                     </div>
                   </div>
                 </div>

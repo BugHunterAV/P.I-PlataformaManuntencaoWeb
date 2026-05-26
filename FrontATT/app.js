@@ -243,6 +243,26 @@ createApp({
         { x: W / 2, label: formatChartTimestamp(raw[Math.floor(raw.length / 2)].timestamp) },
         { x: W, label: formatChartTimestamp(raw[raw.length - 1].timestamp) },
       ];
+
+      const selectedSensor = dashTelemetriaSensor.value
+        ? sensorMap.get(Number(dashTelemetriaSensor.value))
+        : null;
+      const thresholds = [];
+      if (selectedSensor && selectedSensor.limite_alerta) {
+        const t = computeSensorThresholds(selectedSensor);
+        const rawThresholds = [
+          { name: 'Baixo', display: t.lowValue, value: Number(t.lowValue), pct: t.lowPct, color: 'var(--warn)', dash: '4 4' },
+          { name: 'Médio', display: t.medValue, value: Number(t.medValue), pct: t.medPct, color: 'var(--acid)', dash: '4 4' },
+          { name: 'Crítico', display: t.critValue, value: Number(t.critValue), pct: t.critPct, color: 'var(--danger)', dash: '4 4' },
+        ].filter(th => Number.isFinite(th.value));
+
+        thresholds.push(...rawThresholds.map(th => ({
+          ...th,
+          unit: t.unit,
+          y: H - ((th.value - min) / range) * H * 0.85 - H * 0.05,
+        })));
+      }
+
       return {
         path,
         area,
@@ -252,6 +272,7 @@ createApp({
         count: leiturasSource.length,
         yTicks,
         xLabels,
+        thresholds,
       };
     });
 
@@ -268,9 +289,13 @@ createApp({
       const min = Math.min(...values).toFixed(2);
       const max = Math.max(...values).toFixed(2);
       const latest = lists.leituras[0];
+      const activeSensor = dashTelemetriaSensor.value
+        ? sensorMap.get(Number(dashTelemetriaSensor.value))
+        : sensorMap.get(latest.sensor);
       const latestSensor = sensorMap.get(latest.sensor) || {};
       const limit = latestSensor.limite_alerta || 0;
       const latestEquip = lists.equipamentos.find(eq => eq.id === latestSensor.equipamento) || {};
+      const thresholds = computeSensorThresholds(activeSensor);
       const criticos = lists.leituras.filter(l => {
         const sensor = sensorMap.get(l.sensor);
         if (!sensor || !sensor.limite_alerta) return false;
@@ -293,6 +318,7 @@ createApp({
         limit: limit ? limit.toFixed(2) : '—',
         criticos,
         acima_alerta,
+        thresholds,
       };
     });
 
