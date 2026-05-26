@@ -842,7 +842,13 @@ createApp({
       },
       sensor: {
         title: 'Sensor', endpoint: '/api/telemetria/sensores/',
-        defaults: { nome: '', tipo: '', unidade_medida: '', equipamento: null, empresa: null, ativo: true }
+        defaults: {
+          nome: '', tipo: '', unidade_medida: '', equipamento: null, empresa: null, ativo: true,
+          limite_alerta: null,
+          limite_alerta_baixo_pct: 70.0,
+          limite_alerta_medio_pct: 85.0,
+          limite_alerta_critico_pct: 100.0,
+        }
       },
       leitura: {
         title: 'Leitura de Telemetria', endpoint: '/api/telemetria/leituras/',
@@ -1483,6 +1489,41 @@ createApp({
       if (!s || !equipamentoId) return '—';
       return eqNome(equipamentoId);
     }
+
+    function computeSensorThresholds(sensor) {
+      if (!sensor) return null;
+      const limit = parseFloat(sensor.limite_alerta) || 0;
+      const lowPct = sensor.limite_alerta_baixo_pct !== undefined && sensor.limite_alerta_baixo_pct !== null ? parseFloat(sensor.limite_alerta_baixo_pct) : 70;
+      const medPct = sensor.limite_alerta_medio_pct !== undefined && sensor.limite_alerta_medio_pct !== null ? parseFloat(sensor.limite_alerta_medio_pct) : 85;
+      const critPct = sensor.limite_alerta_critico_pct !== undefined && sensor.limite_alerta_critico_pct !== null ? parseFloat(sensor.limite_alerta_critico_pct) : 100;
+      return {
+        limit,
+        unit: sensor.unidade_medida || '',
+        lowPct,
+        medPct,
+        critPct,
+        lowValue: limit ? (limit * lowPct / 100).toFixed(2) : '—',
+        medValue: limit ? (limit * medPct / 100).toFixed(2) : '—',
+        critValue: limit ? (limit * critPct / 100).toFixed(2) : '—',
+      };
+    }
+
+    const selectedSensorThresholds = computed(() => {
+      return computeSensorThresholds(selectedEquipSensor.value);
+    });
+
+    const sensorModalThresholds = computed(() => {
+      if (modal.type !== 'sensor') return null;
+      const sensor = {
+        limite_alerta: fd.limite_alerta,
+        limite_alerta_baixo_pct: fd.limite_alerta_baixo_pct,
+        limite_alerta_medio_pct: fd.limite_alerta_medio_pct,
+        limite_alerta_critico_pct: fd.limite_alerta_critico_pct,
+        unidade_medida: fd.unidade_medida,
+      };
+      return computeSensorThresholds(sensor);
+    });
+
     function onGlobalEmpresaChange() {
       // Recarrega a aba atual ao mudar o filtro global
       // Também recarrega o dashboard se estiver nele
@@ -1737,7 +1778,7 @@ createApp({
       availableSectors,
       leiturasHoje, dashTelemetriaEquip, dashTelemetriaSensor,
       dashTelemetriaSensoresFiltrados, dashCustoSetor,
-      equipModal, selectedSensorLabel, equipModalChart, equipModalStats,
+      equipModal, selectedSensorLabel, selectedSensorThresholds, sensorModalThresholds, equipModalChart, equipModalStats,
       openEquipamentoDetails, closeEquipModal, fetchEquipamentoReadings,
       chatOpen, chatInput, chatLoading, chatMessages, chatScrollContainer,
       chatPlaceholder,

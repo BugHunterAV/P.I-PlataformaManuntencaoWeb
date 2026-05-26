@@ -612,6 +612,25 @@
                   <span class="detail-refresh">Atualizado em: {{ equipModal.lastRefresh ? (new Date(equipModal.lastRefresh)).toLocaleTimeString('pt-BR') : '—' }}</span>
                 </div>
 
+                <div v-if="selectedSensorThresholds" class="detail-top-row" style="margin-top: 16px; gap:10px;">
+                  <div class="detail-card">
+                    <div class="detail-card-label">Ponto crítico</div>
+                    <div class="detail-card-value">{{ selectedSensorThresholds.limit }} {{ selectedSensorThresholds.unit }}</div>
+                  </div>
+                  <div class="detail-card">
+                    <div class="detail-card-label">Alerta baixo</div>
+                    <div class="detail-card-value">{{ selectedSensorThresholds.lowPct }}% → {{ selectedSensorThresholds.lowValue }} {{ selectedSensorThresholds.unit }}</div>
+                  </div>
+                  <div class="detail-card">
+                    <div class="detail-card-label">Alerta médio</div>
+                    <div class="detail-card-value">{{ selectedSensorThresholds.medPct }}% → {{ selectedSensorThresholds.medValue }} {{ selectedSensorThresholds.unit }}</div>
+                  </div>
+                  <div class="detail-card">
+                    <div class="detail-card-label">Alerta crítico</div>
+                    <div class="detail-card-value">{{ selectedSensorThresholds.critPct }}% → {{ selectedSensorThresholds.critValue }} {{ selectedSensorThresholds.unit }}</div>
+                  </div>
+                </div>
+
                 <div v-if="equipModal.loading && !equipModal.readings.length" class="loading"><div class="spinner"></div>Carregando detalhes...</div>
                 <div v-else>
                   <div v-if="equipModal.error" class="field-error-global">{{ equipModal.error }}</div>
@@ -1375,6 +1394,39 @@
               <span v-if="formErrors.tipo" class="field-error">{{ formErrors.tipo }}</span>
             </div>
             <div class="field"><label>Unidade de Medida</label><input v-model="fd.unidade_medida" placeholder="ex: °C, kPa, A" /></div>
+          </div>
+          <div class="field-row">
+            <div class="field" :class="{hasError:formErrors.limite_alerta}">
+              <label>Ponto Crítico *</label>
+              <input type="number" step="0.1" v-model.number="fd.limite_alerta" placeholder="Ex: 100" />
+              <span v-if="formErrors.limite_alerta" class="field-error">{{ formErrors.limite_alerta }}</span>
+            </div>
+            <div class="field" :class="{hasError:formErrors.limite_alerta_baixo_pct}">
+              <label>Alerta Baixo (%)</label>
+              <input type="number" step="0.1" v-model.number="fd.limite_alerta_baixo_pct" placeholder="Ex: 70" />
+              <span v-if="formErrors.limite_alerta_baixo_pct" class="field-error">{{ formErrors.limite_alerta_baixo_pct }}</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field" :class="{hasError:formErrors.limite_alerta_medio_pct}">
+              <label>Alerta Médio (%)</label>
+              <input type="number" step="0.1" v-model.number="fd.limite_alerta_medio_pct" placeholder="Ex: 85" />
+              <span v-if="formErrors.limite_alerta_medio_pct" class="field-error">{{ formErrors.limite_alerta_medio_pct }}</span>
+            </div>
+            <div class="field" :class="{hasError:formErrors.limite_alerta_critico_pct}">
+              <label>Alerta Crítico (%)</label>
+              <input type="number" step="0.1" v-model.number="fd.limite_alerta_critico_pct" placeholder="Ex: 100" />
+              <span v-if="formErrors.limite_alerta_critico_pct" class="field-error">{{ formErrors.limite_alerta_critico_pct }}</span>
+            </div>
+          </div>
+          <div v-if="sensorModalThresholds" class="field" style="background: rgba(0, 212, 170, 0.05); border: 1px solid rgba(0, 212, 170, 0.2); padding: 12px; border-radius: 12px; margin-bottom: 12px;">
+            <div style="font-size:13px; font-weight:700; color:var(--t1); margin-bottom: 6px;">Resumo didático de limites</div>
+            <div style="font-size:13px; color:var(--t3); line-height:1.6;">
+              <div>Ponto crítico configurado: <strong>{{ sensorModalThresholds.limit }} {{ sensorModalThresholds.unit }}</strong></div>
+              <div>Alerta baixo: <strong>{{ sensorModalThresholds.lowPct }}%</strong> → {{ sensorModalThresholds.lowValue }} {{ sensorModalThresholds.unit }}</div>
+              <div>Alerta médio: <strong>{{ sensorModalThresholds.medPct }}%</strong> → {{ sensorModalThresholds.medValue }} {{ sensorModalThresholds.unit }}</div>
+              <div>Alerta crítico: <strong>{{ sensorModalThresholds.critPct }}%</strong> → {{ sensorModalThresholds.critValue }} {{ sensorModalThresholds.unit }}</div>
+            </div>
           </div>
           <div class="field" :class="{hasError:formErrors.equipamento}">
             <label>Equipamento *</label>
