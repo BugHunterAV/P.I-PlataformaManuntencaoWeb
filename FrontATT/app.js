@@ -225,8 +225,8 @@ createApp({
       const min = Math.min(...extendedVals);
       const max = Math.max(...extendedVals);
       const chartRange = Math.max(max - min, 1);
-      const W = 320, H = 80;
-      const padding = 14;
+      const W = 320, H = 100;
+      const padding = 16;
       const points = raw.map((l, i) => {
         const v = parseFloat(l.valor) || 0;
         const sensor = sensorMap.get(l.sensor) || {};
