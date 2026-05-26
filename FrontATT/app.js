@@ -1604,15 +1604,34 @@ createApp({
         if (token.value) {
           try {
             if (view.value === 'dashboard') {
-              // Busca APENAS o que muda em tempo real — ordering=-timestamp garante os dados mais recentes primeiro
+              // Busca leituras respeitando os filtros ativos do dashboard
+              let telUrl = '/api/telemetria/leituras/?limit=50&ordering=-timestamp';
+              if (dashTelemetriaSensor.value) {
+                telUrl = '/api/telemetria/leituras/?limit=200&ordering=-timestamp&sensor=' + dashTelemetriaSensor.value;
+              } else if (dashTelemetriaEquip.value) {
+                telUrl = '/api/telemetria/leituras/?limit=200&ordering=-timestamp';
+              }
+
               const [telRes, alertRes] = await Promise.allSettled([
-                api('/api/telemetria/leituras/?limit=50&ordering=-timestamp'),
+                api(telUrl),
                 api('/api/alertas/?status=ativo&limit=50&ordering=-criado_em')
               ]);
 
               // Atualiza os gráficos de forma dinâmica e reativa sem travar a tela
               if (telRes.status === 'fulfilled') {
-                lists.leituras = normList(telRes.value);
+                let leituras = normList(telRes.value);
+                // Se filtro por equipamento (sem sensor específico), filtra client-side
+                if (dashTelemetriaEquip.value && !dashTelemetriaSensor.value) {
+                  const eqId = Number(dashTelemetriaEquip.value);
+                  const sensorIds = new Set(lists.sensores.filter(s => getEquipamentoId(s.equipamento) === eqId).map(s => s.id));
+                  leituras = leituras.filter(l => sensorIds.has(l.sensor));
+                }
+                // Se empresa global ativa, filtra pelos sensores conhecidos
+                if (globalEmpresa.value && !dashTelemetriaSensor.value) {
+                  const filterIds = new Set(lists.sensores.map(s => s.id));
+                  leituras = leituras.filter(l => filterIds.has(l.sensor));
+                }
+                lists.leituras = leituras;
               }
               if (alertRes.status === 'fulfilled') {
                 lists.alertas = normList(alertRes.value);
@@ -1622,8 +1641,11 @@ createApp({
             }
             else if (view.value === 'telemetria') {
               // Atualiza a tabela de leituras sem disparar a tela de loading global
-              const res = await api('/api/telemetria/leituras/?limit=50&ordering=-timestamp');
-              lists.leituras = normList(res);
+              const pl = new URLSearchParams();
+              if (filters.telemetria_leituras.valor_min) pl.set('valor_min', filters.telemetria_leituras.valor_min);
+              if (filters.telemetria_leituras.valor_max) pl.set('valor_max', filters.telemetria_leituras.valor_max);
+              const res = await api('/api/telemetria/leituras/?' + pl + (pl.toString() ? '&' : '') + 'ordering=-timestamp');
+              if (res) lists.leituras = normList(res);
             }
             else if (view.value === 'alertas') {
               // Atualização silenciosa — reutiliza os filtros ativos do usuário
