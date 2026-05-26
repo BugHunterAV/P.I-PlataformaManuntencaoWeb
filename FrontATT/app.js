@@ -161,10 +161,15 @@ createApp({
 
     const dashboardAllowedEquipamentoIds = computed(() => new Set(dashboardEquipamentos.value.map(eq => eq.id)));
 
+    function getEquipamentoId(item) {
+      if (item == null) return null;
+      return typeof item === 'object' ? item.id : item;
+    }
+
     const dashboardSensors = computed(() => {
       if (!isTecnico.value) return lists.sensores;
       const allowedEqIds = dashboardAllowedEquipamentoIds.value;
-      return lists.sensores.filter(s => allowedEqIds.has(s.equipamento));
+      return lists.sensores.filter(s => allowedEqIds.has(getEquipamentoId(s.equipamento)));
     });
 
     // ─ Leituras Hoje vs Total ─────────────────────────
@@ -182,8 +187,13 @@ createApp({
       const source = isTecnico.value ? dashboardSensors.value : lists.sensores;
       if (!dashTelemetriaEquip.value) return source;
       const eqId = Number(dashTelemetriaEquip.value);
-      return source.filter(s => s.equipamento === eqId);
+      return source.filter(s => getEquipamentoId(s.equipamento) === eqId);
     });
+
+    function formatChartTimestamp(ts) {
+      if (!ts) return '';
+      return ts.slice(11, 16);
+    }
 
     const chartTelemetria = computed(() => {
       let leiturasSource = lists.leituras;
@@ -196,26 +206,53 @@ createApp({
       // Filtro por equipamento (via sensores do equipamento)
       else if (dashTelemetriaEquip.value) {
         const eqId = Number(dashTelemetriaEquip.value);
-        const sensorIds = new Set(lists.sensores.filter(s => s.equipamento === eqId).map(s => s.id));
+        const sensorIds = new Set(lists.sensores.filter(s => getEquipamentoId(s.equipamento) === eqId).map(s => s.id));
         leiturasSource = leiturasSource.filter(l => sensorIds.has(l.sensor));
       }
 
       // API retorna ordenado por -timestamp (mais recente primeiro); revertemos para exibir cronologicamente no gráfico
       const raw = leiturasSource.slice(0, 20).reverse();
-      if (raw.length < 2) return { path: '', dots: [], min: 0, max: 0, count: raw.length };
+      if (raw.length < 2) return { path: '', dots: [], min: 0, max: 0, count: raw.length, xLabels: [], yTicks: [] };
+      const sensorMap = new Map(lists.sensores.map(s => [s.id, s]));
       const vals = raw.map(l => parseFloat(l.valor) || 0);
       const min = Math.min(...vals);
       const max = Math.max(...vals);
       const range = max - min || 1;
       const W = 320, H = 80;
-      const points = vals.map((v, i) => ({
-        x: (i / (vals.length - 1)) * W,
-        y: H - ((v - min) / range) * H * 0.85 - H * 0.05,
-        v,
-      }));
+      const points = raw.map((l, i) => {
+        const v = parseFloat(l.valor) || 0;
+        const sensor = sensorMap.get(l.sensor) || {};
+        return {
+          x: (i / (raw.length - 1)) * W,
+          y: H - ((v - min) / range) * H * 0.85 - H * 0.05,
+          v,
+          timestamp: l.timestamp,
+          label: sensor.nome || `Sensor ${l.sensor}`,
+          unit: sensor.unidade_medida || '',
+          sensorId: l.sensor,
+        };
+      });
       const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
       const area = path + ` L${W},${H} L0,${H} Z`;
-      return { path, area, dots: points, min: min.toFixed(1), max: max.toFixed(1), count: leiturasSource.length };
+      const yTicks = Array.from({ length: 4 }, (_, idx) => {
+        const value = min + ((max - min) * idx / 3);
+        return { y: H - ((value - min) / range) * H * 0.85 - H * 0.05, label: value.toFixed(1) };
+      });
+      const xLabels = [
+        { x: 0, label: formatChartTimestamp(raw[0].timestamp) },
+        { x: W / 2, label: formatChartTimestamp(raw[Math.floor(raw.length / 2)].timestamp) },
+        { x: W, label: formatChartTimestamp(raw[raw.length - 1].timestamp) },
+      ];
+      return {
+        path,
+        area,
+        dots: points,
+        min: min.toFixed(1),
+        max: max.toFixed(1),
+        count: leiturasSource.length,
+        yTicks,
+        xLabels,
+      };
     });
 
     const telemetriaSummary = computed(() => {
@@ -1416,7 +1453,7 @@ createApp({
     }
     function countSensores(eqId) {
       if (eqId == null) return 0;
-      return lists.sensores.filter(s => s.equipamento === eqId).length;
+      return lists.sensores.filter(s => getEquipamentoId(s.equipamento) === eqId).length;
     }
     function usuarioNome(id) {
       if (!id) return '';
@@ -1433,16 +1470,18 @@ createApp({
       return empresaNome(eq.empresa);
     }
     function empresaNomeSensor(s) {
-      if (!s.equipamento) return '—';
-      const eq = lists.equipamentos.find(e => e.id === s.equipamento);
+      const equipamentoId = getEquipamentoId(s.equipamento);
+      if (!equipamentoId) return '—';
+      const eq = lists.equipamentos.find(e => e.id === equipamentoId);
       if (!eq || !eq.empresa) return '—';
       return empresaNome(eq.empresa);
     }
     function sensorEquipNome(sensorId) {
       if (!sensorId) return '—';
       const s = lists.sensores.find(x => x.id === sensorId);
-      if (!s || !s.equipamento) return '—';
-      return eqNome(s.equipamento);
+      const equipamentoId = getEquipamentoId(s?.equipamento);
+      if (!s || !equipamentoId) return '—';
+      return eqNome(equipamentoId);
     }
     function onGlobalEmpresaChange() {
       // Recarrega a aba atual ao mudar o filtro global
@@ -1692,6 +1731,8 @@ createApp({
       empresaNomeSensor, sensorEquipNome,
       onGlobalEmpresaChange,
       chartEquipStatus, chartAlertNivel, chartOrdens, chartTelemetria,
+      telemetriaSummary,
+      dashboardEquipamentos,
       chartHistoricoTipo, donutArcs,
       availableSectors,
       leiturasHoje, dashTelemetriaEquip, dashTelemetriaSensor,

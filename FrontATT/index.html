@@ -382,9 +382,20 @@
                     <line x1="0" y1="96" x2="320" y2="96" stroke="var(--edge)" stroke-width="0.5"/>
                     <path :d="chartTelemetria.area" fill="url(#spark-grad)"/>
                     <path :d="chartTelemetria.path" fill="none" stroke="var(--acid)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <g class="spark-axis-labels">
+                      <g v-for="tick in chartTelemetria.yTicks" :key="tick.label">
+                        <text x="6" :y="tick.y + 4" class="spark-axis-text">{{ tick.label }}</text>
+                      </g>
+                      <g v-for="label in chartTelemetria.xLabels" :key="label.label">
+                        <text :x="label.x" y="92" class="spark-axis-text" :text-anchor="label.x === 0 ? 'start' : label.x === 320 ? 'end' : 'middle'">{{ label.label }}</text>
+                      </g>
+                    </g>
                     <circle v-for="(dot,i) in chartTelemetria.dots" :key="i"
-                            :cx="dot.x" :cy="dot.y" r="3"
-                            fill="var(--bg)" stroke="var(--acid)" stroke-width="1.5"/>
+                            :cx="dot.x" :cy="dot.y" r="4"
+                            fill="var(--bg)" stroke="var(--acid)" stroke-width="1.5"
+                            style="cursor:pointer">
+                      <title>{{ `${dot.label}: ${dot.v.toFixed(2)} ${dot.unit || ''} — ${dot.timestamp ? dot.timestamp.slice(0,16).replace('T',' ') : ''}` }}</title>
+                    </circle>
                   </svg>
                   <div class="spark-labels">
                     <span>min {{ chartTelemetria.min }}</span>
