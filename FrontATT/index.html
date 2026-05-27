@@ -455,7 +455,7 @@
 
             <div class="chart-card col-6" v-if="!isTecnico">
               <div class="chart-head">
-                <div class="chart-title">Custo por Tipo</div>
+                <div class="chart-title">Evolução de Custos</div>
                 <div class="chart-filter-row">
                   <select class="chart-filter-select" v-model="dashCustoSetor">
                     <option value="">Setor (Geral)</option>
@@ -464,18 +464,39 @@
                 </div>
               </div>
               <div class="chart-body">
-                <div v-if="chartHistoricoTipo.length" class="bar-list">
-                  <div v-for="b in chartHistoricoTipo" :key="b.label" class="bar-item">
-                    <div class="bar-meta">
-                      <span class="bar-label">{{ b.label }}</span>
-                      <span class="bar-val" :style="{color:b.color}">R$ {{ b.value }}</span>
-                    </div>
-                    <div class="bar-track">
-                      <div class="bar-fill" :style="{width: b.pct+'%', background: b.color}"></div>
-                    </div>
+                <div v-if="chartCustoEvolucao.path" class="spark-wrap" style="min-height: 120px;">
+                  <svg width="100%" viewBox="0 0 320 140" preserveAspectRatio="xMidYMid meet" style="overflow:visible">
+                    <defs>
+                      <linearGradient id="cost-grad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="var(--ice)" stop-opacity=".25"/>
+                        <stop offset="100%" stop-color="var(--ice)" stop-opacity="0"/>
+                      </linearGradient>
+                    </defs>
+                    <line x1="45" y1="10" x2="320" y2="10" stroke="var(--edge)" stroke-width="0.5"/>
+                    <line x1="45" y1="50" x2="320" y2="50" stroke="var(--edge)" stroke-width="0.5"/>
+                    <line x1="45" y1="90" x2="320" y2="90" stroke="var(--edge)" stroke-width="0.5"/>
+                    <path :d="chartCustoEvolucao.area" fill="url(#cost-grad)"/>
+                    <path :d="chartCustoEvolucao.path" fill="none" stroke="var(--ice)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <g class="spark-axis-labels">
+                      <g v-for="tick in chartCustoEvolucao.yTicks" :key="tick.label">
+                        <text x="40" :y="tick.y - 4" class="spark-axis-text" text-anchor="end">{{ tick.label }}</text>
+                      </g>
+                      <g v-for="label in chartCustoEvolucao.xLabels" :key="label.label">
+                        <text :x="label.x" y="115" class="spark-axis-text" :text-anchor="label.x <= 45 ? 'start' : label.x >= 320 ? 'end' : 'middle'">{{ label.label }}</text>
+                      </g>
+                    </g>
+                    <circle v-for="(dot,i) in chartCustoEvolucao.dots" :key="i"
+                            :cx="dot.x" :cy="dot.y" r="3"
+                            fill="var(--bg)" stroke="var(--ice)" stroke-width="1.5"
+                            style="cursor:pointer">
+                      <title>{{ `${dot.label}: R$ ${dot.v.toFixed(2)}` }}</title>
+                    </circle>
+                  </svg>
+                  <div class="spark-labels" style="justify-content: flex-end;">
+                    <span>Custo Total: <strong>R$ {{ chartCustoEvolucao.total }}</strong></span>
                   </div>
                 </div>
-                <div v-else class="spark-no-data">Sem histórico de manutenção</div>
+                <div v-else class="spark-no-data">Sem histórico de manutenção suficiente</div>
               </div>
             </div>
           </div>

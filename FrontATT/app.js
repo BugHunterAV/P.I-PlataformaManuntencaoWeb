@@ -385,37 +385,73 @@ createApp({
       });
     }
 
-    const chartHistoricoTipo = computed(() => {
-      // Ajustado para refletir os novos campos do Historico (custo_pecas + custo_mao_de_obra)
-      const costs = {};
+    const chartCustoEvolucao = computed(() => {
+      const dailyCosts = {};
       lists.historico.forEach(h => {
-        // Se filtro de setor está ativo, filtra pelo setor do equipamento da OS
         if (dashCustoSetor.value) {
           const osId = typeof h.ordem_servico === 'object' ? h.ordem_servico?.id : h.ordem_servico;
           const os = lists.ordens.find(o => o.id === osId);
           if (os) {
-            const eqId = os.equipamento;
-            const loc = lists.localizacoes.find(l => l.equipamento === eqId);
-            const setor = loc ? loc.setor : null;
-            if (setor !== dashCustoSetor.value) return; // Pula se não é do setor
+            const loc = lists.localizacoes.find(l => l.equipamento === os.equipamento);
+            if (!loc || loc.setor !== dashCustoSetor.value) return;
           } else {
-            return; // Sem OS associada, pula
+            return;
           }
         }
-
-        // Tenta pegar o tipo_os pela Ordem de Serviço aninhada, ou agrupa como 'geral'
-        const k = h.ordem_servico?.tipo_os || 'geral';
-        const custoTotal = (parseFloat(h.custo_pecas) || 0) + (parseFloat(h.custo_mao_de_obra) || 0);
-        costs[k] = (costs[k] || 0) + custoTotal;
+        const date = h.data_execucao;
+        if (!date) return;
+        const total = (parseFloat(h.custo_pecas) || 0) + (parseFloat(h.custo_mao_de_obra) || 0);
+        dailyCosts[date] = (dailyCosts[date] || 0) + total;
       });
-      const entries = Object.entries(costs).sort((a, b) => b[1] - a[1]).slice(0, 5);
-      const max = Math.max(...entries.map(e => e[1]), 1);
-      const palette = ['#c6f135', '#00d4aa', '#4db8ff', '#ffaa00', '#ff3b3b'];
-      return entries.map(([label, value], i) => ({
-        label, value: value.toFixed(0),
-        pct: (value / max) * 100,
-        color: palette[i % palette.length]
-      }));
+
+      const sortedDates = Object.keys(dailyCosts).sort();
+      if (sortedDates.length < 2) {
+        return { path: '', area: '', dots: [], min: 0, max: 0, total: 0, xLabels: [], yTicks: [] };
+      }
+
+      const vals = sortedDates.map(d => dailyCosts[d]);
+      const max = Math.max(...vals, 1);
+      const chartRange = max;
+      
+      const W = 320, H = 100;
+      const padding = 16;
+      const leftPad = 45;
+      const chartW = W - leftPad;
+
+      const points = sortedDates.map((date, i) => {
+        const v = dailyCosts[date];
+        return {
+          x: leftPad + (i / (sortedDates.length - 1)) * chartW,
+          y: padding + (1 - (v / chartRange)) * (H - padding * 2),
+          v,
+          label: date.split('-').reverse().join('/'),
+        };
+      });
+
+      const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      const area = path + ` L${W},${H} L${leftPad},${H} Z`;
+
+      const yTicks = Array.from({ length: 4 }, (_, idx) => {
+        const value = (max * idx) / 3;
+        // Format to 1k if >= 1000 for better fit
+        const label = value >= 1000 ? (value/1000).toFixed(1) + 'k' : value.toFixed(0);
+        return { y: padding + (1 - (value / max)) * (H - padding * 2), label };
+      });
+
+      const xLabels = [
+        { x: leftPad, label: points[0].label.substring(0, 5) },
+        { x: leftPad + chartW / 2, label: points[Math.floor(points.length / 2)].label.substring(0, 5) },
+        { x: W, label: points[points.length - 1].label.substring(0, 5) },
+      ];
+
+      const totalCost = vals.reduce((a, b) => a + b, 0);
+
+      return {
+        path, area, dots: points,
+        min: 0, max: max.toFixed(0),
+        total: totalCost.toFixed(2),
+        yTicks, xLabels, leftPad
+      };
     });
 
     const availableSectors = computed(() => {
@@ -1850,10 +1886,10 @@ createApp({
       eqNome, osTitulo, osEquipNome, eqEmpresaNome, empresaNome, sensorNome, locSetor, custoTotal, countSensores, usuarioNome,
       empresaNomeSensor, sensorEquipNome,
       onGlobalEmpresaChange,
-      chartEquipStatus, chartAlertNivel, chartOrdens, chartTelemetria,
+      chartEquipStatus, chartAlertNivel, chartOrdens, chartTelemetria, chartCustoEvolucao,
       telemetriaSummary,
       dashboardEquipamentos,
-      chartHistoricoTipo, donutArcs,
+      donutArcs,
       availableSectors,
       leiturasHoje, dashTelemetriaEquip, dashTelemetriaSensor,
       dashTelemetriaSensoresFiltrados, dashCustoSetor,
