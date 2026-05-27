@@ -112,7 +112,11 @@ def inicializar_memoria_sensores(sensores, memoria_atual):
             continue
 
         limite = sensor.limite_alerta if sensor.limite_alerta and sensor.limite_alerta > 0 else 100.0
-        memoria[sensor.id] = round(limite * 0.65, 2)
+        limite_baixo_pct = sensor.limite_alerta_baixo_pct if sensor.limite_alerta_baixo_pct is not None else 70.0
+        
+        # Iniciar no meio da faixa segura (ex: 60% se o limite for 70%)
+        safe_pct = max(35.0, limite_baixo_pct - 10.0) / 100.0
+        memoria[sensor.id] = round(limite * safe_pct, 2)
         logger.debug('Inicializando sensor %s (%s) em %.2f', sensor.nome, sensor.get_tipo_display(), memoria[sensor.id])
 
     return memoria
@@ -120,16 +124,32 @@ def inicializar_memoria_sensores(sensores, memoria_atual):
 
 def gerar_valor_sensor(sensor, valor_anterior):
     limite = sensor.limite_alerta if sensor.limite_alerta and sensor.limite_alerta > 0 else 100.0
-    alvo_minimo = limite * 0.62
-    alvo_maximo = limite * 0.68
+    limite_baixo_pct = sensor.limite_alerta_baixo_pct if sensor.limite_alerta_baixo_pct is not None else 70.0
 
-    flutuacao = random.uniform(-0.4, 0.4)
-    novo_valor = valor_anterior + flutuacao
+    # Define faixa segura dinâmica mais alta e estreita para gráficos mais vibrantes.
+    # Ex: se limite_baixo é 70%, o alvo é oscilar entre 55% e 68%.
+    pct_max = max(40.0, limite_baixo_pct - 2.0) / 100.0
+    pct_min = max(30.0, limite_baixo_pct - 15.0) / 100.0
+    
+    alvo_minimo = limite * pct_min
+    alvo_maximo = limite * pct_max
 
-    if novo_valor > alvo_maximo:
-        novo_valor -= random.uniform(0.2, 0.5)
-    elif novo_valor < alvo_minimo:
-        novo_valor += random.uniform(0.2, 0.5)
+    # 1% de chance de gerar um pico (anomalia)
+    is_anomalia = random.random() < 0.01
+
+    if is_anomalia:
+        # Pico forte para cima, podendo passar do limite baixo/médio/crítico raramente
+        flutuacao_pct = random.uniform(0.05, 0.20)
+    else:
+        # Aumentar a variação normal (até 5%) com efeito elástico nas bordas
+        if valor_anterior > alvo_maximo:
+            flutuacao_pct = random.uniform(-0.06, 0.01) # Puxa para baixo
+        elif valor_anterior < alvo_minimo:
+            flutuacao_pct = random.uniform(-0.01, 0.06) # Puxa para cima
+        else:
+            flutuacao_pct = random.uniform(-0.05, 0.05) # Variação solta
+
+    novo_valor = valor_anterior + (limite * flutuacao_pct)
 
     novo_valor = round(max(0.1, novo_valor), 2)
     return novo_valor, limite, alvo_minimo, alvo_maximo
