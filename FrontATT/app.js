@@ -227,11 +227,13 @@ createApp({
       const chartRange = Math.max(max - min, 1);
       const W = 320, H = 100;
       const padding = 16;
+      const leftPad = 45;
+      const chartW = W - leftPad;
       const points = raw.map((l, i) => {
         const v = parseFloat(l.valor) || 0;
         const sensor = sensorMap.get(l.sensor) || {};
         return {
-          x: (i / (raw.length - 1)) * W,
+          x: leftPad + (i / (raw.length - 1)) * chartW,
           y: padding + (1 - ((v - min) / chartRange)) * (H - padding * 2),
           v,
           timestamp: l.timestamp,
@@ -241,14 +243,14 @@ createApp({
         };
       });
       const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
-      const area = path + ` L${W},${H} L0,${H} Z`;
+      const area = path + ` L${W},${H} L${leftPad},${H} Z`;
       const yTicks = Array.from({ length: 4 }, (_, idx) => {
         const value = min + ((chartRange) * idx / 3);
         return { y: padding + (1 - ((value - min) / chartRange)) * (H - padding * 2), label: value.toFixed(1) };
       });
       const xLabels = [
-        { x: 0, label: formatChartTimestamp(raw[0].timestamp) },
-        { x: W / 2, label: formatChartTimestamp(raw[Math.floor(raw.length / 2)].timestamp) },
+        { x: leftPad, label: formatChartTimestamp(raw[0].timestamp) },
+        { x: leftPad + chartW / 2, label: formatChartTimestamp(raw[Math.floor(raw.length / 2)].timestamp) },
         { x: W, label: formatChartTimestamp(raw[raw.length - 1].timestamp) },
       ];
 
@@ -281,6 +283,7 @@ createApp({
         yTicks,
         xLabels,
         thresholds,
+        leftPad,
       };
     });
 
