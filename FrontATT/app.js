@@ -198,16 +198,24 @@ createApp({
     const chartTelemetria = computed(() => {
       let leiturasSource = lists.leituras;
 
-      // Filtro por sensor específico
-      if (dashTelemetriaSensor.value) {
-        const sensorId = Number(dashTelemetriaSensor.value);
-        leiturasSource = leiturasSource.filter(l => l.sensor === sensorId);
+      // Se nenhum sensor específico for selecionado na UI, precisamos pegar apenas 
+      // as leituras de UM único sensor para o gráfico formar uma linha do tempo real.
+      let targetSensorId = dashTelemetriaSensor.value ? Number(dashTelemetriaSensor.value) : null;
+
+      if (!targetSensorId && leiturasSource.length > 0) {
+        // Pega o sensor da leitura mais recente da lista filtrada pelo equipamento (ou global)
+        if (dashTelemetriaEquip.value) {
+          const eqId = Number(dashTelemetriaEquip.value);
+          const sensorIds = new Set(lists.sensores.filter(s => getEquipamentoId(s.equipamento) === eqId).map(s => s.id));
+          const firstValid = leiturasSource.find(l => sensorIds.has(l.sensor));
+          if (firstValid) targetSensorId = firstValid.sensor;
+        } else {
+          targetSensorId = leiturasSource[0].sensor;
+        }
       }
-      // Filtro por equipamento (via sensores do equipamento)
-      else if (dashTelemetriaEquip.value) {
-        const eqId = Number(dashTelemetriaEquip.value);
-        const sensorIds = new Set(lists.sensores.filter(s => getEquipamentoId(s.equipamento) === eqId).map(s => s.id));
-        leiturasSource = leiturasSource.filter(l => sensorIds.has(l.sensor));
+
+      if (targetSensorId) {
+        leiturasSource = leiturasSource.filter(l => l.sensor === targetSensorId);
       }
 
       // API retorna ordenado por -timestamp (mais recente primeiro); revertemos para exibir cronologicamente no gráfico
