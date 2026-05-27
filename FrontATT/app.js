@@ -1703,7 +1703,7 @@ createApp({
             console.warn("Pequeno atraso na sincronização, tentando no próximo ciclo...");
           }
         }
-      }, 5000); // 5 segundos — sincroniza melhor com o simulador (ciclo de 7-10s)
+      }, 2000); // 2 segundos — sincroniza em tempo real sem sobrecarregar
     });
 
     // ─ Chat AI (NanaSmart AI) ────────────────────────
