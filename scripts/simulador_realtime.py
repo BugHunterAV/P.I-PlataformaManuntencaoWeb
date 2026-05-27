@@ -34,9 +34,9 @@ def parse_args():
         description='Simulador de Telemetria Industrial em Tempo Real',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument('--interval-min', type=float, default=7.0,
+    parser.add_argument('--interval-min', type=float, default=1.0,
                         help='Tempo mínimo em segundos entre ciclos')
-    parser.add_argument('--interval-max', type=float, default=10.0,
+    parser.add_argument('--interval-max', type=float, default=3.0,
                         help='Tempo máximo em segundos entre ciclos')
     parser.add_argument('--cycles', type=int, default=0,
                         help='Número máximo de ciclos de geração. 0 = execução contínua')
