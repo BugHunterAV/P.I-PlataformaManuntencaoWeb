@@ -39,3 +39,8 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         if user.empresa:
             return Usuario.objects.select_related('empresa').filter(empresa=user.empresa)
         return Usuario.objects.none()
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+        user.set_password('senhapadrao123')
+        user.save()
