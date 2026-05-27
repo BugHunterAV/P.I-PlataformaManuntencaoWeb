@@ -952,6 +952,10 @@ createApp({
         title: 'Localização', endpoint: '/api/localizacao/',
         defaults: { equipamento: null, setor: '' }
       },
+      change_password: {
+        title: 'Trocar Senha', endpoint: '/api/auth/change-password/',
+        defaults: { senha_atual: '', nova_senha: '', confirmar_nova_senha: '' }
+      },
     };
 
     function resetForm(defaults) {
@@ -1053,7 +1057,7 @@ createApp({
           }
         }
         modal.open = false;
-        toast(modal.editId ? 'Atualizado com sucesso!' : 'Criado com sucesso!', 'success');
+        toast(modal.type === 'change_password' ? 'Senha alterada com sucesso!' : (modal.editId ? 'Atualizado com sucesso!' : 'Criado com sucesso!'), 'success');
         navigate(view.value);
       } catch (e) {
         if (e.fieldErrors) {

@@ -1192,7 +1192,8 @@
               </div>
               
               <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);">
-                <p style="font-size: 12px; color: var(--t4);">* A edição do perfil é gerenciada pelo administrador do sistema. Entre em contato caso precise alterar dados de acesso.</p>
+                <button class="btn btn-primary" @click="openModal('change_password')">Trocar Senha</button>
+                <p style="font-size: 12px; color: var(--t4); margin-top: 12px;">* A edição do perfil é gerenciada pelo administrador do sistema. Entre em contato caso precise alterar dados de acesso.</p>
               </div>
             </div>
           </div>
@@ -1401,6 +1402,25 @@
               <label>Custo Peças (R$)</label>
               <input type="number" step="0.01" v-model.number="fd.custo_pecas" placeholder="Ex: 150.00" />
             </div>
+          </div>
+        </template>
+
+        <!-- ══════════ MODAL: TROCAR SENHA ══════════ -->
+        <template v-if="modal.type==='change_password'">
+          <div class="field" :class="{hasError:formErrors.senha_atual}">
+            <label>Senha Atual *</label>
+            <input type="password" v-model="fd.senha_atual" placeholder="••••••••" />
+            <span v-if="formErrors.senha_atual" class="field-error">{{ formErrors.senha_atual }}</span>
+          </div>
+          <div class="field" :class="{hasError:formErrors.nova_senha}">
+            <label>Nova Senha *</label>
+            <input type="password" v-model="fd.nova_senha" placeholder="Mínimo 6 caracteres" />
+            <span v-if="formErrors.nova_senha" class="field-error">{{ formErrors.nova_senha }}</span>
+          </div>
+          <div class="field" :class="{hasError:formErrors.confirmar_nova_senha}">
+            <label>Confirmar Nova Senha *</label>
+            <input type="password" v-model="fd.confirmar_nova_senha" placeholder="Digite a nova senha novamente" />
+            <span v-if="formErrors.confirmar_nova_senha" class="field-error">{{ formErrors.confirmar_nova_senha }}</span>
           </div>
         </template>
 
