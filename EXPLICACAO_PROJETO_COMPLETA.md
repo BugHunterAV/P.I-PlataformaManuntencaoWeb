@@ -1,7 +1,7 @@
 # 📋 Documentação Completa do Projeto — NanaSmart
 
 > **Plataforma de Manutenção Industrial com Django REST Framework**
-> Este documento explica **cada parte do projeto** de forma clara para que você consiga apresentar ao professor com segurança.
+> Este documento explica **cada parte do projeto** de forma clara.w
 
 ---
 
