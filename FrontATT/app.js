@@ -94,6 +94,7 @@ createApp({
       refreshing: false,
       error: '',
       lastRefresh: null,
+      ordens: [],
     });
     let equipModalPollTimer = null;
 
@@ -1543,6 +1544,17 @@ createApp({
       }
     }
 
+    async function fetchEquipamentoOrdens(eqId) {
+      try {
+        const res = await api(`/api/ordens-servico/?equipamento=${eqId}&limit=999`);
+        equipModal.ordens = normList(res);
+        sortByNivel(equipModal.ordens, 'prioridade'); // Ordem de prioridade (crítico > médio > baixo)
+      } catch (err) {
+        equipModal.ordens = [];
+        console.error("Erro ao buscar ordens do equipamento", err);
+      }
+    }
+
     async function pollEquipamentoReadings() {
       if (!equipModal.open || !equipModal.selectedSensor) return;
       await fetchEquipamentoReadings(equipModal.selectedSensor, { silent: true });
@@ -1566,7 +1578,9 @@ createApp({
       equipModal.readings = [];
       equipModal.error = '';
       equipModal.refreshing = false;
+      equipModal.ordens = [];
       await fetchEquipamentoSensors(eq.id);
+      fetchEquipamentoOrdens(eq.id);
       if (equipModal.sensors.length) {
         equipModal.selectedSensor = equipModal.sensors[0].id;
       }
@@ -1583,6 +1597,7 @@ createApp({
       equipModal.lastRefresh = null;
       equipModal.loading = false;
       equipModal.refreshing = false;
+      equipModal.ordens = [];
       stopEquipModalPolling();
     }
 

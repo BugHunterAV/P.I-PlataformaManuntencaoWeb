@@ -785,7 +785,46 @@
                     <div class="empty-icon">⚠</div>
                     Este equipamento não possui sensores ativos cadastrados.
                   </div>
-                </div>
+                  </div>
+                  <div class="detail-table-wrap" style="margin-top:24px;">
+                    <div class="detail-table-title" style="display:flex; justify-content:space-between; align-items:center;">
+                      <span>Histórico de Ordens de Serviço ({{ equipModal.ordens.length }})</span>
+                    </div>
+                    <table v-if="equipModal.ordens.length">
+                      <thead>
+                        <tr>
+                          <th>O.S.</th>
+                          <th>Data Criação</th>
+                          <th>Responsável</th>
+                          <th>Prioridade</th>
+                          <th>Status</th>
+                          <th>Custo Total (R$)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="os in equipModal.ordens" :key="os.id">
+                          <td style="color:var(--t1); font-weight:600;">{{ os.titulo }}</td>
+                          <td>{{ fmtDate(os.created_at || os.data_abertura || os.updated_at) }}</td>
+                          <td>{{ usuarioNome(os.responsavel) || '—' }}</td>
+                          <td>
+                            <span class="badge" :class="prioridadeBadge(os.prioridade)">
+                              <span class="badge-dot"></span>{{ os.prioridade || '—' }}
+                            </span>
+                          </td>
+                          <td>
+                            <span class="badge" :class="ordemStatusBadge(os.status)">
+                              <span class="badge-dot"></span>{{ os.status || '—' }}
+                            </span>
+                          </td>
+                          <td>{{ custoTotal(os) }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                    <div v-else class="empty" style="margin-top:16px;">
+                      <div class="empty-icon" style="font-size:24px; margin-bottom:8px;">📝</div>
+                      Nenhuma ordem de serviço registrada para este equipamento.
+                    </div>
+                  </div>
               </div>
             </div>
           </div>
