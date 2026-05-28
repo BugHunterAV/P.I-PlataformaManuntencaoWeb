@@ -95,6 +95,7 @@ createApp({
       error: '',
       lastRefresh: null,
       ordens: [],
+      osFilter: 'todas',
     });
     let equipModalPollTimer = null;
 
@@ -121,6 +122,12 @@ createApp({
         last: last.toFixed(2),
         count: values.length,
       };
+    });
+
+    const equipModalFilteredOrdens = computed(() => {
+      if (equipModal.osFilter === 'alertas') return equipModal.ordens.filter(o => o.titulo.toLowerCase().includes('alerta'));
+      if (equipModal.osFilter === 'os') return equipModal.ordens.filter(o => !o.titulo.toLowerCase().includes('alerta'));
+      return equipModal.ordens;
     });
 
     // ─ Computed básicos ──────────────────────────────
@@ -345,8 +352,9 @@ createApp({
       const latestEquip = lists.equipamentos.find(eq => eq.id === (selectedSensor?.equipamento || latestSensor.equipamento)) || {};
       const thresholds = computeSensorThresholds(activeSensor);
       const openOrders = lists.ordens.filter(o => {
-        if (!activeSensor || !activeSensor.equipamento) return false;
-        return String(o.equipamento) === String(activeSensor.equipamento) && ['pendente', 'andamento'].includes(o.status);
+        if (!o.equipamento) return false;
+        const eId = typeof o.equipamento === 'object' ? o.equipamento.id : o.equipamento;
+        return eId === latestEquip.id && o.status !== 'concluida' && o.status !== 'cancelada';
       }).length;
       const criticos = lists.leituras.filter(l => {
         const sensor = sensorMap.get(l.sensor);
@@ -1087,9 +1095,6 @@ createApp({
           payload.timestamp = new Date().toISOString();
         }
 
-        // DEBUG — remover após confirmar
-        if (modal.type === 'ordem' || modal.type === 'encerrar_os') console.log('PAYLOAD OS →', JSON.stringify(payload));
-
         // Garante valores válidos para campos choice da OS
         if (modal.type === 'ordem' || modal.type === 'encerrar_os') {
           if (payload.status === 'concluida' && !payload.responsavel && me.value?.id) {
@@ -1579,6 +1584,7 @@ createApp({
       equipModal.error = '';
       equipModal.refreshing = false;
       equipModal.ordens = [];
+      equipModal.osFilter = 'todas';
       await fetchEquipamentoSensors(eq.id);
       fetchEquipamentoOrdens(eq.id);
       if (equipModal.sensors.length) {
@@ -1987,7 +1993,7 @@ createApp({
       availableSectors,
       leiturasHoje, dashTelemetriaEquip, dashTelemetriaSensor,
       dashTelemetriaSensoresFiltrados, dashCustoSetor,
-      equipModal, selectedSensorLabel, selectedSensorThresholds, sensorModalThresholds, equipModalChart, equipModalStats,
+      equipModal, selectedSensorLabel, selectedSensorThresholds, sensorModalThresholds, equipModalChart, equipModalStats, equipModalFilteredOrdens,
       openEquipamentoDetails, closeEquipModal, fetchEquipamentoReadings,
       chatOpen, chatInput, chatLoading, chatMessages, chatScrollContainer,
       chatPlaceholder,
