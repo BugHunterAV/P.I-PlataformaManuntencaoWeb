@@ -1,6 +1,12 @@
 const { createApp, ref, reactive, computed, onMounted, watch, nextTick } = Vue;
 const BASE = 'http://localhost:8000';
 
+// Helper: ordena por nível de severidade (critico → medio → baixo)
+const NIVEL_PRIORIDADE = { critico: 0, medio: 1, baixo: 2 };
+function sortByNivel(items, campo = 'nivel') {
+  return items.sort((a, b) => (NIVEL_PRIORIDADE[a[campo]] ?? 3) - (NIVEL_PRIORIDADE[b[campo]] ?? 3));
+}
+
 createApp({
   setup() {
     const token = ref(localStorage.getItem('sentinel_token') || '');
@@ -683,6 +689,7 @@ createApp({
           if (allowedEqIds) {
             alerts = alerts.filter(a => allowedEqIds.has(a.equipamento));
           }
+          sortByNivel(alerts);
           dashAlerts.value = alerts;
           alertCount.value = alerts.length;
         }
@@ -772,6 +779,7 @@ createApp({
           }
           items = items.filter(a => eqIds.has(a.equipamento));
         }
+        sortByNivel(items);
         lists.alertas = items;
         Object.assign(pages.alertas, normPages(d));
         // Busca localizações para mostrar o setor/local de cada equipamento
@@ -798,6 +806,7 @@ createApp({
           const eqIds = new Set(normList(eqRes).map(eq => eq.id));
           items = items.filter(o => eqIds.has(o.equipamento));
         }
+        sortByNivel(items, 'prioridade');
         lists.ordens = items;
         if (!lists.usuarios.length) await fetchUsuariosAll();
         Object.assign(pages.ordens, normPages(d));
@@ -1714,7 +1723,9 @@ createApp({
                 lists.leituras = leituras;
               }
               if (alertRes.status === 'fulfilled') {
-                lists.alertas = normList(alertRes.value);
+                const alertItems = normList(alertRes.value);
+                sortByNivel(alertItems);
+                lists.alertas = alertItems;
                 alertCount.value = lists.alertas.length;
                 dashAlerts.value = lists.alertas.slice(0, 5);
               }
@@ -1734,7 +1745,7 @@ createApp({
               if (filters.alertas.nivel) p.set('nivel', filters.alertas.nivel);
               if (filters.alertas.status) p.set('status', filters.alertas.status);
               const res = await api('/api/alertas/?' + p);
-              if (res) lists.alertas = normList(res);
+              if (res) { const items = normList(res); sortByNivel(items); lists.alertas = items; }
             }
           } catch (e) {
             console.warn("Pequeno atraso na sincronização, tentando no próximo ciclo...");
