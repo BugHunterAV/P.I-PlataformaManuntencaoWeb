@@ -1,33 +1,45 @@
 # 🏭 Plataforma de Manutenção Industrial Preditiva
 
-> API REST completa e profissional para gestão inteligente de ativos industriais, manutenção preditiva, ordens de serviço, telemetria IoT em tempo real, alertas automáticos e dashboards executivos.
+> API REST completa e profissional para gestão inteligente de ativos industriais, manutenção preditiva, ordens de serviço, telemetria IoT em tempo real, alertas automáticos, dashboards executivos, exportação de relatórios e integração com Inteligência Artificial.
 
 ---
 
 ## 📌 Sobre o Projeto
 
-Esta é uma API REST desenvolvida em Django que tem como objetivo centralizar e digitalizar toda a gestão de manutenção industrial de uma empresa. 
+Esta é uma API REST desenvolvida em Django que centraliza e digitaliza toda a gestão de manutenção industrial de uma empresa.
 
-O sistema permite que indústrias gerenciem de forma eficiente seus equipamentos, monitorem parâmetros em tempo real através de sensores IoT, recebam alertas automáticos quando algum parâmetro sai do normal, controlem todas as ordens de serviço desde a abertura até o fechamento, e tenham visibilidade gerencial através de dashboards com indicadores importantes como MTBF, MTTR e Disponibilidade dos ativos. O sistema conta ainda com uma integração com a Inteligência Artificial (Google Gemini) para auxiliar nas tomadas de decisões e fornecer suporte técnico avançado.
+O sistema permite que indústrias gerenciem de forma eficiente seus equipamentos, monitorem parâmetros em tempo real através de sensores IoT, recebam alertas automáticos quando algum parâmetro sai do normal, controlem todas as ordens de serviço desde a abertura até o fechamento, e tenham visibilidade gerencial através de dashboards com indicadores importantes como MTBF, MTTR e Disponibilidade dos ativos.
 
-O projeto foi construído com foco em modularidade, segurança, escalabilidade, isolamento de dados por empresa (multi-tenant) e fácil integração com o Front-end em Vue.js.
+O sistema conta com:
+- **Integração com IA (Google Gemini)** para suporte técnico avançado e análise de ordens
+- **Exportação de relatórios** em CSV, Excel (.xlsx) e PDF
+- **Front-end completo** em Vue.js (pasta `FrontATT/`) com dashboard, gestão de ativos, OS, alertas e chat de IA
+
+O projeto foi construído com foco em modularidade, segurança, escalabilidade, isolamento de dados por empresa (multi-tenant) e fácil integração com o Front-end.
 
 ---
 
 ## 🛠 Tecnologias Utilizadas
 
-- Python 3.11 ou superior
+**Back-end:**
+- Python 3.11+
 - Django 5.2
-- Django REST Framework
-- djangorestframework-simplejwt para autenticação com tokens JWT
-- drf-spectacular para geração automática de documentação Swagger e ReDoc
-- django-cors-headers para permitir requisições do front-end
-- django-filter para filtros avançados nas listagens
-- python-dotenv para gerenciamento de variáveis de ambiente
-- google-generativeai para integração de Inteligência Artificial com o Google Gemini
-- Faker para geração de dados realistas durante o seed
-- SQLite (suportado para desenvolvimento rápido)
-- PostgreSQL (Banco de dados oficial de produção e desenvolvimento)
+- Django REST Framework 3.16
+- `djangorestframework-simplejwt` — autenticação JWT
+- `drf-spectacular` — documentação Swagger e ReDoc automática
+- `django-cors-headers` — requisições cross-origin do front-end
+- `django-filter` — filtros avançados nas listagens
+- `python-dotenv` — variáveis de ambiente
+- `google-generativeai` / `google-genai` — integração com Google Gemini
+- `Faker` — geração de dados realistas no seed
+- `WeasyPrint` + `ReportLab` — geração de PDF
+- `openpyxl` — geração de Excel (.xlsx)
+- PostgreSQL (produção) / SQLite (desenvolvimento rápido)
+
+**Front-end (`FrontATT/`):**
+- Vue.js 3 (via CDN, sem build step)
+- CSS customizado com design moderno
+- Consome 100% da API REST via JWT
 
 ---
 
@@ -35,38 +47,52 @@ O projeto foi construído com foco em modularidade, segurança, escalabilidade, 
 
 Siga os passos abaixo na ordem exata:
 
-1. Abra o terminal na pasta raiz do projeto e ative o ambiente virtual com o comando:
-   .\.venv\Scripts\activate   (no Windows PowerShell)
+**1. Ative o ambiente virtual:**
+```bash
+# Windows PowerShell
+.\venv\Scripts\activate
+```
 
-2. Instale todas as dependências do projeto com o comando:
-   pip install -r requirements.txt
+**2. Instale as dependências:**
+```bash
+pip install -r requirements.txt
+```
 
-3. Configure o seu banco de dados PostgreSQL (caso ainda não tenha feito):
-   - Certifique-se de que o serviço do PostgreSQL está rodando.
-   - Crie um banco de dados chamado `manutencao`.
-   - Ajuste o usuário e senha no arquivo `app/settings.py` se necessário.
+**3. Configure o banco de dados PostgreSQL:**
+- Certifique-se de que o serviço do PostgreSQL está rodando
+- Crie um banco de dados chamado `manutencao`
+- Ajuste usuário e senha em `app/settings.py` se necessário
 
-4. Crie o arquivo de variáveis de ambiente:
-   - Na raiz do projeto, crie um arquivo chamado `.env`
-   - Adicione sua chave da API do Gemini e outras configurações:
-     ```env
-     GEMINI_API_KEY="sua_chave_api_do_google_gemini_aqui"
-     ```
-     (Para obter a chave, acesse o [Google AI Studio](https://aistudio.google.com/))
-   - Observação: `.env` já está listado em `.gitignore`, portanto não deve ser commitado ao repositório.
+**4. Crie o arquivo de variáveis de ambiente:**
 
-5. Execute as migrações para criar as tabelas no banco de dados:
-   python manage.py migrate
+Na raiz do projeto, crie um arquivo `.env` com:
+```env
+GEMINI_API_KEY="sua_chave_api_do_google_gemini_aqui"
+```
+> Para obter a chave, acesse o [Google AI Studio](https://aistudio.google.com/).
+> O `.env` já está listado no `.gitignore` e não deve ser commitado.
 
-6. Popule o banco de dados com dados realistas. Veja a seção [Scripts de Utilidade](#-scripts-de-utilidade) para detalhes:
-   python scripts/seed_db.py
+**5. Execute as migrações:**
+```bash
+python manage.py migrate
+```
 
-7. Inicie o servidor de desenvolvimento com o comando:
-   python manage.py runserver
-   Caso a porta 8000 esteja ocupada, utilize:
-   python manage.py runserver 9000
+**6. Popule o banco com dados realistas:**
+```bash
+python scripts/seed_db.py
+```
+> Veja a seção [Scripts de Utilidade](#%EF%B8%8F-scripts-de-utilidade) para opções avançadas.
 
-Após iniciar, a API estará acessível em: http://localhost:8000
+**7. Inicie o servidor:**
+```bash
+python manage.py runserver
+# Se a porta 8000 estiver ocupada:
+python manage.py runserver 9000
+```
+
+A API estará acessível em: **http://localhost:8000**
+
+O Front-end está em `FrontATT/index.html` — basta abrir no navegador com o servidor rodando.
 
 ---
 
@@ -74,212 +100,280 @@ Após iniciar, a API estará acessível em: http://localhost:8000
 
 O projeto utiliza o framework de testes nativo do Django. Os testes são isolados e não afetam o banco de dados de produção.
 
-1. Para rodar todos os testes do sistema:
-   python manage.py test
+```bash
+# Rodar todos os testes
+python manage.py test
 
-2. Para rodar testes de um módulo específico (ex: ativos):
-   python manage.py test ativos
+# Rodar testes de um módulo específico
+python manage.py test ativos
+python manage.py test manutencao
+python manage.py test alertas
+python manage.py test gemini_api
 
-3. Para ver o log detalhado dos testes:
-   python manage.py test -v 2
+# Log detalhado
+python manage.py test -v 2
+```
 
 ---
 
 ## 🛠️ Scripts de Utilidade
 
-O projeto conta com scripts na pasta `scripts/` para facilitar o desenvolvimento e testes de carga.
-
-### 1. Seed de Banco de Dados (`seed_db.py`)
-Popula o banco com uma estrutura completa, multi-tenant e realista (inclui Horímetros e Planos de Manutenção).
-
-*   **Uso Padrão** (3 empresas, 15 equipamentos/cada):
-    ```bash
-    python scripts/seed_db.py
-    ```
-*   **Uso Customizado** (Ex: 5 empresas, 30 equipamentos/cada):
-    ```bash
-    python scripts/seed_db.py --empresas 5 --equipamentos 30
-    ```
-
-### 2. Teste de Estresse de Telemetria (`stress_telemetry.py`)
-Simula o envio massivo de dados de sensores para testar a performance e a escalada de alertas e O.S.
-
-*   **Uso Padrão** (100 leituras, 5 threads):
-    ```bash
-    python scripts/stress_telemetry.py
-    ```
-*   **Uso Pesado** (Ex: 1000 leituras, 20 threads):
-    ```bash
-    python scripts/stress_telemetry.py --leituras 1000 --threads 20
-    ```
+O projeto conta com **3 scripts** na pasta `scripts/` para facilitar o desenvolvimento e testes.
 
 ---
 
-## 🔑 Credenciais Padrão
+### 1. 🌱 Seed de Banco de Dados (`seed_db.py`)
 
-Após executar o script de seed:
+Popula o banco com uma estrutura completa, multi-tenant e realista: empresas, usuários com cargos reais, equipamentos industriais, sensores, 120 dias de histórico de telemetria, ordens de serviço, histórico de manutenção e alertas.
 
-- Django Admin:
-  Usuário: admin
-  Senha: admin123
+> ⚠️ **Atenção:** o seed **apaga todos os dados existentes** antes de inserir os novos. Use com cuidado.
 
-- Usuários normais do sistema (Gestores e Técnicos):
-  Senha padrão para todos: 123
+**Padrão** (2 empresas, 10 equipamentos cada):
+```bash
+python scripts/seed_db.py
+```
+
+**Customizado** (ex: 5 empresas, 30 equipamentos cada):
+```bash
+python scripts/seed_db.py --empresas 5 --equipamentos 30
+```
+
+| Argumento | Padrão | Descrição |
+|---|---|---|
+| `--empresas` | `2` | Número de empresas a criar |
+| `--equipamentos` | `10` | Número de equipamentos por empresa |
+
+---
+
+### 2. 📡 Simulador de Telemetria em Tempo Real (`simulador_realtime.py`)
+
+Simula um fluxo contínuo e realista de dados de sensores diretamente no banco, detectando sensores ativos dinamicamente. Ideal para testar alertas, o dashboard e o front-end sem precisar de hardware real.
+
+O simulador preserva o histórico de valores entre ciclos (transições suaves), possui 1% de chance de gerar anomalias/picos, e se adapta automaticamente quando sensores ou equipamentos são ativados/desativados no banco.
+
+**Uso básico** (ciclos contínuos, intervalo de 1 a 3 segundos):
+```bash
+python scripts/simulador_realtime.py
+```
+
+**Exemplos avançados:**
+```bash
+# Ciclo rápido, 50 ciclos, modo seco (sem gravar no banco)
+python scripts/simulador_realtime.py --interval-min 0.5 --interval-max 1.0 --cycles 50 --dry-run
+
+# Simular apenas sensores específicos com log de debug
+python scripts/simulador_realtime.py --sensor 1 2 3 --debug
+
+# Simular apenas equipamentos de uma empresa
+python scripts/simulador_realtime.py --equipamento 4 5
+
+# Resultado determinístico (mesma sequência de valores para testes)
+python scripts/simulador_realtime.py --seed 42
+```
+
+| Argumento | Padrão | Descrição |
+|---|---|---|
+| `--interval-min` | `1.0` | Tempo mínimo em segundos entre ciclos |
+| `--interval-max` | `3.0` | Tempo máximo em segundos entre ciclos |
+| `--cycles` | `0` (infinito) | Número máximo de ciclos. `0` = execução contínua |
+| `--seed` | — | Semente para geração determinística de valores |
+| `--sensor` | — | IDs de sensores específicos para simular |
+| `--equipamento` | — | IDs de equipamentos para limitar a simulação |
+| `--dry-run` | `false` | Executa sem gravar leituras no banco |
+| `--debug` | `false` | Ativa logs de depuração detalhados |
+
+> 💡 **Dica:** use `--dry-run` para ver o que seria gerado antes de gravar no banco.
+
+---
+
+### 3. 🔥 Teste de Estresse de Telemetria (`stress_telemetry.py`)
+
+Simula o envio massivo e paralelo de dados de sensores para testar a performance da API, a escalada de alertas e a criação automática de O.S. sob carga.
+
+**Padrão** (100 leituras, 5 threads):
+```bash
+python scripts/stress_telemetry.py
+```
+
+**Carga pesada** (1000 leituras, 20 threads):
+```bash
+python scripts/stress_telemetry.py --leituras 1000 --threads 20
+```
+
+---
+
+## 🔑 Credenciais Padrão (após o seed)
+
+| Perfil | Usuário | Senha |
+|---|---|---|
+| Admin (Django + API) | `admin` | `admin` |
+| Gestores e Técnicos | *(gerado pelo Faker, formato `nome.sobrenome`)* | `123` |
+
+> Consulte o painel admin (`/admin/`) para ver todos os usuários criados pelo seed.
 
 ---
 
 ## 📁 Estrutura do Projeto
 
+```
 P.I-PlataformaManuntencaoWeb/
-├── app/                      # Configurações principais do Django (settings, urls, etc.)
-├── accounts/                 # Empresas, Usuários e Autenticação
-├── ativos/                   # Equipamentos e Localização
-├── manutencao/               # Ordens de Serviço e Histórico
-├── telemetria/               # Sensores e Leituras IoT
+├── app/                      # Configurações globais (settings, urls raiz, wsgi)
+├── authentication/           # Login JWT, /me, troca de senha
+├── accounts/                 # Empresas e Usuários (modelo customizado)
+├── ativos/                   # Equipamentos, Localização e Planos de Manutenção
+├── manutencao/               # Ordens de Serviço e Histórico de Manutenção
+│   └── dashboards/           # KPIs: MTBF, MTTR, Disponibilidade
+├── telemetria/               # Sensores IoT e Leituras de Telemetria
 ├── alertas/                  # Sistema de Alertas automáticos
-├── dashboards/               # KPIs e Dashboards executivos
-├── gemini_api/               # Integração com a Inteligência Artificial do Google Gemini
-├── scripts/                  # Scripts de automação (seed)
+├── exportacao/               # Exportação de relatórios (CSV, Excel, PDF)
+├── gemini_api/               # Integração com Google Gemini (IA)
+├── scripts/                  # Scripts auxiliares (seed, simulador, stress)
+├── FrontATT/                 # Front-end Vue.js completo
+│   ├── index.html
+│   ├── app.js
+│   └── styles.css
 └── manage.py
+```
 
-### Descrição detalhada de cada pasta:
+### Descrição detalhada de cada app:
 
-- **app/** → Contém as configurações centrais do projeto (settings.py, urls.py principais, wsgi.py, etc.)
-- **accounts/** → Gerencia Empresas e Usuários (modelos, serializers, views e permissões)
-- **ativos/** → Módulo responsável por Equipamentos e sua Localização física
-- **manutencao/** → Ordens de Serviço (O.S.) e Histórico de Manutenções
-- **telemetria/** → Sensores IoT e Leituras de telemetria em tempo real
-- **alertas/** → Sistema de alertas automáticos gerados pela telemetria
-- **dashboards/** → Cálculo e retorno de KPIs (MTBF, MTTR, Disponibilidade, etc.)
-- **gemini_api/** → Comunicação direta com a API do Gemini, fornecendo suporte inteligente isolado por empresa e cargo.
-- **scripts/** → Scripts auxiliares como `seed_db.py` e `stress_telemetry.py`
+| App | Responsabilidade |
+|---|---|
+| `app/` | Configurações centrais: `settings.py`, `urls.py` raiz, `wsgi.py` |
+| `authentication/` | Login JWT, refresh token, endpoint `/me`, troca de senha |
+| `accounts/` | Modelos de `Empresa` e `Usuario` customizado (com `tipo_usuario`, `cargo`) |
+| `ativos/` | Equipamentos, Localização física e Planos de Manutenção por Horímetro |
+| `manutencao/` | Ordens de Serviço (O.S.) corretivas, preditivas e preventivas + Histórico |
+| `manutencao/dashboards/` | Cálculo de KPIs: MTBF, MTTR, Disponibilidade, resumo geral |
+| `telemetria/` | Sensores IoT e Leituras de telemetria em tempo real |
+| `alertas/` | Alertas automáticos (baixo, médio, crítico) gerados pela telemetria |
+| `exportacao/` | Relatórios exportáveis em CSV, Excel (.xlsx) e PDF |
+| `gemini_api/` | Chat IA, análise de OS, priorização de ordens e gestão financeira |
 
 ---
 
-## 🔗 Principais Vinculações e Regras de Cascade
+## 🔗 Principais Relacionamentos e Regras de Cascade
 
-| Modelo                    | Relacionado com               | Tipo de Relacionamento     | Cascade / Comportamento                              | Observação |
-|---------------------------|-------------------------------|----------------------------|-----------------------------------------------------|----------|
-| **Usuario**               | Empresa                       | ForeignKey                 | PROTECT (não permite excluir empresa com usuários) | Cada usuário pertence a uma empresa |
-| **Equipamento**           | Empresa                       | ForeignKey                 | CASCADE (excluir empresa exclui equipamentos)      | Ativo pertence a uma empresa |
-| **Equipamento**           | EquipamentoLocalizacao        | OneToOneField              | CASCADE                                             | Localização é única por equipamento |
-| **Sensor**                | Equipamento                   | ForeignKey                 | CASCADE                                             | Sensor pertence a um equipamento |
-| **Telemetria**            | Sensor                        | ForeignKey                 | CASCADE                                             | Leituras pertencem a um sensor |
-| **Alerta**                | Equipamento                   | ForeignKey                 | CASCADE                                             | Alertas são gerados por equipamento |
-| **OrdemServico**          | Equipamento                   | ForeignKey                 | PROTECT                                             | Não permite excluir equipamento com OS aberta |
-| **OrdemServico**          | Usuario (responsavel)         | ForeignKey                 | SET_NULL                                            | Se o responsável for excluído, fica nulo |
-| **HistoricoManutencao**   | OrdemServico                  | OneToOneField              | CASCADE                                             | Histórico é excluído junto com a OS |
-| **PlanoManutencao**      | Equipamento                   | ForeignKey                 | CASCADE                                             | Planos pertencem a um equipamento |
+| Modelo | Relacionado com | Tipo | Comportamento |
+|---|---|---|---|
+| **Usuario** | Empresa | ForeignKey | CASCADE — exclusão de empresa remove usuários |
+| **Equipamento** | Empresa | ForeignKey | CASCADE — exclusão de empresa remove equipamentos |
+| **EquipamentoLocalizacao** | Equipamento | OneToOneField | CASCADE — localização única por equipamento |
+| **PlanoManutencao** | Equipamento | ForeignKey | CASCADE — planos removidos com o equipamento |
+| **Sensor** | Equipamento | ForeignKey | CASCADE — sensores removidos com o equipamento |
+| **Telemetria** | Sensor | ForeignKey | CASCADE — leituras removidas com o sensor |
+| **Alerta** | Equipamento | ForeignKey | CASCADE — alertas removidos com o equipamento |
+| **OrdemServico** | Equipamento | ForeignKey | PROTECT — não permite excluir equipamento com OS aberta |
+| **OrdemServico** | Usuario (responsável) | ForeignKey | SET_NULL — responsável excluído → campo fica nulo |
+| **HistoricoManutencao** | OrdemServico | OneToOneField | CASCADE — histórico removido com a OS |
 
 ---
 
 ## 🛡 Segurança e Controle de Acesso
 
-A API utiliza autenticação JWT através do header:
+**Autenticação via JWT:**
+```
 Authorization: Bearer SEU_TOKEN_AQUI
+```
 
-O sistema possui isolamento completo por empresa (multi-tenant). Um usuário só consegue ver e alterar dados da empresa à qual está vinculado.
+O sistema possui **isolamento completo por empresa (multi-tenant)**. Um usuário só vê e altera dados da empresa à qual está vinculado.
 
-Perfis Disponíveis:
-- admin → Tem acesso total ao sistema
-- gestor → Pode gerenciar usuários, equipamentos e ordens da própria empresa
-- tecnico → Pode visualizar dados e registrar manutenções. **Regra de Sigilo**: Técnicos só visualizam Ordens de Serviço que estão "sem responsável" ou que foram atribuídas a eles.
+**Perfis disponíveis:**
+
+| Perfil | Permissões |
+|---|---|
+| `admin` | Acesso total ao sistema, visualiza dados de todas as empresas |
+| `gestor` | Gerencia usuários, equipamentos e ordens da **própria empresa** |
+| `tecnico` | Visualiza dados e registra manutenções. Só vê OS sem responsável **ou** atribuídas a ele |
+
+**Endpoint de login:** `POST /api/auth/login/`
+```json
+{ "username": "seu_usuario", "password": "sua_senha" }
+```
 
 ---
 
-## ⚙️ Inteligência Preditiva e Automação
+## ⚙️ Inteligência Preditiva e Automação (Signals)
 
-O sistema monitora a telemetria em tempo real e toma decisões automáticas para prevenir falhas:
+O sistema monitora a telemetria em tempo real e toma decisões automáticas:
 
-### 1. Regras de Disparo de Alertas
-A severidade do alerta é calculada com base no percentual atingido do `limite_alerta` configurado no sensor:
-- 🟢 **Baixo**: Valor >= **70%** do limite.
-- 🟡 **Médio**: Valor >= **85%** do limite.
-- 🔴 **Crítico**: Valor >= **100%** do limite.
+### 1. Regras de Disparo de Alertas por Sensor
 
-### 2. Geração Automática de O.S.
-Qualquer anomalia detectada gera instantaneamente uma **Ordem de Serviço** para inspeção. A prioridade da O.S. (`baixo`, `medio`, `critico`) reflete exatamente o nível do alerta gerado.
+A severidade é calculada com base no percentual do `limite_alerta` configurado no sensor:
+
+| Nível | Condição | Exemplo (limite = 100°C) |
+|---|---|---|
+| 🟢 **Baixo** | Valor ≥ 70% do limite | ≥ 70°C |
+| 🟡 **Médio** | Valor ≥ 85% do limite | ≥ 85°C |
+| 🔴 **Crítico** | Valor ≥ 100% do limite | ≥ 100°C |
+
+> Os percentuais são configuráveis individualmente por sensor (`limite_alerta_baixo_pct`, `limite_alerta_medio_pct`, `limite_alerta_critico_pct`).
+
+### 2. Geração Automática de O.S. por Alerta
+
+Qualquer anomalia detectada gera instantaneamente uma **Ordem de Serviço** para inspeção. A prioridade da O.S. (`baixo`, `medio`, `critico`) reflete exatamente o nível do alerta.
 
 ### 3. Escalada e Agrupamento Inteligente
-- **Escalada**: Se uma falha de nível "Médio" piorar para "Crítico", o sistema **eleva a prioridade** da O.S. já aberta em vez de criar uma duplicata.
-- **Multifuncionalidade**: Se houver falhas de tipos diferentes (ex: Temperatura e Vibração) no mesmo motor, o sistema cria **duas O.S. distintas** para rastreamento individual.
 
-### 4. Manutenção Preditiva por Horímetro (Tempo de Uso)
-Além dos sensores que detectam anomalias, o sistema conta com um motor preditivo baseado no desgaste natural (tempo de operação), medido pelo campo `horimetro` do equipamento.
+- **Escalada:** Se uma falha de nível "Médio" piorar para "Crítico", o sistema **eleva a prioridade** da O.S. já aberta em vez de criar duplicata.
+- **Multifuncionalidade:** Se houver falhas de tipos diferentes (ex: Temperatura e Vibração) no mesmo motor, o sistema cria **duas O.S. distintas** para rastreamento individual.
 
-**Fluxo de Funcionamento Completo (A "Lógica de Ouro"):**
+### 4. Geração Automática de O.S. por Horímetro (Tempo de Uso)
 
-1. **Criação do Equipamento (O Ponto de Partida)**:
-   - Ao cadastrar uma máquina (`POST /api/equipamentos/`), o gestor informa o horímetro atual (ex: `200` horas). 
-   - Se não for informado, o sistema assume `0.0`. Isso é crucial para máquinas que já estão em operação antes da adoção do sistema.
+Além dos sensores, o sistema gera O.S. automaticamente com base no tempo de operação (horímetro) do equipamento, usando Planos de Manutenção configuráveis.
 
-2. **Criação dos Planos Customizados**:
-   - Uma máquina pode ter *múltiplos* planos de manutenção. Em vez de definir isso no equipamento, você cria planos vinculados a ele (`POST /api/planos-manutencao/`).
-   - Exemplo: "Troca de Óleo" a cada 100h e "Revisão Geral" a cada 1000h.
-   - **O Segredo (Carimbo Inicial)**: No exato momento em que você cria o plano "Troca de Óleo" (intervalo 100h) para a máquina que tem 200h, o sistema grava internamente: *Última manutenção foi em 200h*. Portanto, o **próximo disparo será em 300h**.
+**Fluxo completo:**
 
-3. **Monitoramento e Disparo Automático**:
-   - Conforme a máquina trabalha, o sistema externo ou o técnico atualiza o horímetro (`PATCH /api/equipamentos/{id}/`).
-   - Se o horímetro atingir ou ultrapassar 300h (ex: `PATCH` enviando `305`), o sistema intercepta essa atualização (via Signals) e **gera automaticamente uma O.S.** do tipo `preditiva`.
-
-4. **Ciclo Contínuo e Anti-Duplicação**:
-   - Após o disparo, o plano é atualizado. O novo "carimbo" passa a ser 305h. O próximo disparo será projetado para 405h.
-   - O sistema possui inteligência anti-duplicação: se o horímetro continuar subindo (ex: 310h), mas a O.S. Preditiva de "Troca de Óleo" ainda estiver aberta, ele **não** criará uma nova. Ele aguarda o fechamento do ciclo atual.
+1. **Cadastro do equipamento** com horímetro atual (ex: `200h`). Se não informado, assume `0`.
+2. **Criação do plano** (ex: "Troca de Óleo" a cada `100h`). O sistema grava internamente que a última manutenção foi em `200h`, então o próximo disparo será em `300h`.
+3. **Atualização do horímetro** via `PATCH /api/equipamentos/{id}/`. Se atingir ou ultrapassar `300h`, o sistema **gera automaticamente uma O.S.**.
+4. **Ciclo contínuo:** Após o disparo, o carimbo é atualizado para o horímetro atual. A próxima O.S. será projetada para `horímetro_atual + intervalo`.
+5. **Anti-duplicação:** Se a O.S. de horímetro ainda estiver aberta, o sistema **não cria uma nova** até o fechamento da anterior.
 
 ---
 
 ## 🤖 Inteligência Artificial (Gemini API)
 
-O sistema possui integração profunda com a API do Google Gemini, oferecendo um assistente inteligente com acesso baseado em papéis (RBAC).
+O sistema possui integração profunda com a API do Google Gemini, com **acesso baseado em perfil (RBAC)**.
 
-- **Respostas Contextualizadas:** O assistente sabe qual empresa o usuário pertence e responde apenas com dados relevantes daquela empresa.
-- **Acesso Hierárquico:**
-  - **Admin:** Pode fazer perguntas e gerenciar informações globais do sistema.
-  - **Gestor:** Visualiza e recebe conselhos estratégicos exclusivos dos dados da própria empresa, garantindo privacidade (Multi-tenant).
-  - **Técnico:** Restrito às suas manutenções e OS, a IA atua como um conselheiro técnico seguro, não expondo relatórios gerenciais, apenas informações ligadas à execução de suas tarefas.
-- **Como Funciona:** Tudo é isolado pelo sistema no back-end. A IA recebe as regras no prompt base de forma dinâmica dependendo do cargo do usuário autenticado no JWT.
-- **Endpoints Gemini disponíveis:**
-  - `POST /api/gemini/chat/` → Chat geral com contexto de ativos e manutenção.
-  - `POST /api/gemini/ordens/analise/` → Análise de ordens de serviço abertas e recomendações práticas.
-  - `POST /api/gemini/ordens/sem-atribuicao/` → Priorização e atribuição de ordens sem responsável.
-  - `POST /api/gemini/gestao/financeira/` → Orientação financeira para gestores e administradores.
+- **Respostas contextualizadas:** O assistente sabe qual empresa o usuário pertence e responde apenas com dados relevantes.
+- **Acesso hierárquico:**
+  - **Admin:** perguntas e gestão de informações globais.
+  - **Gestor:** conselhos estratégicos exclusivos dos dados da própria empresa.
+  - **Técnico:** restrito às suas OS e manutenções — a IA não expõe relatórios gerenciais.
 
-### 🧭 Front-end: Assistente de IA no painel
+**Endpoints disponíveis:**
 
-O `FrontATT` já conta com um widget de chat flutuante que consome o endpoint `POST /api/gemini/chat/`.
+| Método | Endpoint | Descrição |
+|---|---|---|
+| POST | `/api/gemini/chat/` | Chat geral com contexto de ativos e manutenção |
+| POST | `/api/gemini/ordens/analise/` | Análise de ordens de serviço abertas |
+| POST | `/api/gemini/ordens/sem-atribuicao/` | Priorização de ordens sem responsável |
+| POST | `/api/gemini/gestao/financeira/` | Orientação financeira (gestores e admins) |
 
-- O front-end usa o token JWT salvo em `localStorage` para autenticação.
-- O usuário atual é carregado pelo endpoint `/api/auth/me/`, garantindo que a IA saiba quem está logado.
-- A interface envia o histórico de conversas para o backend, permitindo que a IA mantenha contexto entre perguntas.
-- O widget exibe sugestões rápidas diferentes para técnicos, gestores e admins, ajudando a direcionar perguntas relevantes.
+> O Front-end (`FrontATT/`) já possui um widget de chat flutuante que consome o endpoint de chat, com sugestões rápidas personalizadas por perfil do usuário.
 
-### 📌 Plano de melhoria do front-end para o chat da IA
+---
 
-1. **Gaming o widget atual**
-   - Manter o chat flutuante disponível em todas as telas.
-   - Mostrar o perfil atual (`me.tipo_usuario`) para ajustar as opções rápidas.
-   - Usar o `Authorization: Bearer <token>` já configurado no `api()` global.
+## 📤 Exportação de Relatórios
 
-2. **Usar o histórico corretamente**
-   - O front-end já envia `history` com as mensagens anteriores.
-   - Cada item usa `role: 'user'` ou `role: 'ai'`, e o backend converte corretamente para o modelo Gemini.
+O sistema permite exportar dados em **CSV**, **Excel (.xlsx)** e **PDF**, com isolamento multi-tenant automático.
 
-3. **Separar endpoints por tipo de demanda**
-   - Chat geral: `POST /api/gemini/chat/`
-   - Análise de OS: `POST /api/gemini/ordens/analise/`
-   - Ordens sem atribuição: `POST /api/gemini/ordens/sem-atribuicao/`
-   - Gestão financeira: `POST /api/gemini/gestao/financeira/`
+| Método | Endpoint | O que exporta |
+|---|---|---|
+| GET | `/api/exportar/ordens-servico/{formato}/` | Ordens de Serviço |
+| GET | `/api/exportar/equipamentos/{formato}/` | Equipamentos |
+| GET | `/api/exportar/alertas/{formato}/` | Alertas |
+| GET | `/api/exportar/telemetria/{formato}/` | Leituras de Telemetria |
+| GET | `/api/exportar/historico/{formato}/` | Histórico de Manutenção |
+| GET | `/api/exportar/dashboard/{formato}/` | KPIs do Dashboard |
 
-4. **Evoluir para um assistente contextual**
-   - Adicionar botões rápidos que usem endpoints específicos quando necessário.
-   - Exibir avisos claros se a chave `GEMINI_API_KEY` não estiver configurada.
-   - Registrar o último contexto enviado para depuração e possível replay.
+`{formato}` aceita: `csv`, `excel` ou `pdf`
 
-5. **Melhorar a interface com Markdown**
-   - O front-end já interpreta listas, negritos e parágrafos no texto retornado.
-   - Futuramente, pode ser estendida para links clicáveis, tabelas simples e código formatado.
-
-> O objetivo é que a IA não seja um chat genérico, mas sim um assistente de manutenção com identidade do usuário, cargo e empresa.
+**Exemplo com filtros:**
+```
+GET /api/exportar/ordens-servico/pdf/?status=pendente&prioridade=critico
+```
 
 ---
 
@@ -287,161 +381,209 @@ O `FrontATT` já conta com um widget de chat flutuante que consome o endpoint `P
 
 Com o servidor rodando, acesse:
 
-- Swagger UI (interface visual interativa): http://localhost:8000/api/schema/swagger-ui/
-- ReDoc (documentação mais limpa): http://localhost:8000/api/schema/redoc/
-- Painel Administrativo Django: http://localhost:8000/admin/
+| Interface | URL |
+|---|---|
+| Swagger UI (interativa) | http://localhost:8000/api/schema/swagger-ui/ |
+| ReDoc (documentação limpa) | http://localhost:8000/api/schema/redoc/ |
+| Painel Administrativo Django | http://localhost:8000/admin/ |
+
+---
+
+## 🔗 Endpoints da API — Lista Completa
+
+**Base URL:** `http://localhost:8000/api/`
+
+### 🔐 Autenticação
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| POST | `/api/auth/login/` | Login — retorna tokens JWT (access + refresh) |
+| POST | `/api/auth/refresh/` | Renovar o token de acesso |
+| GET | `/api/auth/me/` | Dados do usuário atualmente logado |
+| POST | `/api/auth/change-password/` | Trocar senha do usuário logado |
+
+### 🏢 Empresas
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/api/empresas/` | Listar empresas |
+| POST | `/api/empresas/` | Criar nova empresa |
+| GET | `/api/empresas/{id}/` | Detalhes de uma empresa |
+| PUT/PATCH | `/api/empresas/{id}/` | Atualizar empresa |
+| DELETE | `/api/empresas/{id}/` | Excluir empresa |
+
+### 👤 Usuários
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/api/usuarios/` | Listar usuários |
+| POST | `/api/usuarios/` | Criar novo usuário |
+| GET | `/api/usuarios/{id}/` | Detalhes de um usuário |
+| PUT/PATCH | `/api/usuarios/{id}/` | Atualizar usuário |
+| DELETE | `/api/usuarios/{id}/` | Excluir usuário |
+
+### ⚙️ Equipamentos
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/api/equipamentos/` | Listar equipamentos |
+| POST | `/api/equipamentos/` | Cadastrar novo equipamento |
+| GET | `/api/equipamentos/{id}/` | Detalhes de um equipamento |
+| PUT/PATCH | `/api/equipamentos/{id}/` | Atualizar (PATCH no `horimetro` dispara automações) |
+| DELETE | `/api/equipamentos/{id}/` | Excluir equipamento |
+
+**Filtros:** `?empresa=1`, `?status=ativo`, `?tipo=motor_eletrico`, `?search=bomba`
+
+### 📍 Localização
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/api/localizacao/` | Listar localizações |
+| POST | `/api/localizacao/` | Cadastrar localização |
+| GET | `/api/localizacao/{id}/` | Detalhes de uma localização |
+| PUT/PATCH | `/api/localizacao/{id}/` | Atualizar localização |
+| DELETE | `/api/localizacao/{id}/` | Excluir localização |
+
+### 📅 Planos de Manutenção (Horímetro)
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/api/planos-manutencao/` | Listar planos |
+| POST | `/api/planos-manutencao/` | Criar novo plano preditivo |
+| GET | `/api/planos-manutencao/{id}/` | Detalhes de um plano |
+| PATCH | `/api/planos-manutencao/{id}/` | Atualizar intervalo ou detalhes |
+| DELETE | `/api/planos-manutencao/{id}/` | Excluir plano |
+
+**Filtros:** `?equipamento=1`, `?ativo=true`, `?prioridade=critico`
+
+### 🛠️ Ordens de Serviço
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/api/ordens-servico/` | Listar O.S. |
+| POST | `/api/ordens-servico/` | Criar nova O.S. |
+| GET | `/api/ordens-servico/{id}/` | Detalhes de uma O.S. |
+| PUT/PATCH | `/api/ordens-servico/{id}/` | Atualizar O.S. |
+| DELETE | `/api/ordens-servico/{id}/` | Excluir O.S. (só Gestor/Admin) |
+
+**Filtros:** `?status=pendente`, `?prioridade=critico`, `?tipo_os=corretiva`, `?equipamento=1`, `?responsavel=2`, `?search=motor`, `?ordering=-data_abertura`
+
+### 📋 Histórico de Manutenção
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/api/historico/` | Listar histórico |
+| POST | `/api/historico/` | Registrar histórico de manutenção |
+| GET | `/api/historico/{id}/` | Detalhes de um histórico |
+| PUT/PATCH | `/api/historico/{id}/` | Atualizar histórico |
+| DELETE | `/api/historico/{id}/` | Excluir histórico |
+
+### 🚨 Alertas
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/api/alertas/` | Listar alertas |
+| POST | `/api/alertas/` | Criar alerta manual |
+| GET | `/api/alertas/{id}/` | Detalhes de um alerta |
+| PATCH | `/api/alertas/{id}/` | Atualizar status (ex: marcar como resolvido) |
+| DELETE | `/api/alertas/{id}/` | Excluir alerta (só Gestor/Admin) |
+
+**Filtros:** `?equipamento=1`, `?nivel=critico`, `?status=ativo`
+
+### 📡 Telemetria — Sensores
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/api/telemetria/sensores/` | Listar sensores |
+| POST | `/api/telemetria/sensores/` | Cadastrar sensor (com limites customizáveis) |
+| GET | `/api/telemetria/sensores/{id}/` | Detalhes de um sensor |
+| PUT/PATCH | `/api/telemetria/sensores/{id}/` | Atualizar sensor |
+| DELETE | `/api/telemetria/sensores/{id}/` | Excluir sensor |
+
+**Filtros:** `?equipamento=1`, `?tipo=temperatura`, `?ativo=true`
+
+### 📡 Telemetria — Leituras
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/api/telemetria/leituras/` | Listar leituras |
+| POST | `/api/telemetria/leituras/` | Enviar nova leitura (dispara alertas automáticos) |
+| GET | `/api/telemetria/leituras/{id}/` | Detalhes de uma leitura |
+
+**Filtros:** `?sensor=1`, `?sensor__equipamento=2`
+
+### 📊 Dashboards e KPIs
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/api/dashboards/resumo/` | Resumo geral e KPIs da empresa |
+| GET | `/api/dashboards/kpis/` | KPIs detalhados: MTBF, MTTR, Disponibilidade por equipamento |
+
+### 🤖 Inteligência Artificial (Gemini)
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| POST | `/api/gemini/chat/` | Chat com contexto isolado por usuário e empresa |
+| POST | `/api/gemini/ordens/analise/` | Análise de ordens abertas e recomendações |
+| POST | `/api/gemini/ordens/sem-atribuicao/` | Priorização de ordens sem responsável |
+| POST | `/api/gemini/gestao/financeira/` | Orientação financeira (Gestor/Admin) |
+
+### 📤 Exportação de Relatórios
+
+| Método | Endpoint | Formatos aceitos |
+|---|---|---|
+| GET | `/api/exportar/ordens-servico/{formato}/` | `csv`, `excel`, `pdf` |
+| GET | `/api/exportar/equipamentos/{formato}/` | `csv`, `excel`, `pdf` |
+| GET | `/api/exportar/alertas/{formato}/` | `csv`, `excel`, `pdf` |
+| GET | `/api/exportar/telemetria/{formato}/` | `csv`, `excel`, `pdf` |
+| GET | `/api/exportar/historico/{formato}/` | `csv`, `excel`, `pdf` |
+| GET | `/api/exportar/dashboard/{formato}/` | `csv`, `excel`, `pdf` |
 
 ---
 
 ## 🐛 Problemas Comuns e Soluções
 
-- O comando python não é reconhecido → Use py no lugar de python no Windows
-- Ambiente virtual não ativado → Rode novamente o comando de ativação
-- Porta 8000 já está em uso → Use python manage.py runserver 9000
-- Erro 403 Forbidden → O usuário logado não tem permissão para realizar a ação
-- Listagens retornando vazias → Verifique se o usuário está vinculado a uma empresa no painel admin
+| Problema | Solução |
+|---|---|
+| `python` não reconhecido | Use `py` no lugar de `python` no Windows |
+| Ambiente virtual não ativado | Rode novamente o comando de ativação |
+| Porta 8000 já em uso | Use `python manage.py runserver 9000` |
+| Erro 401 Unauthorized | Token JWT ausente ou expirado — refaça login |
+| Erro 403 Forbidden | Usuário sem permissão para a ação (verifique o perfil) |
+| Listagens retornando vazias | Usuário não vinculado a uma empresa — verifique no admin |
+| IA não responde | Verifique se `GEMINI_API_KEY` está configurado no `.env` |
+| Simulador não encontra sensores | Execute o seed primeiro e verifique se há equipamentos `ativo` no banco |
 
 ---
 
 ## 🗺 Roadmap do Projeto
 
 ### ✅ Concluído
-- Criação da estrutura completa de aplicativos Django
-- Implementação de todos os CRUDs necessários
-- Sistema completo de autenticação JWT com Refresh e Blacklist
-- Sistema de permissões RBAC por perfil e isolamento multi-tenant
-- Geração automática e escalada de O.S. para todos os níveis de alerta
-- Limites de alerta customizáveis individualmente por sensor
-- **Manutenção Preditiva por Horímetro**: Geração automática de O.S. baseada em horas de uso
-- **Classificação de O.S.**: Distinção entre ordens Corretivas (sensores), Preditivas (horímetro) e Preventivas (manuais)
+
+- Estrutura completa de apps Django com CRUDs para todos os recursos
+- Autenticação JWT com Refresh Token
+- Sistema de permissões RBAC por perfil (admin, gestor, técnico)
+- Isolamento multi-tenant por empresa em todos os endpoints
+- Geração automática e escalada de O.S. por alertas de telemetria
+- Limites de alerta configuráveis individualmente por sensor (percentuais customizáveis)
+- **Geração automática de O.S. por Horímetro** com planos customizados por equipamento
+- **Classificação de O.S.:** Preditiva (horímetro e sensores), Corretiva (manual/emergência), Preventiva (manual)
 - Regras de visibilidade restrita para técnicos (Sigilo de O.S.)
-- Cálculo automático de KPIs no dashboard (Em testes)
-- Migração oficial para PostgreSQL (Pronto para produção)
-- Script de seed completo e realista
-- Documentação automática com Swagger e ReDoc
-- Suíte de 102 testes automatizados de integração e estresse
+- Dashboard com KPIs: MTBF, MTTR, Disponibilidade e resumo geral
+- Banco de dados PostgreSQL (pronto para produção)
+- Seed completo e ultra-realista com 120 dias de histórico de telemetria
+- **Simulador de telemetria em tempo real** com detecção dinâmica de sensores
+- Documentação automática Swagger e ReDoc
+- Suíte de testes automatizados de integração
+- **Integração com Google Gemini** (chat, análise de OS, priorização, gestão financeira)
+- **Exportação de relatórios** em CSV, Excel e PDF para todos os recursos
+- **Front-end completo** (Vue.js) com dashboard, ativos, OS, alertas, telemetria e chat IA
+- Troca de senha via endpoint autenticado
 
-### 🔄 Em Desenvolvimento
-- Paginação e filtros avançados em todas as listagens
-- Suporte a WebSockets para telemetria em tempo real
-- Preparação e deploy em ambiente de produção
+### 🔄 Em Desenvolvimento / Melhorias Planejadas
 
----
-
-## 🔗 Endpoints da API - Lista Completa
-
-**Base URL:** http://localhost:8000/api/
-
-### 🔐 Autenticação
-
-| Método | Endpoint                          | Descrição |
-|--------|-----------------------------------|---------|
-| POST   | /api/auth/token/                  | Realizar login e obter tokens JWT (access e refresh) |
-| POST   | /api/auth/token/refresh/          | Renovar o token de acesso quando expirado |
-| GET    | /api/auth/me/                     | Retornar todos os dados do usuário atualmente logado |
-
-### 🏢 Empresas
-
-| Método | Endpoint                          | Descrição |
-|--------|-----------------------------------|---------|
-| GET    | /api/empresas/                    | Listar todas as empresas |
-| POST   | /api/empresas/                    | Criar nova empresa |
-| GET    | /api/empresas/{id}/               | Retornar detalhes de uma empresa específica |
-| PUT    | /api/empresas/{id}/               | Atualizar completamente uma empresa |
-| PATCH  | /api/empresas/{id}/               | Atualizar parcialmente uma empresa |
-| DELETE | /api/empresas/{id}/               | Excluir uma empresa |
-
-### 👤 Usuários
-
-| Método | Endpoint                          | Descrição |
-|--------|-----------------------------------|---------|
-| GET    | /api/usuarios/                    | Listar todos os usuários |
-| POST   | /api/usuarios/                    | Criar novo usuário |
-| GET    | /api/usuarios/{id}/               | Detalhes de um usuário específico |
-| PUT    | /api/usuarios/{id}/               | Atualizar completamente um usuário |
-| PATCH  | /api/usuarios/{id}/               | Atualizar parcialmente um usuário |
-| DELETE | /api/usuarios/{id}/               | Excluir um usuário |
-
-### ⚙️ Equipamentos
-
-| Método | Endpoint                          | Descrição |
-|--------|-----------------------------------|---------|
-| GET    | /api/equipamentos/                | Listar todos os equipamentos |
-| POST   | /api/equipamentos/                | Cadastrar novo equipamento |
-| GET    | /api/equipamentos/{id}/           | Detalhes de um equipamento específico |
-| PUT    | /api/equipamentos/{id}/           | Atualizar completamente um equipamento |
-| PATCH  | /api/equipamentos/{id}/           | Atualizar parcialmente um equipamento |
-| DELETE | /api/equipamentos/{id}/           | Excluir um equipamento |
-
-### 📍 Localização
-
-| Método | Endpoint                          | Descrição |
-|--------|-----------------------------------|---------|
-| GET    | /api/localizacao/                 | Listar localizações dos equipamentos |
-| POST   | /api/localizacao/                 | Cadastrar localização de um equipamento |
-| GET    | /api/localizacao/{id}/            | Detalhes de uma localização |
-| PUT    | /api/localizacao/{id}/            | Atualizar completamente uma localização |
-| PATCH  | /api/localizacao/{id}/            | Atualizar parcialmente uma localização |
-| DELETE | /api/localizacao/{id}/            | Excluir uma localização |
-
-### 🚨 Alertas
-
-| Método | Endpoint                          | Descrição |
-|--------|-----------------------------------|---------|
-| GET    | /api/alertas/                     | Listar todos os alertas |
-| GET    | /api/alertas/{id}/                | Detalhes de um alerta específico |
-| PATCH  | /api/alertas/{id}/                | Atualizar status do alerta (ex: marcar como resolvido) |
-
-### 🛠️ Ordens de Serviço
-
-| Método | Endpoint                          | Descrição |
-|--------|-----------------------------------|---------|
-| GET    | /api/ordens-servico/              | Listar todas as ordens de serviço |
-| POST   | /api/ordens-servico/              | Criar nova ordem de serviço |
-| GET    | /api/ordens-servico/{id}/         | Detalhes de uma ordem específica |
-| PUT    | /api/ordens-servico/{id}/         | Atualizar completamente uma ordem |
-| PATCH  | /api/ordens-servico/{id}/         | Atualizar parcialmente ou status da ordem |
-| DELETE | /api/ordens-servico/{id}/         | Excluir uma ordem de serviço |
-
-### 📡 Telemetria - Sensores
-
-| Método | Endpoint                          | Descrição |
-|--------|-----------------------------------|---------|
-| GET    | /api/telemetria/sensores/         | Listar todos os sensores |
-| POST   | /api/telemetria/sensores/         | Cadastrar novo sensor (com limite_alerta customizado) |
-| GET    | /api/telemetria/sensores/{id}/    | Detalhes de um sensor |
-| PUT    | /api/telemetria/sensores/{id}/    | Atualizar completamente um sensor |
-| PATCH  | /api/telemetria/sensores/{id}/    | Atualizar parcialmente um sensor |
-| DELETE | /api/telemetria/sensores/{id}/    | Excluir um sensor |
-
-### 📡 Telemetria - Leituras
-
-| Método | Endpoint                          | Descrição |
-|--------|-----------------------------------|---------|
-| GET    | /api/telemetria/leituras/         | Listar todas as leituras de telemetria |
-| POST   | /api/telemetria/leituras/         | Enviar nova leitura de sensor |
-| GET    | /api/telemetria/leituras/{id}/    | Detalhes de uma leitura específica |
-
-### 📅 Planos de Manutenção (Horímetro)
-
-| Método | Endpoint                          | Descrição |
-|--------|-----------------------------------|---------|
-| GET    | /api/planos-manutencao/           | Listar todos os planos de manutenção preditiva |
-| POST   | /api/planos-manutencao/           | Criar novo plano de manutenção por horímetro |
-| GET    | /api/planos-manutencao/{id}/      | Detalhes de um plano específico |
-| PATCH  | /api/planos-manutencao/{id}/      | Atualizar intervalo ou detalhes do plano |
-| DELETE | /api/planos-manutencao/{id}/      | Excluir um plano de manutenção |
-
-### 📊 Dashboards
-
-| Método | Endpoint                          | Descrição |
-|--------|-----------------------------------|---------|
-| GET    | /api/dashboards/resumo/           | Retornar resumo geral e KPIs da empresa |
-
-### 🤖 Inteligência Artificial (Gemini)
-
-| Método | Endpoint                          | Descrição |
-|--------|-----------------------------------|---------|
-| POST   | /api/gemini/chat/                 | Enviar mensagem para a IA do Gemini, com contexto isolado por usuário |
-
----
+- Evolução da análise preditiva com IA (detecção de tendências automática via telemetria)
+- WebSockets para telemetria em tempo real no front-end
+- Paginação e filtros avançados no front-end
+- Deploy em ambiente de produção
+- Notificações por e-mail para alertas críticos
