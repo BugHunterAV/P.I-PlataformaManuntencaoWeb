@@ -18,7 +18,6 @@ def verificar_planos_por_horimetro(sender, instance, **kwargs):
     """
     # Importação local para evitar circular imports
     from manutencao.models import OrdemServico
-
     for plano in instance.planos_manutencao.filter(ativo=True):
         proximo_disparo = plano.horimetro_ultima_os + plano.intervalo_horas
 

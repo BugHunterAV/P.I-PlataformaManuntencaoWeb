@@ -61,7 +61,7 @@ class UserProfileTests(APITestCase):
             username="admin_test", password="123", tipo_usuario="admin"
         )
         self.client.force_authenticate(user=self.user)
-        self.url = reverse('usuario-list')
+        self.url = reverse('usuarios-list')
 
     def test_create_user_admin(self):
         """Testa se um Admin pode criar novos usuários."""

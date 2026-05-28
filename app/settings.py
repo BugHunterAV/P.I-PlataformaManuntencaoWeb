@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'authentication',
     'accounts',
     'django_filters',
-    'ativos',
+    'ativos.apps.AtivosConfig',
     'django_extensions',
     'corsheaders', 
     'manutencao',

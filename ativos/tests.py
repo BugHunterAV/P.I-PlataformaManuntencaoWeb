@@ -12,7 +12,7 @@ class AtivosTests(APITestCase):
             username="gestor_ativos", password="123", tipo_usuario="gestor", empresa=self.empresa
         )
         self.client.force_authenticate(user=self.user)
-        self.equip_url = reverse('equipamento-list')
+        self.equip_url = reverse('equipamentos-list')
 
     def test_create_equipamento(self):
         """Testa a criação de equipamento e se o horímetro padrão é 0.0."""
@@ -37,7 +37,7 @@ class PlanoManutencaoTests(APITestCase):
             nome="Motor Preditivo", tipo="Motor", numero_serie="PRED-999", 
             empresa=self.empresa, horimetro=200.0
         )
-        self.plano_url = reverse('planomanutencao-list')
+        self.plano_url = reverse('planos-manutencao-list')
 
     def test_horimetro_trigger(self):
         """Testa se a O.S. preditiva é gerada corretamente ao atingir o horímetro."""
@@ -47,7 +47,8 @@ class PlanoManutencaoTests(APITestCase):
             "nome_servico": "Troca de Óleo",
             "descricao": "Serviço de teste",
             "intervalo_horas": 100.0,
-            "prioridade": "medio"
+            "prioridade": "medio",
+            "ativo": True
         }
         self.client.post(self.plano_url, plano_data)
         
