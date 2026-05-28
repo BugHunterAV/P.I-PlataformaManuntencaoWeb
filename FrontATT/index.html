@@ -784,7 +784,7 @@
                     Este equipamento não possui sensores ativos cadastrados.
                   </div>
                   </div>
-                  <div class="detail-table-wrap" style="margin-top:24px;">
+                  <div class="detail-table-wrap" style="margin-top:24px;" v-if="isAdminOrGestor">
                     <div class="detail-table-title" style="display:flex; justify-content:space-between; align-items:center;">
                       <span>Histórico do Equipamento ({{ equipModalFilteredOrdens.length }})</span>
                       <div style="display:flex; gap: 8px;">
@@ -805,7 +805,7 @@
                         </tr>
                       </thead>
                       <tbody>
-                        <tr v-for="os in equipModalFilteredOrdens" :key="os.id">
+                        <tr v-for="os in equipModalFilteredOrdens" :key="os.id" class="clickable-row" @click="editItem('ordem', os)">
                           <td style="color:var(--t1); font-weight:600;">{{ os.titulo }}</td>
                           <td>{{ fmtDate(os.created_at || os.data_abertura || os.updated_at) }}</td>
                           <td>{{ usuarioNome(os.responsavel) || '—' }}</td>
@@ -1312,6 +1312,7 @@
 
         <!-- ORDEM -->
         <template v-if="modal.type==='ordem'">
+          <fieldset :disabled="['concluida', 'cancelada'].includes(modal.oldStatus)" style="border:none; padding:0; margin:0;">
           <div class="field" :class="{hasError:formErrors.titulo}">
             <label>Título *</label><input v-model="fd.titulo" placeholder="Ex: Manutenção preventiva compressor" />
             <span v-if="formErrors.titulo" class="field-error">{{ formErrors.titulo }}</span>
@@ -1384,6 +1385,7 @@
             <textarea v-model="fd.descricao" rows="3" placeholder="Descreva o problema ou o serviço a ser realizado..."></textarea>
             <span v-if="formErrors.descricao" class="field-error">{{ formErrors.descricao }}</span>
           </div>
+          </fieldset>
         </template>
 
         <!-- ══════════ MODAL: ENCERRAR O.S ══════════ -->
@@ -1648,7 +1650,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-ghost" @click="modal.open=false">Cancelar</button>
-        <button class="btn btn-primary" @click="saveItem" :disabled="modal.saving">
+        <button v-if="!(modal.type === 'ordem' && ['concluida', 'cancelada'].includes(modal.oldStatus))" class="btn btn-primary" @click="saveItem" :disabled="modal.saving">
           {{ modal.saving ? 'Salvando...' : (modal.editId ? 'Atualizar' : 'Criar') }}
         </button>
       </div>
