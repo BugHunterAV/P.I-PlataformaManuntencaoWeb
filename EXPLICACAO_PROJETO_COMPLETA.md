@@ -663,7 +663,7 @@ class Sensor(models.Model):
   - `limite_alerta_medio_pct = 85` → alerta médio a partir de 85°C
   - `limite_alerta_critico_pct = 100` → alerta crítico a partir de 100°C
 
-**Validação customizada (`clean`):** garante que `baixo < médio < crítico` e que todos estejam entre 0 e 100.
+**Validação customizada (`clean`):** garante que `baixo < médio < crítico` e que todos estejam entre 0 e 100%.
 
 #### Telemetria (leitura de sensor)
 ```python
