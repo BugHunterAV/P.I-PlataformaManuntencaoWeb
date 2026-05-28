@@ -395,6 +395,12 @@ createApp({
 
     const chartCustoEvolucao = computed(() => {
       const dailyCosts = {};
+      let totalPecas = 0;
+      let totalMaoDeObra = 0;
+      let osCount = 0;
+      let highestCost = 0;
+      let highestCostDate = '';
+
       lists.historico.forEach(h => {
         if (dashCustoSetor.value) {
           const osId = typeof h.ordem_servico === 'object' ? h.ordem_servico?.id : h.ordem_servico;
@@ -408,16 +414,30 @@ createApp({
         }
         const date = h.data_execucao;
         if (!date) return;
-        const total = (parseFloat(h.custo_pecas) || 0) + (parseFloat(h.custo_mao_de_obra) || 0);
+
+        const pecas = parseFloat(h.custo_pecas) || 0;
+        const mao = parseFloat(h.custo_mao_de_obra) || 0;
+        const total = pecas + mao;
+
+        totalPecas += pecas;
+        totalMaoDeObra += mao;
+        osCount += 1;
+
         dailyCosts[date] = (dailyCosts[date] || 0) + total;
       });
 
       const sortedDates = Object.keys(dailyCosts).sort();
       if (sortedDates.length < 2) {
-        return { path: '', area: '', dots: [], min: 0, max: 0, total: 0, xLabels: [], yTicks: [] };
+        return { path: '', area: '', dots: [], min: 0, max: 0, total: 0, xLabels: [], yTicks: [], summary: null };
       }
 
-      const vals = sortedDates.map(d => dailyCosts[d]);
+      const vals = sortedDates.map(d => {
+        if (dailyCosts[d] > highestCost) {
+            highestCost = dailyCosts[d];
+            highestCostDate = d;
+        }
+        return dailyCosts[d];
+      });
       const max = Math.max(...vals, 1);
       const chartRange = max;
       
@@ -454,11 +474,20 @@ createApp({
 
       const totalCost = vals.reduce((a, b) => a + b, 0);
 
+      const summary = {
+          totalPecas: totalPecas.toFixed(2),
+          totalMaoDeObra: totalMaoDeObra.toFixed(2),
+          osCount,
+          avgCost: osCount ? (totalCost / osCount).toFixed(2) : '0.00',
+          highestCost: highestCost.toFixed(2),
+          highestCostDate: highestCostDate ? highestCostDate.split('-').reverse().join('/') : ''
+      };
+
       return {
         path, area, dots: points,
         min: 0, max: max.toFixed(0),
         total: totalCost.toFixed(2),
-        yTicks, xLabels, leftPad
+        yTicks, xLabels, leftPad, summary
       };
     });
 
@@ -678,7 +707,7 @@ createApp({
 
         if (isTecnico.value) {
           const ordensAbertas = lists.ordens.filter(o => o.status === 'pendente' || o.status === 'andamento');
-          const minhasOrdens = lists.ordens.filter(o => o.responsavel === me.value?.id).length;
+          const minhasOrdens = ordensAbertas.filter(o => o.responsavel === me.value?.id).length;
           const ordensSemTecnico = ordensAbertas.filter(o => !o.responsavel).length;
 
           kpis.value = {

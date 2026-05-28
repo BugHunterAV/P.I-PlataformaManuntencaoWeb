@@ -492,8 +492,43 @@
                       <title>{{ `${dot.label}: R$ ${dot.v.toFixed(2)}` }}</title>
                     </circle>
                   </svg>
-                  <div class="spark-labels" style="justify-content: flex-end;">
+                  <div class="spark-labels" style="justify-content: space-between;" v-if="chartCustoEvolucao.summary">
+                    <span>O.S. Faturadas: <strong>{{ chartCustoEvolucao.summary.osCount }}</strong></span>
                     <span>Custo Total: <strong>R$ {{ chartCustoEvolucao.total }}</strong></span>
+                  </div>
+                  <div class="spark-summary" v-if="chartCustoEvolucao.summary">
+                    <div class="spark-summary-col">
+                      <div class="spark-summary-item">
+                        <span>Gasto c/ Peças</span>
+                        <strong style="color: var(--teal)">R$ {{ chartCustoEvolucao.summary.totalPecas }}</strong>
+                      </div>
+                      <div class="spark-summary-item">
+                        <span>Mão de Obra</span>
+                        <strong style="color: var(--blue)">R$ {{ chartCustoEvolucao.summary.totalMaoDeObra }}</strong>
+                      </div>
+                    </div>
+                    <div class="spark-summary-col">
+                      <div class="spark-summary-item">
+                        <span>Média por O.S.</span>
+                        <strong>R$ {{ chartCustoEvolucao.summary.avgCost }}</strong>
+                      </div>
+                      <div class="spark-summary-item">
+                        <span>Pico Diário</span>
+                        <strong style="color: var(--warn)">R$ {{ chartCustoEvolucao.summary.highestCost }}</strong>
+                      </div>
+                    </div>
+                    <div class="spark-summary-col">
+                      <div class="spark-summary-item">
+                        <span>Data do Pico</span>
+                        <strong>{{ chartCustoEvolucao.summary.highestCostDate || '—' }}</strong>
+                      </div>
+                      <div class="spark-summary-item">
+                        <span>Status Geral</span>
+                        <strong :style="{ color: chartCustoEvolucao.summary.avgCost > 500 ? 'var(--warn)' : 'var(--teal)' }">
+                          {{ chartCustoEvolucao.summary.avgCost > 500 ? 'Atenção' : 'Estável' }}
+                        </strong>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div v-else class="spark-no-data">Sem histórico de manutenção suficiente</div>
