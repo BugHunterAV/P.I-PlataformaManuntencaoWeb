@@ -204,6 +204,9 @@
                 <button class="btn-export excel" @click="exportData('dashboard', 'excel')" title="Baixar Excel">📊 Excel</button>
               </div>
             </template>
+            <div class="theme-toggle" :class="{'is-light': !darkMode}" @click="toggleTheme" :title="darkMode ? 'Mudar para modo claro' : 'Mudar para modo escuro'">
+              <div class="theme-toggle-knob">{{ darkMode ? '🌙' : '☀️' }}</div>
+            </div>
             <span class="topbar-chip">API v1.0</span>
             <span class="live-dot"></span>
           </div>

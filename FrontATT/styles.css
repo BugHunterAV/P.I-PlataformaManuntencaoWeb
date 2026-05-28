@@ -2423,3 +2423,335 @@ tbody tr:last-child td {
     right: 16px;
   }
 }
+
+/* ═══════════════════════════════════════════════
+   THEME TOGGLE BUTTON
+═══════════════════════════════════════════════ */
+.theme-toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 100px;
+  border: 1px solid var(--edge);
+  background: var(--s3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  padding: 0 3px;
+  transition: all 0.3s ease;
+  flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+  border-color: var(--acid2);
+  box-shadow: 0 0 12px rgba(184, 255, 0, 0.12);
+}
+
+.theme-toggle-knob {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--acid);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateX(0px);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+  line-height: 1;
+}
+
+.theme-toggle.is-light .theme-toggle-knob {
+  transform: translateX(18px);
+}
+
+/* ═══════════════════════════════════════════════
+   LIGHT MODE OVERRIDES
+═══════════════════════════════════════════════ */
+html.light-mode {
+  --bg: #f4f6f9;
+  --s1: #ffffff;
+  --s2: #ffffff;
+  --s3: #eef1f5;
+  --s4: #e2e7ed;
+  --edge: #d6dce4;
+  --wire: #c5cdd8;
+  --mist: #b0bac7;
+
+  --acid: #4a9400;
+  --acid2: #3a7500;
+  --acid-a: rgba(74, 148, 0, .1);
+  --acid-b: rgba(74, 148, 0, .06);
+
+  --danger: #dc2626;
+  --warn: #d97706;
+  --ice: #0284c7;
+  --mint: #059669;
+  --rose: #e11d48;
+
+  --t1: #0f172a;
+  --t2: #334155;
+  --t3: #64748b;
+  --t4: #94a3b8;
+  --t5: #cbd5e1;
+
+  --glow-acid: 0 0 16px rgba(74, 148, 0, .2), 0 0 48px rgba(74, 148, 0, .06);
+  --glow-danger: 0 0 14px rgba(220, 38, 38, .2);
+  --shadow: 0 2px 12px rgba(0, 0, 0, .08);
+  --shadow-xl: 0 8px 40px rgba(0, 0, 0, .12);
+}
+
+/* Light mode — specific overrides for elements with hardcoded colors */
+html.light-mode body {
+  background: var(--bg);
+  color: var(--t1);
+}
+
+html.light-mode .login-visual {
+  background: var(--s1);
+}
+
+html.light-mode .login-visual::after {
+  background-image:
+    repeating-linear-gradient(55deg,
+      transparent 0px,
+      transparent 38px,
+      rgba(0, 0, 0, .03) 38px,
+      rgba(0, 0, 0, .03) 39px);
+}
+
+html.light-mode .login-box {
+  background: var(--s2);
+  border-left-color: var(--edge);
+}
+
+html.light-mode .login-box::before {
+  background: linear-gradient(180deg, transparent, var(--acid2) 50%, transparent);
+}
+
+html.light-mode .login-btn {
+  background: var(--acid);
+  color: #ffffff;
+}
+
+html.light-mode .login-btn:hover {
+  background: #5aaa00;
+}
+
+html.light-mode .logo-icon {
+  background: var(--acid);
+  color: #ffffff;
+}
+
+html.light-mode .btn-primary {
+  background: var(--acid);
+  color: #ffffff;
+}
+
+html.light-mode .btn-primary:hover {
+  background: #5aaa00;
+}
+
+html.light-mode .user-ava {
+  background: linear-gradient(135deg, var(--acid2), var(--acid));
+  color: #ffffff;
+}
+
+html.light-mode .spark-labels {
+  color: var(--t1);
+}
+
+html.light-mode .spark-threshold-legend {
+  color: var(--t1);
+}
+
+html.light-mode .spark-threshold-chip {
+  background: rgba(0, 0, 0, .05);
+  border-color: rgba(0, 0, 0, .1);
+}
+
+html.light-mode .spark-axis-text {
+  fill: var(--t3);
+}
+
+html.light-mode .spark-summary-item {
+  background: rgba(0, 0, 0, .03);
+  border-color: rgba(0, 0, 0, .08);
+}
+
+html.light-mode .alert-row {
+  border-bottom-color: rgba(0, 0, 0, .08);
+}
+
+html.light-mode .activity-item {
+  border-bottom-color: rgba(0, 0, 0, .08);
+}
+
+html.light-mode tbody tr:hover {
+  background: rgba(0, 0, 0, .025);
+}
+
+html.light-mode .clickable-row:hover {
+  background: rgba(74, 148, 0, 0.06);
+}
+
+html.light-mode td {
+  border-bottom-color: rgba(0, 0, 0, .06);
+}
+
+html.light-mode .modal-backdrop {
+  background: rgba(15, 23, 42, .5);
+  backdrop-filter: blur(6px);
+}
+
+html.light-mode .modal::after {
+  background: linear-gradient(90deg, transparent, var(--acid2) 40%, transparent);
+}
+
+html.light-mode .badge {
+  text-shadow: none;
+}
+
+html.light-mode .badge-green {
+  background: rgba(5, 150, 105, .1);
+  color: #059669;
+  border-color: rgba(5, 150, 105, .3);
+}
+
+html.light-mode .badge-red {
+  background: rgba(220, 38, 38, .1);
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, .3);
+}
+
+html.light-mode .badge-yellow {
+  background: rgba(217, 119, 6, .1);
+  color: #b45309;
+  border-color: rgba(217, 119, 6, .3);
+}
+
+html.light-mode .badge-blue {
+  background: rgba(2, 132, 199, .1);
+  color: #0284c7;
+  border-color: rgba(2, 132, 199, .3);
+}
+
+html.light-mode .badge-gray {
+  background: rgba(100, 116, 139, .1);
+  color: var(--t3);
+  border-color: rgba(100, 116, 139, .2);
+}
+
+html.light-mode .badge-orange {
+  background: rgba(74, 148, 0, .08);
+  color: var(--acid);
+  border-color: rgba(74, 148, 0, .2);
+}
+
+html.light-mode .nav-count {
+  background: var(--danger);
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(220, 38, 38, .25);
+}
+
+html.light-mode .export-btns {
+  background: rgba(0, 0, 0, .03);
+}
+
+html.light-mode .btn-export.pdf {
+  background: rgba(220, 38, 38, .08);
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, .2);
+}
+
+html.light-mode .btn-export.excel {
+  background: rgba(5, 150, 105, .08);
+  color: #059669;
+  border-color: rgba(5, 150, 105, .2);
+}
+
+html.light-mode .btn-export.csv {
+  background: rgba(2, 132, 199, .08);
+  color: #0284c7;
+  border-color: rgba(2, 132, 199, .2);
+}
+
+html.light-mode .theme-toggle {
+  background: var(--edge);
+  border-color: var(--wire);
+}
+
+html.light-mode .theme-toggle-knob {
+  background: var(--acid);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+
+/* AI Chat Widget Light Mode Overrides */
+html.light-mode .ai-chat-trigger {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: var(--edge);
+  box-shadow: var(--shadow);
+}
+
+html.light-mode .ai-chat-window {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: var(--edge);
+  box-shadow: var(--shadow-xl);
+}
+
+html.light-mode .ai-chat-header {
+  background: rgba(244, 246, 249, 0.9);
+  border-bottom-color: var(--edge);
+}
+
+html.light-mode .ai-msg-row.user .ai-msg-bubble {
+  background: rgba(244, 246, 249, 1);
+  border-color: var(--wire);
+}
+
+html.light-mode .ai-msg-row.ai .ai-msg-bubble {
+  background: rgba(255, 255, 255, 1);
+  border-color: var(--edge);
+}
+
+html.light-mode .ai-suggestions-container {
+  background: rgba(244, 246, 249, 0.8);
+  border-top-color: var(--edge);
+}
+
+html.light-mode .ai-suggestion-chip {
+  background: rgba(255, 255, 255, 0.8);
+  border-color: var(--wire);
+  color: var(--t2);
+}
+
+html.light-mode .ai-suggestion-chip:hover {
+  background: var(--acid-b);
+  border-color: var(--acid);
+  color: var(--acid);
+}
+
+html.light-mode .ai-chat-footer {
+  background: rgba(255, 255, 255, 0.95);
+  border-top-color: var(--edge);
+}
+
+html.light-mode .ai-chat-footer input {
+  background: rgba(244, 246, 249, 0.8);
+  border-color: var(--wire);
+  color: var(--t1);
+}
+
+html.light-mode .ai-chat-footer button {
+  color: #ffffff;
+}
+
+html.light-mode .ai-pulse-ring {
+  border-color: var(--acid);
+}
+
+/* Scrollbar for light mode */
+html.light-mode ::-webkit-scrollbar-thumb {
+  background: var(--wire);
+}

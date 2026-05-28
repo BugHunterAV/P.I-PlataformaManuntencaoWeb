@@ -7,6 +7,12 @@ function sortByNivel(items, campo = 'nivel') {
   return items.sort((a, b) => (NIVEL_PRIORIDADE[a[campo]] ?? 3) - (NIVEL_PRIORIDADE[b[campo]] ?? 3));
 }
 
+// Helper: ordena por tipo de usuário (admin → gestor → tecnico)
+const TIPO_USUARIO_PRIORIDADE = { admin: 0, gestor: 1, tecnico: 2 };
+function sortByTipoUsuario(items, campo = 'tipo_usuario') {
+  return items.sort((a, b) => (TIPO_USUARIO_PRIORIDADE[a[campo]] ?? 3) - (TIPO_USUARIO_PRIORIDADE[b[campo]] ?? 3));
+}
+
 createApp({
   setup() {
     const token = ref(localStorage.getItem('sentinel_token') || '');
@@ -22,6 +28,23 @@ createApp({
     const alertCount = ref(0);
     const toasts = ref([]);
     const globalEmpresa = ref('');  // Filtro global por empresa (admin)
+
+    // ─ Theme (dark/light) ───────────────────────
+    const darkMode = ref(localStorage.getItem('nanasmart_theme') !== 'light');
+    function applyTheme() {
+      if (darkMode.value) {
+        document.documentElement.classList.remove('light-mode');
+      } else {
+        document.documentElement.classList.add('light-mode');
+      }
+    }
+    function toggleTheme() {
+      darkMode.value = !darkMode.value;
+      localStorage.setItem('nanasmart_theme', darkMode.value ? 'dark' : 'light');
+      applyTheme();
+    }
+    // Aplica o tema salvo imediatamente
+    applyTheme();
 
     // ─ Dashboard chart filters ──────────────────────
     const dashTelemetriaEquip = ref('');
@@ -892,7 +915,9 @@ createApp({
         const p = new URLSearchParams();
         if (filters.usuarios.search) p.set('search', filters.usuarios.search);
         const d = await api('/api/usuarios/?' + p);
-        lists.usuarios = normList(d);
+        const items = normList(d);
+        sortByTipoUsuario(items);
+        lists.usuarios = items;
         Object.assign(pages.usuarios, normPages(d));
       });
     }
@@ -932,7 +957,9 @@ createApp({
     async function fetchUsuariosAll() {
       if (lists.usuarios.length) return;
       const d = await api('/api/usuarios/?limit=999');
-      lists.usuarios = normList(d);
+      const items = normList(d);
+      sortByTipoUsuario(items);
+      lists.usuarios = items;
     }
 
     async function fetchPage(resource, url) {
@@ -1949,6 +1976,7 @@ createApp({
       openEquipamentoDetails, closeEquipModal, fetchEquipamentoReadings,
       chatOpen, chatInput, chatLoading, chatMessages, chatScrollContainer,
       chatPlaceholder,
+      darkMode, toggleTheme,
       toggleChat, sendChatMessage, sendSuggestion, formatMarkdown
     };
   }
