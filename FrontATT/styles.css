@@ -1094,6 +1094,10 @@ thead {
 }
 
 th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--s1); /* Same as thead background */
   text-align: left;
   padding: 9px 16px;
   font-family: var(--mono);
@@ -1606,7 +1610,16 @@ tbody tr:last-child td {
 }
 
 .detail-table-wrap th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  /* fallback background incase of rgba */
+  background: var(--s1); 
+  /* override background with slight green */
   background: rgba(0, 212, 170, 0.08);
+  /* The transparent background will show rows scrolling under it. Let's make it opaque by blending it with var(--bg). Actually, var(--bg) is pure black #000 in dark mode. 
+     Wait, var(--s1) is #1a1a1a. I'll just use a solid color so text doesn't overlap. */
+  background-color: var(--s1);
   color: var(--t4);
   font-weight: 700;
 }
@@ -2053,11 +2066,17 @@ tbody tr:last-child td {
   position: absolute;
   top: -2px;
   right: -2px;
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   background: var(--acid);
   border-radius: 50%;
-  box-shadow: 0 0 8px var(--acid);
+  box-shadow: 0 0 12px var(--acid);
+  animation: dot-pulse 1.5s infinite alternate;
+}
+
+@keyframes dot-pulse {
+  0% { transform: scale(0.8); opacity: 0.8; box-shadow: 0 0 6px var(--acid); }
+  100% { transform: scale(1.3); opacity: 1; box-shadow: 0 0 16px var(--acid); }
 }
 
 .ai-trigger-label {

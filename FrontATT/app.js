@@ -1740,6 +1740,15 @@ createApp({
 
     // ─── ATUALIZAÇÃO AUTOMÁTICA SILENCIOSA (OTIMIZADA) ───
     onMounted(async () => {
+      // Adicionar listener para fechar janelas com ESC
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          if (modal.open) modal.open = false;
+          else if (equipModal.open) closeEquipModal();
+          else if (chatOpen.value) chatOpen.value = false;
+        }
+      });
+
       if (token.value) {
         await fetchMe();
         // Carrega lista de empresas para o filtro global do admin
