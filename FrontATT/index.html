@@ -631,7 +631,7 @@
           </div>
           <div class="table-wrap">
             <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
-            <div v-else-if="lists.equipamentos.length===0" class="empty"><div class="empty-icon">⚙</div>Nenhum equipamento</div>
+            <div v-else-if="lists.equipamentos.length===0" class="empty"><div class="empty-icon">⚙</div>Tudo tranquilo por aqui!<br>Nenhum equipamento cadastrado.</div>
             <table v-else>
               <thead><tr><th>ID</th><th>Nome</th><th>Modelo</th><th>Fabricante</th><th>Nº Série</th><th>Setor</th><th>Sensores</th><th>Status</th><th>Empresa</th><th>Ações</th></tr></thead>
               <tbody>
@@ -738,7 +738,9 @@
                           <path v-if="equipModalChart.area" :d="equipModalChart.area" fill="rgba(0, 212, 170, 0.12)" />
                           <path v-if="equipModalChart.path" :d="equipModalChart.path" fill="none" stroke="#00d4aa" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
                           <g v-for="(dot, idx) in equipModalChart.dots" :key="'dot-'+idx">
-                            <circle :cx="dot.x" :cy="dot.y" r="3" fill="#00d4aa" stroke="var(--s1)" stroke-width="1" />
+                            <circle :cx="dot.x" :cy="dot.y" r="4" fill="#00d4aa" stroke="var(--s1)" stroke-width="1" class="chart-dot" style="cursor:pointer;">
+                              <title>{{ dot.label }}: {{ dot.v.toFixed(2) }}</title>
+                            </circle>
                             <text :x="dot.x" :y="dot.y - 10" fill="var(--t1)" font-size="10" font-weight="700" text-anchor="middle">{{ dot.label }}</text>
                           </g>
                         </svg>
@@ -859,7 +861,7 @@
           </div>
           <div class="table-wrap">
             <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
-            <div v-else-if="lists.alertas.length===0" class="empty"><div class="empty-icon">◉</div>Nenhum alerta</div>
+            <div v-else-if="lists.alertas.length===0" class="empty"><div class="empty-icon">🎉</div>Oba! Nenhum alerta ativo no momento.</div>
             <table v-else>
               <thead><tr><th>ID</th><th>Tipo</th><th>Nível</th><th>Descrição</th><th>Equipamento</th><th>Local/Setor</th><th>Status</th><th>Data</th><th>Ações</th></tr></thead>
               <tbody>
@@ -920,7 +922,7 @@
           </div>
           <div class="table-wrap">
             <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>
-            <div v-else-if="lists.ordens.length===0" class="empty"><div class="empty-icon">✦</div>Nenhuma ordem</div>
+            <div v-else-if="lists.ordens.length===0" class="empty"><div class="empty-icon">🙌</div>Caixa de entrada limpa! Nenhuma ordem pendente.</div>
             <table v-else>
               <thead><tr><th>ID</th><th>Título</th><th>Tipo</th><th>Prioridade</th><th>Responsável</th><th>Status</th><th>Equipamento</th><th>Local/Setor</th><th>Abertura</th><th>Ações</th></tr></thead>
               <tbody>

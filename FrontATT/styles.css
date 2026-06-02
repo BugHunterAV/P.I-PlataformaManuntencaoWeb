@@ -2755,3 +2755,81 @@ html.light-mode .ai-pulse-ring {
 html.light-mode ::-webkit-scrollbar-thumb {
   background: var(--wire);
 }
+
+/* ════════════ TOASTS ════════════ */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.toast {
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  animation: slideInUp 0.3s ease-out forwards;
+}
+
+.toast-success {
+  background: var(--mint);
+  color: #000;
+}
+
+.toast-error {
+  background: var(--signal);
+}
+
+@keyframes slideInUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ════════════ ANIMAÇÕES GERAIS ════════════ */
+@keyframes modalFadeIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.modal {
+  animation: modalFadeIn 0.2s ease-out forwards;
+}
+
+.clickable-row {
+  transition: background-color 0.15s ease;
+}
+.clickable-row:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+html.light-mode .clickable-row:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.btn {
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+.btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+/* ════════════ EMPTY STATES MELHORADOS ════════════ */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  opacity: 0.7;
+}
+
+.empty-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}

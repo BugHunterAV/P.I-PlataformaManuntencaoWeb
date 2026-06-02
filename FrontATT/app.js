@@ -1469,7 +1469,19 @@ createApp({
     // ─ Helpers ───────────────────────────────────────
     function fmtDate(d) {
       if (!d) return '—';
-      return new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+      const date = new Date(d);
+      const today = new Date();
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      
+      const timeStr = date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+      
+      if (date.toDateString() === today.toDateString()) {
+        return `Hoje, às ${timeStr}`;
+      } else if (date.toDateString() === yesterday.toDateString()) {
+        return `Ontem, às ${timeStr}`;
+      }
+      return date.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     }
     function nivelBadge(n) { return { critico: 'badge-red', medio: 'badge-yellow', baixo: 'badge-green' }[n] || 'badge-gray'; }
     function nivelColor(n) { return { critico: 'var(--signal)', medio: 'var(--warn)', baixo: 'var(--teal)' }[n] || 'var(--ink4)'; }
