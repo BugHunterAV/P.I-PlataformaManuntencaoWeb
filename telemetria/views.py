@@ -27,10 +27,12 @@ from django_filters import rest_framework as df_filters
 class TelemetriaFilter(df_filters.FilterSet):
     valor_min = df_filters.NumberFilter(field_name="valor", lookup_expr='gte')
     valor_max = df_filters.NumberFilter(field_name="valor", lookup_expr='lte')
+    timestamp_de = df_filters.DateTimeFilter(field_name='timestamp', lookup_expr='gte')
+    timestamp_ate = df_filters.DateTimeFilter(field_name='timestamp', lookup_expr='lte')
 
     class Meta:
         model = Telemetria
-        fields = ['sensor', 'sensor__equipamento', 'valor_min', 'valor_max']
+        fields = ['sensor', 'sensor__equipamento', 'valor_min', 'valor_max', 'timestamp_de', 'timestamp_ate']
 
 class TelemetriaViewSet(viewsets.ModelViewSet):
     serializer_class = TelemetriaSerializer

@@ -62,6 +62,7 @@ createApp({
       sensores: [], leituras: [], historico: [], empresas: [],
       usuarios: [], localizacoes: []
     });
+    const leiturasTodayCount = ref(0);
     const leiturasTotalCount = ref(0);
     const pages = reactive({
       equipamentos: { next: null, prev: null },
@@ -249,6 +250,22 @@ createApp({
     function getEquipamentoId(item) {
       if (item == null) return null;
       return typeof item === 'object' ? item.id : item;
+    }
+
+    function buildTelemetriaUrl({ limit = 50, allowedEqIds = null, sensorId = null, equipamentoId = null, timestampDe = null, timestampAte = null } = {}) {
+      const params = new URLSearchParams();
+      params.set('limit', String(limit));
+      params.set('ordering', '-timestamp');
+      if (sensorId) {
+        params.set('sensor', sensorId);
+      } else if (equipamentoId) {
+        params.set('sensor__equipamento', equipamentoId);
+      } else if (allowedEqIds && allowedEqIds.size) {
+        params.set('sensor__equipamento__in', [...allowedEqIds].join(','));
+      }
+      if (timestampDe) params.set('timestamp_de', timestampDe);
+      if (timestampAte) params.set('timestamp_ate', timestampAte);
+      return '/api/telemetria/leituras/?' + params.toString();
     }
 
     const dashboardSensors = computed(() => {
@@ -814,23 +831,48 @@ createApp({
         const sensorFilter = allowedEqIds && allowedEqIds.size
           ? '&equipamento__in=' + [...allowedEqIds].join(',')
           : '';
-        const telemetriaFilter = allowedEqIds && allowedEqIds.size
-          ? '&sensor__equipamento__in=' + [...allowedEqIds].join(',')
-          : '';
         const sensorRes = await api('/api/telemetria/sensores/?limit=999' + sensorFilter);
         if (sensorRes) lists.sensores = normList(sensorRes);
 
-        const telRes = await api('/api/telemetria/leituras/?limit=50&ordering=-timestamp' + telemetriaFilter);
+        const today = new Date().toISOString().slice(0, 10);
+        const timestampDe = `${today}T00:00:00`;
+        const timestampAte = `${today}T23:59:59`;
+
+        const telUrl = buildTelemetriaUrl({
+          limit: 50,
+          allowedEqIds: dashboardAllowedEquipamentoIds.value,
+          sensorId: dashTelemetriaSensor.value,
+          equipamentoId: dashTelemetriaEquip.value,
+        });
+        const telRes = await api(telUrl);
+        const telHojeRes = await api(buildTelemetriaUrl({
+          limit: 1,
+          allowedEqIds: dashboardAllowedEquipamentoIds.value,
+          timestampDe,
+          timestampAte,
+        }));
+        const telTotalRes = await api(buildTelemetriaUrl({
+          limit: 1,
+          allowedEqIds: dashboardAllowedEquipamentoIds.value,
+        }));
+
         if (telRes) {
-          leiturasTotalCount.value = Number(telRes.count ?? 0) || 0;
           let leituras = normList(telRes);
           if (lists.sensores.length) {
             const sensorIds = new Set(lists.sensores.map(s => s.id));
             leituras = leituras.filter(l => sensorIds.has(l.sensor));
           }
           lists.leituras = leituras;
+        }
+        if (telTotalRes) {
+          leiturasTotalCount.value = Number(telTotalRes.count ?? 0) || 0;
         } else {
           leiturasTotalCount.value = 0;
+        }
+        if (telHojeRes) {
+          leiturasTodayCount.value = Number(telHojeRes.count ?? 0) || 0;
+        } else {
+          leiturasTodayCount.value = 0;
         }
 
         if (histRes.status === 'fulfilled' && histRes.value) lists.historico = normList(histRes.value);
@@ -858,7 +900,7 @@ createApp({
             total_equipamentos: lists.equipamentos.length,
             alertas_ativos: dashAlerts.value.length,
             ordens_abertas: lists.ordens.filter(o => o.status === 'pendente' || o.status === 'andamento').length,
-            leituras_hoje: leiturasHoje.value.length,
+            leituras_hoje: leiturasTodayCount.value,
             leituras_total: leiturasTotalCount.value || lists.leituras.length,
           };
         }
@@ -1857,16 +1899,28 @@ createApp({
         if (token.value) {
           try {
             if (view.value === 'dashboard') {
-              // Busca leituras respeitando os filtros ativos do dashboard
-              let telUrl = '/api/telemetria/leituras/?limit=50&ordering=-timestamp';
-              if (dashTelemetriaSensor.value) {
-                telUrl = '/api/telemetria/leituras/?limit=200&ordering=-timestamp&sensor=' + dashTelemetriaSensor.value;
-              } else if (dashTelemetriaEquip.value) {
-                telUrl = '/api/telemetria/leituras/?limit=200&ordering=-timestamp';
-              }
+              const today = new Date().toISOString().slice(0, 10);
+              const timestampDe = `${today}T00:00:00`;
+              const timestampAte = `${today}T23:59:59`;
+              const telUrl = buildTelemetriaUrl({
+                limit: 50,
+                allowedEqIds: dashboardAllowedEquipamentoIds.value,
+                sensorId: dashTelemetriaSensor.value,
+                equipamentoId: dashTelemetriaEquip.value,
+              });
 
-              const [telRes, alertRes] = await Promise.allSettled([
+              const [telRes, telHojeRes, telTotalRes, alertRes] = await Promise.allSettled([
                 api(telUrl),
+                api(buildTelemetriaUrl({
+                  limit: 1,
+                  allowedEqIds: dashboardAllowedEquipamentoIds.value,
+                  timestampDe,
+                  timestampAte,
+                })),
+                api(buildTelemetriaUrl({
+                  limit: 1,
+                  allowedEqIds: dashboardAllowedEquipamentoIds.value,
+                })),
                 api('/api/alertas/?status=ativo&limit=50&ordering=-criado_em')
               ]);
 
@@ -1885,6 +1939,14 @@ createApp({
                   leituras = leituras.filter(l => filterIds.has(l.sensor));
                 }
                 lists.leituras = leituras;
+              }
+              if (telTotalRes.status === 'fulfilled' && telTotalRes.value) {
+                leiturasTotalCount.value = Number(telTotalRes.value.count ?? 0) || lists.leituras.length;
+                if (kpis.value) kpis.value.leituras_total = leiturasTotalCount.value;
+              }
+              if (telHojeRes.status === 'fulfilled' && telHojeRes.value) {
+                leiturasTodayCount.value = Number(telHojeRes.value.count ?? 0) || 0;
+                if (kpis.value) kpis.value.leituras_hoje = leiturasTodayCount.value;
               }
               if (alertRes.status === 'fulfilled') {
                 const alertItems = normList(alertRes.value);
@@ -1915,7 +1977,7 @@ createApp({
             console.warn("Pequeno atraso na sincronização, tentando no próximo ciclo...");
           }
         }
-      }, 2000); // 2 segundos — sincroniza em tempo real sem sobrecarregar
+      }, 10000); // 10 segundos — sincroniza em tempo real sem sobrecarregar
     });
 
     // ─ Chat AI (NanaSmart AI) ────────────────────────
@@ -2107,7 +2169,7 @@ createApp({
       dashboardEquipamentos,
       donutArcs,
       availableSectors,
-      leiturasHoje, dashTelemetriaEquip, dashTelemetriaSensor,
+      leiturasHoje, leiturasTodayCount, leiturasTotalCount, dashTelemetriaEquip, dashTelemetriaSensor,
       dashTelemetriaSensoresFiltrados, dashCustoSetor,
       dashSetor, dashEquipamento, explainerCollapsed, dashboardMetrics, dashboardEquipmentOptions, availableDashboardSectors, dashboardKpisLoading, dashboardKpisError,
       equipModal, selectedSensorLabel, selectedSensorThresholds, sensorModalThresholds, equipModalChart, equipModalStats, equipModalFilteredOrdens,
