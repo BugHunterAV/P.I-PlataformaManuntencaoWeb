@@ -670,6 +670,26 @@ body {
   opacity: .06;
 }
 
+.kpi-info {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.12);
+  color: var(--t3);
+  font-size: 11px;
+  cursor: help;
+  border: 1px solid rgba(255,255,255,0.12);
+  transition: background .2s, transform .2s;
+}
+.kpi-info:hover {
+  background: rgba(255,255,255,0.2);
+  transform: scale(1.05);
+}
+
 /* ─ Chart card ─ */
 .chart-card {
   background: var(--s2);
