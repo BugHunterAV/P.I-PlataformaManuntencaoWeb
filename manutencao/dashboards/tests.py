@@ -1,3 +1,6 @@
+from datetime import timedelta
+
+from django.utils import timezone
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
@@ -61,3 +64,23 @@ class DashboardSummaryTests(APITestCase):
         self.assertIn('kpis_globais', response.data)
         self.assertIn('detalhes_equipamentos', response.data)
         self.assertEqual(response.data['resumo_status']['total'], 2)
+
+    def test_kpi_dashboard_returns_valid_kpi_list(self):
+        self.client.force_authenticate(user=self.gestor)
+        OrdemServico.objects.create(
+            equipamento=self.equip1,
+            titulo="OS Concluída",
+            descricao="Teste kpi",
+            status="concluida",
+            data_abertura=timezone.now() - timedelta(hours=3),
+            data_conclusao=timezone.now(),
+        )
+        response = self.client.get(reverse('kpi-dashboard'))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsInstance(response.data, list)
+        self.assertGreaterEqual(len(response.data), 1)
+        item = response.data[0]
+        self.assertIn('mttr_hours', item)
+        self.assertIn('mtbf_hours', item)
+        self.assertIn('disponibilidade_porcentagem', item)
+        self.assertIn('total_manutencoes', item)

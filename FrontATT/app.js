@@ -780,9 +780,10 @@ createApp({
       dashboardKpisError.value = null;
       try {
         const data = await api('/api/dashboards/kpis/');
-        dashboardKpis.value = Array.isArray(data) ? data : [];
+        dashboardKpis.value = normList(data);
       } catch (err) {
         dashboardKpisError.value = err?.message || 'Falha ao carregar KPIs';
+        toast(dashboardKpisError.value, 'error');
         dashboardKpis.value = [];
       } finally {
         dashboardKpisLoading.value = false;

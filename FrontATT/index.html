@@ -309,6 +309,7 @@
               <div class="kpi-mega-foot">Percentual estimado de uptime. Maior é melhor.</div>
             </div>
           </div>
+          <div v-if="dashboardKpisError" class="chart-error" style="margin-bottom:16px; color:#ffb3b3; font-size:13px;">{{ dashboardKpisError }}</div>
 
           <div v-if="!isTecnico" class="chart-card col-12 explainer-card" :class="{collapsed: explainerCollapsed}" style="margin-bottom:16px">
             <button class="chart-head chart-head-button" @click="explainerCollapsed = !explainerCollapsed" type="button">
