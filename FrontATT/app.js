@@ -95,6 +95,7 @@ createApp({
     const equipModal = reactive({
       open: false,
       equipamento: null,
+      currentOS: null,
       sensors: [],
       selectedSensor: null,
       readings: [],
@@ -1620,6 +1621,10 @@ createApp({
       }
       return date.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
     }
+    function formatNumber(value) {
+      if (value == null || value === '') return '—';
+      return Number(value).toLocaleString('pt-BR');
+    }
     function nivelBadge(n) { return { critico: 'badge-red', medio: 'badge-yellow', baixo: 'badge-green' }[n] || 'badge-gray'; }
     function nivelColor(n) { return { critico: 'var(--signal)', medio: 'var(--warn)', baixo: 'var(--teal)' }[n] || 'var(--ink4)'; }
     function statusBadge(s) { return { ativo: 'badge-red', resolvido: 'badge-green', ignorado: 'badge-gray' }[s] || 'badge-gray'; }
@@ -1724,18 +1729,29 @@ createApp({
       }
     }
 
-    async function openEquipamentoDetails(eq) {
+    async function openEquipamentoDetails(eq, os = null) {
       stopEquipModalPolling();
       equipModal.open = true;
-      equipModal.equipamento = eq;
+      let equipment = (typeof eq === 'number' || typeof eq === 'string')
+        ? lists.equipamentos.find(item => item.id === Number(eq)) || { id: Number(eq) }
+        : eq;
+      if (equipment && !equipment.nome) {
+        try {
+          equipment = await api(`/api/equipamentos/${equipment.id}/`);
+        } catch (err) {
+          console.warn('Não foi possível obter detalhes completos do equipamento:', err);
+        }
+      }
+      equipModal.equipamento = equipment;
+      equipModal.currentOS = os || null;
       equipModal.selectedSensor = null;
       equipModal.readings = [];
       equipModal.error = '';
       equipModal.refreshing = false;
       equipModal.ordens = [];
-      equipModal.osFilter = 'todas';
-      await fetchEquipamentoSensors(eq.id);
-      fetchEquipamentoOrdens(eq.id);
+      equipModal.osFilter = os ? 'os' : 'todas';
+      await fetchEquipamentoSensors(equipment.id);
+      fetchEquipamentoOrdens(equipment.id);
       if (equipModal.sensors.length) {
         equipModal.selectedSensor = equipModal.sensors[0].id;
       }
@@ -1745,6 +1761,7 @@ createApp({
     function closeEquipModal() {
       equipModal.open = false;
       equipModal.equipamento = null;
+      equipModal.currentOS = null;
       equipModal.sensors = [];
       equipModal.selectedSensor = null;
       equipModal.readings = [];
@@ -2159,7 +2176,7 @@ createApp({
       fetchEquipamentos, fetchAlertas, fetchOrdens, fetchTelemetria,
       fetchHistorico, fetchEmpresas, fetchUsuarios, fetchLocalizacoes, fetchPage, fetchDashboard,
       openModal, editItem, saveItem, deleteItem, exportData, assumirOS, openEncerrarOS, assumirOSFromAlerta,
-      fmtDate, nivelBadge, nivelColor, statusBadge, eqStatusBadge,
+      formatNumber, fmtDate, nivelBadge, nivelColor, statusBadge, eqStatusBadge,
       ordemStatusBadge, prioridadeBadge,
       eqNome, osTitulo, osEquipNome, eqEmpresaNome, empresaNome, sensorNome, locSetor, custoTotal, countSensores, usuarioNome,
       empresaNomeSensor, sensorEquipNome,

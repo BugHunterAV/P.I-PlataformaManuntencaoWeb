@@ -267,9 +267,9 @@
                 <div class="kpi-mega-icon">⬡</div>
                 <div class="kpi-mega-label">Leituras (Hoje / Total)</div>
                 <div class="kpi-mega-val kpi-mega-val-split">
-                  {{ leiturasTodayCount }}
+                  {{ formatNumber(leiturasTodayCount) }}
                   <span class="kpi-val-divider">/</span>
-                  <span class="kpi-mega-val-secondary">{{ leiturasTotalCount }}</span>
+                  <span class="kpi-mega-val-secondary">{{ formatNumber(leiturasTotalCount) }}</span>
                 </div>
                 <div class="kpi-mega-foot">pontos de telemetria</div>
               </div>
@@ -716,180 +716,6 @@
             <button class="page-btn" :disabled="!pages.equipamentos.next" @click="fetchPage('equipamentos',pages.equipamentos.next)">Próxima →</button>
           </div>
 
-          <div v-if="equipModal.open" class="modal-backdrop" @click.self="closeEquipModal">
-            <div class="modal modal-wide">
-              <div class="modal-header">
-                <div>
-                  <div class="modal-title">Detalhes do Equipamento</div>
-                  <div style="margin-top:8px;font-size:18px;font-weight:700;color:var(--t1);">{{ equipModal.equipamento?.nome }}</div>
-                </div>
-                <button class="modal-close" @click="closeEquipModal">×</button>
-              </div>
-              <div class="modal-body">
-                <div class="detail-top-row">
-                  <div class="detail-card">
-                    <div class="detail-card-label">ID</div>
-                    <div class="detail-card-value">#{{ equipModal.equipamento?.id }}</div>
-                  </div>
-                  <div class="detail-card">
-                    <div class="detail-card-label">Status</div>
-                    <div class="detail-card-value">{{ equipModal.equipamento?.status || '—' }}</div>
-                  </div>
-                  <div class="detail-card">
-                    <div class="detail-card-label">Setor</div>
-                    <div class="detail-card-value">{{ locSetor(equipModal.equipamento?.id) }}</div>
-                  </div>
-                  <div class="detail-card">
-                    <div class="detail-card-label">Sensores</div>
-                    <div class="detail-card-value">{{ equipModal.sensors.length }}</div>
-                  </div>
-                </div>
-
-                <div class="detail-filter-row">
-                  <label class="filter-label">Sensor</label>
-                  <select class="filter-select" v-model="equipModal.selectedSensor">
-                    <option v-if="!equipModal.sensors.length" value="">Nenhum sensor disponível</option>
-                    <option v-for="s in equipModal.sensors" :key="s.id" :value="s.id">{{ s.nome }}{{ s.tipo ? ' (' + s.tipo + ')' : '' }}</option>
-                  </select>
-                  <span class="detail-refresh">Atualizado em: {{ equipModal.lastRefresh ? (new Date(equipModal.lastRefresh)).toLocaleTimeString('pt-BR') : '—' }}</span>
-                </div>
-
-                <div v-if="selectedSensorThresholds" class="detail-top-row" style="margin-top: 16px; gap:10px;">
-                  <div class="detail-card">
-                    <div class="detail-card-label">Ponto crítico</div>
-                    <div class="detail-card-value">{{ selectedSensorThresholds.limit }} {{ selectedSensorThresholds.unit }}</div>
-                  </div>
-                  <div class="detail-card">
-                    <div class="detail-card-label">Alerta baixo</div>
-                    <div class="detail-card-value">{{ selectedSensorThresholds.lowPct }}% → {{ selectedSensorThresholds.lowValue }} {{ selectedSensorThresholds.unit }}</div>
-                  </div>
-                  <div class="detail-card">
-                    <div class="detail-card-label">Alerta médio</div>
-                    <div class="detail-card-value">{{ selectedSensorThresholds.medPct }}% → {{ selectedSensorThresholds.medValue }} {{ selectedSensorThresholds.unit }}</div>
-                  </div>
-                  <div class="detail-card">
-                    <div class="detail-card-label">Alerta crítico</div>
-                    <div class="detail-card-value">{{ selectedSensorThresholds.critPct }}% → {{ selectedSensorThresholds.critValue }} {{ selectedSensorThresholds.unit }}</div>
-                  </div>
-                </div>
-
-                <div v-if="equipModal.loading && !equipModal.readings.length" class="loading"><div class="spinner"></div>Carregando detalhes...</div>
-                <div v-else>
-                  <div v-if="equipModal.error" class="field-error-global">{{ equipModal.error }}</div>
-                  <div v-if="equipModal.refreshing" class="field-error-global" style="background:rgba(0,212,170,0.08);border-color:rgba(0,212,170,0.3);color:var(--acid);">Atualizando leituras...</div>
-
-                  <template v-if="equipModal.sensors.length">
-                    <div class="equip-graph-card">
-                      <div class="chart-head" style="margin-bottom: 14px;">
-                        <div>
-                          <div class="chart-title">Histórico do {{ selectedSensorLabel }}</div>
-                          <div class="chart-sub">Últimas {{ equipModal.readings.length }} leituras</div>
-                        </div>
-                      </div>
-                      <div class="equip-graph-wrap">
-                        <svg viewBox="0 0 360 180" preserveAspectRatio="none" class="equip-chart-svg">
-                          <g v-for="(tick, idx) in equipModalChart.ticks" :key="'tick-'+idx">
-                            <line :x1="0" :y1="tick.y" :x2="360" :y2="tick.y" stroke="rgba(255,255,255,0.2)" stroke-dasharray="4 4" />
-                            <text :x="8" :y="tick.y - 6" fill="var(--t4)" font-size="11" font-family="Inter,system-ui,monospace">{{ tick.label }}</text>
-                          </g>
-                          <path v-if="equipModalChart.area" :d="equipModalChart.area" fill="rgba(0, 212, 170, 0.12)" />
-                          <path v-if="equipModalChart.path" :d="equipModalChart.path" fill="none" stroke="#00d4aa" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
-                          <g v-for="(dot, idx) in equipModalChart.dots" :key="'dot-'+idx">
-                            <circle :cx="dot.x" :cy="dot.y" r="4" fill="#00d4aa" stroke="var(--s1)" stroke-width="1" class="chart-dot" style="cursor:pointer;">
-                              <title>{{ dot.label }}: {{ dot.v.toFixed(2) }}</title>
-                            </circle>
-                            <text :x="dot.x" :y="dot.y - 10" fill="var(--t1)" font-size="10" font-weight="700" text-anchor="middle">{{ dot.label }}</text>
-                          </g>
-                        </svg>
-                      </div>
-                      <div class="detail-stats-row">
-                        <div class="detail-stat">
-                          <div class="detail-stat-label">Último valor</div>
-                          <div class="detail-stat-value">{{ equipModalStats.last }}</div>
-                        </div>
-                        <div class="detail-stat">
-                          <div class="detail-stat-label">Mínimo</div>
-                          <div class="detail-stat-value">{{ equipModalStats.min }}</div>
-                        </div>
-                        <div class="detail-stat">
-                          <div class="detail-stat-label">Máximo</div>
-                          <div class="detail-stat-value">{{ equipModalStats.max }}</div>
-                        </div>
-                        <div class="detail-stat">
-                          <div class="detail-stat-label">Pontos</div>
-                          <div class="detail-stat-value">{{ equipModalStats.count }}</div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="detail-table-wrap">
-                      <div class="detail-table-title">Últimas leituras</div>
-                      <table>
-                        <thead>
-                          <tr><th>Data/Hora</th><th>Valor</th><th>Sensor</th></tr>
-                        </thead>
-                        <tbody>
-                          <tr v-for="read in equipModal.readings.slice(0, 10)" :key="read.id">
-                            <td>{{ fmtDate(read.timestamp) }}</td>
-                            <td>{{ read.valor }}</td>
-                            <td>{{ selectedSensorLabel }}</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </template>
-                  <div v-else class="empty" style="margin-top:16px;">
-                    <div class="empty-icon">⚠</div>
-                    Este equipamento não possui sensores ativos cadastrados.
-                  </div>
-                  </div>
-                  <div class="detail-table-wrap" style="margin-top:24px;" v-if="isAdminOrGestor">
-                    <div class="detail-table-title" style="display:flex; justify-content:space-between; align-items:center;">
-                      <span>Histórico do Equipamento ({{ equipModalFilteredOrdens.length }})</span>
-                      <div style="display:flex; gap: 8px;">
-                        <button class="btn btn-ghost btn-sm" :class="{ 'btn-primary': equipModal.osFilter === 'todas' }" @click="equipModal.osFilter = 'todas'">Tudo</button>
-                        <button class="btn btn-ghost btn-sm" :class="{ 'btn-primary': equipModal.osFilter === 'alertas' }" @click="equipModal.osFilter = 'alertas'">Alertas</button>
-                        <button class="btn btn-ghost btn-sm" :class="{ 'btn-primary': equipModal.osFilter === 'os' }" @click="equipModal.osFilter = 'os'">Ordens (O.S.)</button>
-                      </div>
-                    </div>
-                    <table v-if="equipModalFilteredOrdens.length">
-                      <thead>
-                        <tr>
-                          <th>O.S. / Alerta</th>
-                          <th>Data Criação</th>
-                          <th>Responsável</th>
-                          <th>Prioridade</th>
-                          <th>Status</th>
-                          <th>Custo Total (R$)</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        <tr v-for="os in equipModalFilteredOrdens" :key="os.id" class="clickable-row" @click="editItem('ordem', os)">
-                          <td style="color:var(--t1); font-weight:600;">{{ os.titulo }}</td>
-                          <td>{{ fmtDate(os.created_at || os.data_abertura || os.updated_at) }}</td>
-                          <td>{{ usuarioNome(os.responsavel) || '—' }}</td>
-                          <td>
-                            <span class="badge" :class="prioridadeBadge(os.prioridade)">
-                              <span class="badge-dot"></span>{{ os.prioridade || '—' }}
-                            </span>
-                          </td>
-                          <td>
-                            <span class="badge" :class="ordemStatusBadge(os.status)">
-                              <span class="badge-dot"></span>{{ os.status || '—' }}
-                            </span>
-                          </td>
-                          <td>{{ custoTotal(os) }}</td>
-                        </tr>
-                      </tbody>
-                    </table>
-                    <div v-else class="empty" style="margin-top:16px;">
-                      <div class="empty-icon" style="font-size:24px; margin-bottom:8px;">📝</div>
-                      Nenhuma ordem de serviço registrada para este equipamento.
-                    </div>
-                  </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- ══════════ ALERTAS ══════════ -->
@@ -983,23 +809,23 @@
             <table v-else>
               <thead><tr><th>ID</th><th>Título</th><th>Tipo</th><th>Prioridade</th><th>Responsável</th><th>Status</th><th>Equipamento</th><th>Local/Setor</th><th>Abertura</th><th>Ações</th></tr></thead>
               <tbody>
-                <tr v-for="o in lists.ordens" :key="o.id">
-                  <td style="font-family:var(--mono);color:var(--t4)">#{{ o.id }}</td>
-                  <td style="font-weight:600;color:var(--t1);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ o.titulo }}</td>
-                  <td style="font-family:var(--mono);font-size:11px">{{ o.tipo_os || '—' }}</td>
-                  <td><span class="badge" :class="prioridadeBadge(o.prioridade)">{{ o.prioridade || '—' }}</span></td>
-                  <td style="font-size:11px; font-weight:600" :style="{color: o.responsavel ? 'var(--ice)' : 'var(--warn)'}">
+                <tr v-for="o in lists.ordens" :key="o.id" class="clickable-row">
+                  <td style="font-family:var(--mono);color:var(--t4); cursor:pointer" @click="openEquipamentoDetails(o.equipamento, o)">#{{ o.id }}</td>
+                  <td style="font-weight:600;color:var(--t1);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; cursor:pointer" @click="openEquipamentoDetails(o.equipamento, o)">{{ o.titulo }}</td>
+                  <td style="font-family:var(--mono);font-size:11px; cursor:pointer" @click="openEquipamentoDetails(o.equipamento, o)">{{ o.tipo_os || '—' }}</td>
+                  <td style="cursor:pointer" @click="openEquipamentoDetails(o.equipamento, o)"><span class="badge" :class="prioridadeBadge(o.prioridade)">{{ o.prioridade || '—' }}</span></td>
+                  <td style="font-size:11px; font-weight:600; cursor:pointer" :style="{color: o.responsavel ? 'var(--ice)' : 'var(--warn)'}" @click="openEquipamentoDetails(o.equipamento, o)">
                     {{ usuarioNome(o.responsavel) || 'AGUARDANDO TÉCNICO' }}
                   </td>
-                  <td><span class="badge" :class="ordemStatusBadge(o.status)">{{ o.status || '—' }}</span></td>
-                  <td style="font-size:11px">{{ eqNome(o.equipamento) }}</td>
-                  <td style="font-family:var(--mono);font-size:11px;color:var(--acid)">{{ locSetor(o.equipamento) }}</td>
-                  <td style="font-family:var(--mono);font-size:10px;color:var(--t4)">{{ fmtDate(o.data_abertura || o.criado_em) }}</td>
+                  <td style="cursor:pointer" @click="openEquipamentoDetails(o.equipamento, o)"><span class="badge" :class="ordemStatusBadge(o.status)">{{ o.status || '—' }}</span></td>
+                  <td style="font-size:11px; cursor:pointer; color:var(--acid)" @click="openEquipamentoDetails(o.equipamento, o)">{{ eqNome(o.equipamento) }}</td>
+                  <td style="font-family:var(--mono);font-size:11px;color:var(--acid); cursor:pointer" @click="openEquipamentoDetails(o.equipamento, o)">{{ locSetor(o.equipamento) }}</td>
+                  <td style="font-family:var(--mono);font-size:10px;color:var(--t4); cursor:pointer" @click="openEquipamentoDetails(o.equipamento, o)">{{ fmtDate(o.data_abertura || o.criado_em) }}</td>
                   <td><div class="action-btns">
-                    <button v-if="isAdminOrGestor" class="btn btn-ghost btn-sm" @click="editItem('ordem',o)">Editar</button>
-                    <button v-if="!o.responsavel" class="btn btn-primary btn-sm" :disabled="o._assumindo" @click="assumirOS(o)">{{ o._assumindo ? 'Assumindo...' : 'Assumir O.S' }}</button>
-                    <button v-if="o.responsavel === me?.id && o.status !== 'concluida' && o.status !== 'cancelada'" class="btn btn-success btn-sm" @click="openEncerrarOS(o)">Encerrar O.S</button>
-                    <button v-if="isAdmin" class="btn btn-danger btn-sm" @click="deleteItem('ordens-servico',o.id)">✕</button>
+                    <button v-if="isAdminOrGestor" class="btn btn-ghost btn-sm" @click.stop="editItem('ordem',o)">Editar</button>
+                    <button v-if="!o.responsavel" class="btn btn-primary btn-sm" :disabled="o._assumindo" @click.stop="assumirOS(o)">{{ o._assumindo ? 'Assumindo...' : 'Assumir O.S' }}</button>
+                    <button v-if="o.responsavel === me?.id && o.status !== 'concluida' && o.status !== 'cancelada'" class="btn btn-success btn-sm" @click.stop="openEncerrarOS(o)">Encerrar O.S</button>
+                    <button v-if="isAdmin" class="btn btn-danger btn-sm" @click.stop="deleteItem('ordens-servico',o.id)">✕</button>
                   </div></td>
                 </tr>
               </tbody>
@@ -1807,6 +1633,214 @@
       <button @click="sendChatMessage" :disabled="chatLoading || !chatInput.trim()">
         Enviar
       </button>
+    </div>
+  </div>
+
+  <div v-if="equipModal.open" class="modal-backdrop" @click.self="closeEquipModal">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">Detalhes do Equipamento</div>
+          <div style="margin-top:8px;font-size:18px;font-weight:700;color:var(--t1);">{{ equipModal.equipamento?.nome }}</div>
+        </div>
+        <button class="modal-close" @click="closeEquipModal">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-top-row">
+          <div class="detail-card">
+            <div class="detail-card-label">ID</div>
+            <div class="detail-card-value">#{{ equipModal.equipamento?.id }}</div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-card-label">Status</div>
+            <div class="detail-card-value">{{ equipModal.equipamento?.status || '—' }}</div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-card-label">Setor</div>
+            <div class="detail-card-value">{{ locSetor(equipModal.equipamento?.id) }}</div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-card-label">Sensores</div>
+            <div class="detail-card-value">{{ equipModal.sensors.length }}</div>
+          </div>
+        </div>
+
+        <div v-if="equipModal.currentOS" class="detail-os-card" style="margin-top:16px; padding:16px; border:1px solid rgba(0,212,170,0.18); border-radius:12px; background:rgba(0,212,170,0.05);">
+          <div style="display:flex; gap:14px; flex-wrap:wrap; align-items:flex-start;">
+            <div style="flex:2; min-width:220px;">
+              <div class="detail-card-label">Ordem de Serviço vinculada</div>
+              <div class="detail-card-value" style="font-size:15px; font-weight:700; color:var(--t1);">
+                #{{ equipModal.currentOS.id }} — {{ equipModal.currentOS.titulo }}
+              </div>
+            </div>
+            <div style="display:grid; gap:10px; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); width:100%;">
+              <div class="detail-card">
+                <div class="detail-card-label">Status</div>
+                <div class="detail-card-value">{{ equipModal.currentOS.status || '—' }}</div>
+              </div>
+              <div class="detail-card">
+                <div class="detail-card-label">Prioridade</div>
+                <div class="detail-card-value">{{ equipModal.currentOS.prioridade || '—' }}</div>
+              </div>
+              <div class="detail-card">
+                <div class="detail-card-label">Tipo</div>
+                <div class="detail-card-value">{{ equipModal.currentOS.tipo_os || '—' }}</div>
+              </div>
+              <div class="detail-card">
+                <div class="detail-card-label">Abertura</div>
+                <div class="detail-card-value">{{ fmtDate(equipModal.currentOS.data_abertura || equipModal.currentOS.criado_em) }}</div>
+              </div>
+              <div class="detail-card">
+                <div class="detail-card-label">Responsável</div>
+                <div class="detail-card-value">{{ usuarioNome(equipModal.currentOS.responsavel) || '—' }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-filter-row">
+          <label class="filter-label">Sensor</label>
+          <select class="filter-select" v-model="equipModal.selectedSensor">
+            <option v-if="!equipModal.sensors.length" value="">Nenhum sensor disponível</option>
+            <option v-for="s in equipModal.sensors" :key="s.id" :value="s.id">{{ s.nome }}{{ s.tipo ? ' (' + s.tipo + ')' : '' }}</option>
+          </select>
+          <span class="detail-refresh">Atualizado em: {{ equipModal.lastRefresh ? (new Date(equipModal.lastRefresh)).toLocaleTimeString('pt-BR') : '—' }}</span>
+        </div>
+
+        <div v-if="selectedSensorThresholds" class="detail-top-row" style="margin-top: 16px; gap:10px;">
+          <div class="detail-card">
+            <div class="detail-card-label">Ponto crítico</div>
+            <div class="detail-card-value">{{ selectedSensorThresholds.limit }} {{ selectedSensorThresholds.unit }}</div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-card-label">Alerta baixo</div>
+            <div class="detail-card-value">{{ selectedSensorThresholds.lowPct }}% → {{ selectedSensorThresholds.lowValue }} {{ selectedSensorThresholds.unit }}</div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-card-label">Alerta médio</div>
+            <div class="detail-card-value">{{ selectedSensorThresholds.medPct }}% → {{ selectedSensorThresholds.medValue }} {{ selectedSensorThresholds.unit }}</div>
+          </div>
+          <div class="detail-card">
+            <div class="detail-card-label">Alerta crítico</div>
+            <div class="detail-card-value">{{ selectedSensorThresholds.critPct }}% → {{ selectedSensorThresholds.critValue }} {{ selectedSensorThresholds.unit }}</div>
+          </div>
+        </div>
+
+        <div v-if="equipModal.loading && !equipModal.readings.length" class="loading"><div class="spinner"></div>Carregando detalhes...</div>
+        <div v-else>
+          <div v-if="equipModal.error" class="field-error-global">{{ equipModal.error }}</div>
+          <div v-if="equipModal.refreshing" class="field-error-global" style="background:rgba(0,212,170,0.08);border-color:rgba(0,212,170,0.3);color:var(--acid);">Atualizando leituras...</div>
+
+          <template v-if="equipModal.sensors.length">
+            <div class="equip-graph-card">
+              <div class="chart-head" style="margin-bottom: 14px;">
+                <div>
+                  <div class="chart-title">Histórico do {{ selectedSensorLabel }}</div>
+                  <div class="chart-sub">Últimas {{ equipModal.readings.length }} leituras</div>
+                </div>
+              </div>
+              <div class="equip-graph-wrap">
+                <svg viewBox="0 0 360 180" preserveAspectRatio="none" class="equip-chart-svg">
+                  <g v-for="(tick, idx) in equipModalChart.ticks" :key="'tick-'+idx">
+                    <line :x1="0" :y1="tick.y" :x2="360" :y2="tick.y" stroke="rgba(255,255,255,0.2)" stroke-dasharray="4 4" />
+                    <text :x="8" :y="tick.y - 6" fill="var(--t4)" font-size="11" font-family="Inter,system-ui,monospace">{{ tick.label }}</text>
+                  </g>
+                  <path v-if="equipModalChart.area" :d="equipModalChart.area" fill="rgba(0, 212, 170, 0.12)" />
+                  <path v-if="equipModalChart.path" :d="equipModalChart.path" fill="none" stroke="#00d4aa" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" />
+                  <g v-for="(dot, idx) in equipModalChart.dots" :key="'dot-'+idx">
+                    <circle :cx="dot.x" :cy="dot.y" r="4" fill="#00d4aa" stroke="var(--s1)" stroke-width="1" class="chart-dot" style="cursor:pointer;">
+                      <title>{{ dot.label }}: {{ dot.v.toFixed(2) }}</title>
+                    </circle>
+                    <text :x="dot.x" :y="dot.y - 10" fill="var(--t1)" font-size="10" font-weight="700" text-anchor="middle">{{ dot.label }}</text>
+                  </g>
+                </svg>
+              </div>
+              <div class="detail-stats-row">
+                <div class="detail-stat">
+                  <div class="detail-stat-label">Último valor</div>
+                  <div class="detail-stat-value">{{ equipModalStats.last }}</div>
+                </div>
+                <div class="detail-stat">
+                  <div class="detail-stat-label">Mínimo</div>
+                  <div class="detail-stat-value">{{ equipModalStats.min }}</div>
+                </div>
+                <div class="detail-stat">
+                  <div class="detail-stat-label">Máximo</div>
+                  <div class="detail-stat-value">{{ equipModalStats.max }}</div>
+                </div>
+                <div class="detail-stat">
+                  <div class="detail-stat-label">Pontos</div>
+                  <div class="detail-stat-value">{{ equipModalStats.count }}</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-table-wrap">
+              <div class="detail-table-title">Últimas leituras</div>
+              <table>
+                <thead>
+                  <tr><th>Data/Hora</th><th>Valor</th><th>Sensor</th></tr>
+                </thead>
+                <tbody>
+                  <tr v-for="read in equipModal.readings.slice(0, 10)" :key="read.id">
+                    <td>{{ fmtDate(read.timestamp) }}</td>
+                    <td>{{ read.valor }}</td>
+                    <td>{{ selectedSensorLabel }}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </template>
+          <div v-else class="empty" style="margin-top:16px;">
+            <div class="empty-icon">⚠</div>
+            Este equipamento não possui sensores ativos cadastrados.
+          </div>
+          </div>
+          <div class="detail-table-wrap" style="margin-top:24px;" v-if="isAdminOrGestor">
+            <div class="detail-table-title" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Histórico do Equipamento ({{ equipModalFilteredOrdens.length }})</span>
+              <div style="display:flex; gap: 8px;">
+                <button class="btn btn-ghost btn-sm" :class="{ 'btn-primary': equipModal.osFilter === 'todas' }" @click="equipModal.osFilter = 'todas'">Tudo</button>
+                <button class="btn btn-ghost btn-sm" :class="{ 'btn-primary': equipModal.osFilter === 'alertas' }" @click="equipModal.osFilter = 'alertas'">Alertas</button>
+                <button class="btn btn-ghost btn-sm" :class="{ 'btn-primary': equipModal.osFilter === 'os' }" @click="equipModal.osFilter = 'os'">Ordens (O.S.)</button>
+              </div>
+            </div>
+            <table v-if="equipModalFilteredOrdens.length">
+              <thead>
+                <tr>
+                  <th>O.S. / Alerta</th>
+                  <th>Data Criação</th>
+                  <th>Responsável</th>
+                  <th>Prioridade</th>
+                  <th>Status</th>
+                  <th>Custo Total (R$)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="os in equipModalFilteredOrdens" :key="os.id" class="clickable-row" @click="editItem('ordem', os)">
+                  <td style="color:var(--t1); font-weight:600;">{{ os.titulo }}</td>
+                  <td>{{ fmtDate(os.created_at || os.data_abertura || os.updated_at) }}</td>
+                  <td>{{ usuarioNome(os.responsavel) || '—' }}</td>
+                  <td>
+                    <span class="badge" :class="prioridadeBadge(os.prioridade)">
+                      <span class="badge-dot"></span>{{ os.prioridade || '—' }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="badge" :class="ordemStatusBadge(os.status)">
+                      <span class="badge-dot"></span>{{ os.status || '—' }}
+                    </span>
+                  </td>
+                  <td>{{ custoTotal(os) }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-else class="empty" style="margin-top:16px;">
+              <div class="empty-icon" style="font-size:24px; margin-bottom:8px;">📝</div>
+              Nenhuma ordem de serviço registrada para este equipamento.
+            </div>
+          </div>
+      </div>
     </div>
   </div>
 
