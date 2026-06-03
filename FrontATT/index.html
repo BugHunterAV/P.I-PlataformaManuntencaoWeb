@@ -1635,7 +1635,7 @@
         rows="1"
         :placeholder="chatPlaceholder"
         @input="resizeChatInput"
-        @keydown.enter.prevent="handleChatEnter"
+        @keydown="handleChatKeydown"
         :disabled="chatLoading"
       ></textarea>
       <button @click="sendChatMessage" :disabled="chatLoading || !chatInput.trim()">

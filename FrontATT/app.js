@@ -2059,10 +2059,10 @@ createApp({
       });
     }
 
-    function handleChatEnter(event) {
-      if (event.shiftKey) {
-        return;
-      }
+    function handleChatKeydown(event) {
+      if (event.key !== 'Enter') return;
+      if (event.shiftKey) return;
+      event.preventDefault();
       sendChatMessage();
     }
 
@@ -2238,7 +2238,7 @@ createApp({
       chatOpen, chatExpanded, chatAtBottom, chatInput, chatLoading, chatMessages, chatScrollContainer,
       chatInputField, chatPlaceholder,
       darkMode, toggleTheme,
-      toggleChat, toggleChatExpand, sendChatMessage, sendSuggestion, onChatScroll, scrollToBottom, formatMarkdown
+      toggleChat, toggleChatExpand, handleChatKeydown, resizeChatInput, sendChatMessage, sendSuggestion, onChatScroll, scrollToBottom, formatMarkdown
     };
   }
 }).mount('#app');
