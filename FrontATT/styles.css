@@ -32,11 +32,11 @@
   --mint: #00e5b0;
   --rose: #ff4f7b;
 
-  --t1: #f0f4f8;
-  --t2: #8fa5bc;
-  --t3: #4d6070;
-  --t4: #2d404f;
-  --t5: #1a2c38;
+  --t1: #ffffff;
+  --t2: #e5ecf7;
+  --t3: #c4d2e2;
+  --t4: #9fb4c3;
+  --t5: #7c8fa3;
 
   --mono: 'IBM Plex Mono', monospace;
   --display: 'Unbounded', sans-serif;
@@ -54,8 +54,8 @@ body {
   background: var(--bg);
   color: var(--t1);
   font-family: var(--body);
-  font-size: 13px;
-  line-height: 1.5;
+  font-size: 14px;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 

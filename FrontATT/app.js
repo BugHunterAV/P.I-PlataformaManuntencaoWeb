@@ -62,6 +62,7 @@ createApp({
       sensores: [], leituras: [], historico: [], empresas: [],
       usuarios: [], localizacoes: []
     });
+    const leiturasTotalCount = ref(0);
     const pages = reactive({
       equipamentos: { next: null, prev: null },
       alertas: { next: null, prev: null },
@@ -813,17 +814,23 @@ createApp({
         const sensorFilter = allowedEqIds && allowedEqIds.size
           ? '&equipamento__in=' + [...allowedEqIds].join(',')
           : '';
+        const telemetriaFilter = allowedEqIds && allowedEqIds.size
+          ? '&sensor__equipamento__in=' + [...allowedEqIds].join(',')
+          : '';
         const sensorRes = await api('/api/telemetria/sensores/?limit=999' + sensorFilter);
         if (sensorRes) lists.sensores = normList(sensorRes);
 
-        const telRes = await api('/api/telemetria/leituras/?limit=50&ordering=-timestamp');
+        const telRes = await api('/api/telemetria/leituras/?limit=50&ordering=-timestamp' + telemetriaFilter);
         if (telRes) {
+          leiturasTotalCount.value = Number(telRes.count ?? 0) || 0;
           let leituras = normList(telRes);
           if (lists.sensores.length) {
             const sensorIds = new Set(lists.sensores.map(s => s.id));
             leituras = leituras.filter(l => sensorIds.has(l.sensor));
           }
           lists.leituras = leituras;
+        } else {
+          leiturasTotalCount.value = 0;
         }
 
         if (histRes.status === 'fulfilled' && histRes.value) lists.historico = normList(histRes.value);
@@ -852,7 +859,7 @@ createApp({
             alertas_ativos: dashAlerts.value.length,
             ordens_abertas: lists.ordens.filter(o => o.status === 'pendente' || o.status === 'andamento').length,
             leituras_hoje: leiturasHoje.value.length,
-            leituras_total: lists.leituras.length,
+            leituras_total: leiturasTotalCount.value || lists.leituras.length,
           };
         }
 
