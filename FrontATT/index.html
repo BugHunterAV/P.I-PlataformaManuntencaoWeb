@@ -315,12 +315,12 @@
               <div class="chart-title">Como interpretar essas métricas</div>
               <div class="chart-sub">Visão rápida para gestores e admin</div>
             </div>
-            <div class="chart-body" style="font-size:12px; line-height:1.6; color:var(--t3);">
-              <p><strong>MTTR</strong> indica quanto tempo, em média, uma ordem de serviço leva para ser concluída. Ex: <strong>40,2h</strong> significa cerca de 40 horas de trabalho. Para este indicador, <strong>menor é melhor</strong>.</p>
-              <p><strong>MTBF</strong> indica quanto tempo, em média, passa entre a conclusão de uma falha e a próxima falha registrada. Ex: <strong>40,2h</strong> significa cerca de 40 horas entre problemas. Aqui, <strong>maior é melhor</strong>.</p>
-              <p><strong>Disponibilidade</strong> é uma estimativa percentual de tempo em que o ativo está disponível para operação. Ex: <strong>76,5%</strong> significa que o ativo esteve disponível cerca de 76,5% do período considerado. Quanto mais próximo de <strong>100%</strong>, melhor.</p>
-              <p style="margin-top:10px; font-size:11px; color:var(--t4);">Não existe um limite global único: o que é bom depende do tipo de equipamento, setor e contexto da empresa. Use essas métricas como referência interna para comparar equipamentos, setores e evolução ao longo do tempo.</p>
-              <ul style="margin-top:10px; padding-left:18px; color:var(--t4); font-size:11px;">
+            <div class="chart-body" style="font-size:12px; line-height:1.6; color:#fff;">
+              <p><strong>MTTR</strong> indica quanto tempo, em média, uma ordem de serviço leva para ser concluída. Fórmula: <strong>MTTR = média(data_conclusao - data_abertura)</strong>. Ex: <strong>40,2h</strong> significa cerca de 40 horas de trabalho. Para este indicador, <strong>menor é melhor</strong>.</p>
+              <p><strong>MTBF</strong> indica quanto tempo, em média, passa entre a conclusão de uma falha e a próxima falha registrada. Fórmula: <strong>MTBF = média(data_abertura_da_os_seguinte - data_conclusao_da_os_anterior)</strong>. Ex: <strong>40,2h</strong> significa cerca de 40 horas entre problemas. Aqui, <strong>maior é melhor</strong>.</p>
+              <p><strong>Disponibilidade</strong> é uma estimativa percentual de tempo em que o ativo está disponível para operação. Fórmula: <strong>Disponibilidade = MTBF / (MTBF + MTTR) × 100</strong>. Ex: <strong>76,5%</strong> significa que o ativo esteve disponível cerca de 76,5% do período considerado. Quanto mais próximo de <strong>100%</strong>, melhor.</p>
+              <p style="margin-top:10px; font-size:11px; color:#f5f7fb;">Não existe um limite global único: o que é bom depende do tipo de equipamento, setor e contexto da empresa. Use essas métricas como referência interna para comparar equipamentos, setores e evolução ao longo do tempo.</p>
+              <ul style="margin-top:10px; padding-left:18px; color:#f5f7fb; font-size:11px;">
                 <li><strong>MTTR</strong>: valor baixo é desejável porque significa reparos mais rápidos.</li>
                 <li><strong>MTBF</strong>: valor alto é desejável porque significa menos falhas em intervalos maiores.</li>
                 <li><strong>Disponibilidade</strong>: quanto mais próximo de 100%, melhor.</li>
