@@ -440,9 +440,14 @@ createApp({
 
     const telemetryYAxis = reactive({ min: null, max: null });
     const displayedChartTelemetria = ref(chartTelemetria.value);
+    const testerMode = ref(false);
     const telemetrySlideOffset = ref(0);
     const telemetryMovingDot = reactive({ x: 0, y: 0, visible: false });
     let telemetryAnimationFrame = null;
+
+    function toggleTesterMode() {
+      testerMode.value = !testerMode.value;
+    }
 
     function lerp(a, b, t) {
       return a + (b - a) * t;
@@ -1310,12 +1315,20 @@ createApp({
       Object.keys(copy).forEach(k => { fd[k] = copy[k]; });
     }
 
-    async function openModal(type) {
+    async function openModal(type, options = {}) {
       const cfg = modalConfig[type];
       modal.type = type; modal.title = 'Novo ' + cfg.title;
       modal.editId = null; modal.oldStatus = null; formErrors.value = {};
-      resetForm(cfg.defaults); modal.open = true;
+      resetForm(cfg.defaults);
 
+      if (type === 'leitura') {
+        const selectedSensorId = options.sensor || dashTelemetriaSensor.value;
+        if (selectedSensorId) {
+          fd.sensor = Number(selectedSensorId);
+        }
+      }
+
+      modal.open = true;
       if (['equipamento', 'alerta', 'ordem', 'sensor', 'localizacao', 'leitura'].includes(type)) {
         await fetchEquipamentosAll();
         await fetchEmpresasAll();
@@ -1399,6 +1412,12 @@ createApp({
         }
         modal.open = false;
         toast(modal.type === 'change_password' ? 'Senha alterada com sucesso!' : (modal.editId ? 'Atualizado com sucesso!' : 'Criado com sucesso!'), 'success');
+        if (modal.type === 'leitura') {
+          await Promise.all([
+            fetchDashboard(),
+            fetchOrdens(),
+          ]);
+        }
         navigate(view.value);
       } catch (e) {
         if (e.fieldErrors) {
@@ -2362,7 +2381,8 @@ createApp({
       chatOpen, chatExpanded, chatAtBottom, chatInput, chatLoading, chatMessages, chatScrollContainer,
       chatInputField, chatPlaceholder,
       darkMode, toggleTheme,
-      toggleChat, toggleChatExpand, handleChatKeydown, resizeChatInput, sendChatMessage, sendSuggestion, onChatScroll, scrollToBottom, formatMarkdown
+      toggleChat, toggleChatExpand, handleChatKeydown, resizeChatInput, sendChatMessage, sendSuggestion, onChatScroll, scrollToBottom, formatMarkdown,
+      testerMode, toggleTesterMode
     };
   }
 }).mount('#app');

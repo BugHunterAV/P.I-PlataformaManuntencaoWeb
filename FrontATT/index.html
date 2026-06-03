@@ -429,6 +429,12 @@
                     <option disabled value="">Selecione sensor</option>
                     <option v-for="s in dashTelemetriaSensoresFiltrados" :key="s.id" :value="s.id">{{ s.nome }} ({{ s.tipo }})</option>
                   </select>
+                  <button v-if="isAdmin" class="btn btn-ghost btn-sm" @click="toggleTesterMode" style="margin-left:8px">
+                    {{ testerMode ? 'Modo Tester: ON' : 'Modo Tester: OFF' }}
+                  </button>
+                  <button v-if="isAdmin && testerMode" class="btn btn-primary btn-sm" @click="openModal('leitura', { sensor: dashTelemetriaSensor })" style="margin-left:8px">
+                    Injetar leitura
+                  </button>
                 </div>
               </div>
               <div class="chart-body">

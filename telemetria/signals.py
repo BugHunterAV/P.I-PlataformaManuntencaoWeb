@@ -60,7 +60,7 @@ def checar_limites_telemetria(sender, instance, created, **kwargs):
                 f"Situação agravada em {equipamento.nome}. "
                 f"Sensor de {sensor.get_tipo_display()} registrou "
                 f"{valor}{sensor.unidade_medida} "
-                f"({round(percentual * 100, 1)}% do limite de {limite}{sensor.unidade_medida})."
+                f"({round(percentual, 1)}% do limite de {limite}{sensor.unidade_medida})."
             )
             alerta_existente.save() # Gatilho para o sinal de Alerta criar/atualizar O.S.
         return
@@ -70,7 +70,7 @@ def checar_limites_telemetria(sender, instance, created, **kwargs):
         f"Anomalia detectada em {equipamento.nome}. "
         f"Sensor de {sensor.get_tipo_display()} registrou "
         f"{valor}{sensor.unidade_medida} "
-        f"({round(percentual * 100, 1)}% do limite de {limite}{sensor.unidade_medida})."
+        f"({round(percentual, 1)}% do limite de {limite}{sensor.unidade_medida})."
     )
 
     Alerta.objects.create(
