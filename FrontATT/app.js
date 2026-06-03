@@ -273,6 +273,29 @@ createApp({
       return source.filter(s => getEquipamentoId(s.equipamento) === eqId);
     });
 
+    watch(dashboardEquipamentos, (equipamentos) => {
+      if (equipamentos.length && !dashTelemetriaEquip.value) {
+        dashTelemetriaEquip.value = equipamentos[0].id;
+      }
+    });
+
+    watch(dashTelemetriaEquip, (eq) => {
+      const filteredSensors = dashTelemetriaSensoresFiltrados.value;
+      if (filteredSensors.length) {
+        if (!dashTelemetriaSensor.value || !filteredSensors.some(s => s.id === Number(dashTelemetriaSensor.value))) {
+          dashTelemetriaSensor.value = filteredSensors[0].id;
+        }
+      } else {
+        dashTelemetriaSensor.value = '';
+      }
+    });
+
+    watch(dashTelemetriaSensoresFiltrados, (sensors) => {
+      if (sensors.length && !dashTelemetriaSensor.value) {
+        dashTelemetriaSensor.value = sensors[0].id;
+      }
+    });
+
     function formatChartTimestamp(ts) {
       if (!ts) return '';
       return ts.slice(11, 16);

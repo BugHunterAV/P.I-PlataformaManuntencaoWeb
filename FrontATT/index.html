@@ -411,11 +411,11 @@
                 <div class="chart-title">Telemetria <span class="live-dot" style="margin-left:6px"></span></div>
                 <div class="chart-filter-row">
                   <select class="chart-filter-select" v-model="dashTelemetriaEquip">
-                    <option value="">Todos Equipamentos</option>
+                    <option disabled value="">Selecione equipamento</option>
                     <option v-for="eq in dashboardEquipamentos" :key="eq.id" :value="eq.id">{{ eq.nome }}</option>
                   </select>
                   <select class="chart-filter-select" v-model="dashTelemetriaSensor">
-                    <option value="">Todos Sensores</option>
+                    <option disabled value="">Selecione sensor</option>
                     <option v-for="s in dashTelemetriaSensoresFiltrados" :key="s.id" :value="s.id">{{ s.nome }} ({{ s.tipo }})</option>
                   </select>
                 </div>
