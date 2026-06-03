@@ -52,6 +52,7 @@ createApp({
     const dashCustoSetor = ref('');
     const dashSetor = ref('');
     const dashEquipamento = ref('');
+    const explainerCollapsed = ref(true);
     const dashboardKpis = ref([]);
     const dashboardKpisLoading = ref(false);
     const dashboardKpisError = ref(null);
@@ -2101,7 +2102,7 @@ createApp({
       availableSectors,
       leiturasHoje, dashTelemetriaEquip, dashTelemetriaSensor,
       dashTelemetriaSensoresFiltrados, dashCustoSetor,
-      dashSetor, dashEquipamento, dashboardMetrics, dashboardEquipmentOptions, availableDashboardSectors, dashboardKpisLoading, dashboardKpisError,
+      dashSetor, dashEquipamento, explainerCollapsed, dashboardMetrics, dashboardEquipmentOptions, availableDashboardSectors, dashboardKpisLoading, dashboardKpisError,
       equipModal, selectedSensorLabel, selectedSensorThresholds, sensorModalThresholds, equipModalChart, equipModalStats, equipModalFilteredOrdens,
       openEquipamentoDetails, closeEquipModal, fetchEquipamentoReadings,
       chatOpen, chatInput, chatLoading, chatMessages, chatScrollContainer,

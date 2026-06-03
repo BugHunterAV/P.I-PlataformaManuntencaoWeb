@@ -709,6 +709,48 @@ body {
   flex-shrink: 0;
 }
 
+.chart-head-button {
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 0;
+}
+
+.chart-expand-indicator {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255,255,255,.05);
+  color: var(--t1);
+  font-size: 18px;
+  border: 1px solid var(--edge);
+}
+
+.explainer-card.collapsed .chart-head {
+  padding-bottom: 20px;
+}
+
+.explainer-card .chart-title {
+  font-size: 12px;
+}
+
+.explainer-card .chart-sub {
+  font-size: 10px;
+}
+
+.explainer-card.collapsed .chart-body {
+  display: none;
+}
+
 .chart-title {
   font-family: var(--mono);
   font-size: 10px;
