@@ -277,6 +277,39 @@
           </div>
           <div v-else-if="!kpis" class="loading" style="height:120px"><div class="spinner"></div></div>
 
+          <div v-if="!isTecnico" class="chart-filter-row" style="margin-bottom:18px; align-items:center;">
+            <label style="font-family:var(--mono); font-size:11px; color:var(--t3); white-space:nowrap;">Filtrar dashboard:</label>
+            <select class="chart-filter-select" v-model="dashSetor">
+              <option value="">Todos os setores</option>
+              <option v-for="setor in availableDashboardSectors" :key="setor" :value="setor">{{ setor }}</option>
+            </select>
+            <select class="chart-filter-select" v-model="dashEquipamento">
+              <option value="">Todos os equipamentos</option>
+              <option v-for="eq in dashboardEquipmentOptions" :key="eq.id" :value="eq.id">{{ eq.nome }}</option>
+            </select>
+          </div>
+
+          <div v-if="!isTecnico" class="dash-grid" style="margin-bottom:16px">
+            <div class="kpi-mega col-3" style="--kpi-color:var(--ice)">
+              <div class="kpi-mega-icon">⏱</div>
+              <div class="kpi-mega-label">MTTR médio</div>
+              <div class="kpi-mega-val">{{ dashboardMetrics.mttr }}</div>
+              <div class="kpi-mega-foot">Tempo médio de reparo das O.S. concluídas.</div>
+            </div>
+            <div class="kpi-mega col-3" style="--kpi-color:var(--acid)">
+              <div class="kpi-mega-icon">⚡</div>
+              <div class="kpi-mega-label">MTBF médio</div>
+              <div class="kpi-mega-val">{{ dashboardMetrics.mtbf }}</div>
+              <div class="kpi-mega-foot">Tempo médio entre a conclusão de uma O.S. e a abertura da próxima.</div>
+            </div>
+            <div class="kpi-mega col-3" style="--kpi-color:var(--warn)">
+              <div class="kpi-mega-icon">✅</div>
+              <div class="kpi-mega-label">Disponibilidade</div>
+              <div class="kpi-mega-val">{{ dashboardMetrics.disponibilidade }}</div>
+              <div class="kpi-mega-foot">Percentual de uptime calculado por MTBF / (MTBF + MTTR).</div>
+            </div>
+          </div>
+
           <!-- Charts Row 1 -->
           <div class="dash-grid" style="margin-bottom:16px">
             <div class="chart-card col-4">

@@ -50,6 +50,11 @@ createApp({
     const dashTelemetriaEquip = ref('');
     const dashTelemetriaSensor = ref('');
     const dashCustoSetor = ref('');
+    const dashSetor = ref('');
+    const dashEquipamento = ref('');
+    const dashboardKpis = ref([]);
+    const dashboardKpisLoading = ref(false);
+    const dashboardKpisError = ref(null);
 
     const lists = reactive({
       equipamentos: [], alertas: [], ordens: [],
@@ -197,6 +202,47 @@ createApp({
     });
 
     const dashboardAllowedEquipamentoIds = computed(() => new Set(dashboardEquipamentos.value.map(eq => eq.id)));
+
+    const availableDashboardSectors = computed(() => {
+      return [...new Set(dashboardEquipamentos.value.map(eq => locSetor(eq.id)).filter(Boolean))].sort();
+    });
+
+    const dashboardEquipmentOptions = computed(() => {
+      if (!dashSetor.value) return dashboardEquipamentos.value;
+      return dashboardEquipamentos.value.filter(eq => locSetor(eq.id) === dashSetor.value);
+    });
+
+    const dashboardKpisFiltered = computed(() => {
+      const allowedIds = new Set(dashboardEquipamentos.value.map(eq => eq.id));
+      return dashboardKpis.value
+        .filter(k => allowedIds.has(k.equipamento_id))
+        .filter(k => !dashSetor.value || locSetor(k.equipamento_id) === dashSetor.value)
+        .filter(k => !dashEquipamento.value || k.equipamento_id === Number(dashEquipamento.value));
+    });
+
+    const dashboardMetrics = computed(() => {
+      const items = dashboardKpisFiltered.value;
+      if (!items.length) {
+        return { mttr: '—', mtbf: '—', disponibilidade: '—', custo: '—', total: 0 };
+      }
+      const validMttr = items.filter(k => k.total_manutencoes > 0).map(k => Number(k.mttr_hours) || 0);
+      const validMtbf = items.filter(k => k.mtbf_hours > 0).map(k => Number(k.mtbf_hours) || 0);
+      const validDisp = items.map(k => k.disponibilidade_porcentagem).filter(v => v !== null && v !== undefined);
+      const avg = (arr) => arr.length ? (arr.reduce((sum, value) => sum + value, 0) / arr.length).toFixed(2) : '—';
+      return {
+        mttr: avg(validMttr),
+        mtbf: avg(validMtbf),
+        disponibilidade: avg(validDisp),
+        custo: items.reduce((sum, k) => sum + (Number(k.custo_total_manutencao) || 0), 0).toFixed(2),
+        total: items.length,
+      };
+    });
+
+    watch(dashSetor, () => {
+      if (dashEquipamento.value && !dashboardEquipmentOptions.value.some(eq => eq.id === Number(dashEquipamento.value))) {
+        dashEquipamento.value = '';
+      }
+    });
 
     function getEquipamentoId(item) {
       if (item == null) return null;
@@ -686,6 +732,20 @@ createApp({
       return { next: d?.next ?? null, prev: d?.previous ?? null };
     }
 
+    async function fetchDashboardKpis() {
+      dashboardKpisLoading.value = true;
+      dashboardKpisError.value = null;
+      try {
+        const data = await api('/api/dashboards/kpis/');
+        dashboardKpis.value = Array.isArray(data) ? data : [];
+      } catch (err) {
+        dashboardKpisError.value = err?.message || 'Falha ao carregar KPIs';
+        dashboardKpis.value = [];
+      } finally {
+        dashboardKpisLoading.value = false;
+      }
+    }
+
     async function fetchDashboard() {
       try {
         const empParam = globalEmpresa.value ? '&empresa=' + globalEmpresa.value : '';
@@ -744,6 +804,12 @@ createApp({
 
         if (histRes.status === 'fulfilled' && histRes.value) lists.historico = normList(histRes.value);
 
+        if (!isTecnico.value) {
+          await fetchDashboardKpis();
+        } else {
+          dashboardKpis.value = [];
+        }
+
         if (isTecnico.value) {
           const ordensAbertas = lists.ordens.filter(o => o.status === 'pendente' || o.status === 'andamento');
           const minhasOrdens = ordensAbertas.filter(o => o.responsavel === me.value?.id).length;
@@ -764,8 +830,6 @@ createApp({
             leituras_hoje: leiturasHoje.value.length,
             leituras_total: lists.leituras.length,
           };
-
-          api('/api/dashboards/kpis/').then(d => { if (d) kpis.value._mtbf = d; }).catch(() => { });
         }
 
         // Busca localizações para filtro de setor no custo
@@ -2014,6 +2078,7 @@ createApp({
       availableSectors,
       leiturasHoje, dashTelemetriaEquip, dashTelemetriaSensor,
       dashTelemetriaSensoresFiltrados, dashCustoSetor,
+      dashSetor, dashEquipamento, dashboardMetrics, dashboardEquipmentOptions, availableDashboardSectors, dashboardKpisLoading, dashboardKpisError,
       equipModal, selectedSensorLabel, selectedSensorThresholds, sensorModalThresholds, equipModalChart, equipModalStats, equipModalFilteredOrdens,
       openEquipamentoDetails, closeEquipModal, fetchEquipamentoReadings,
       chatOpen, chatInput, chatLoading, chatMessages, chatScrollContainer,
