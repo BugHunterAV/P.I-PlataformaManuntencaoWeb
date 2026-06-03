@@ -1,5 +1,9 @@
 const { createApp, ref, reactive, computed, onMounted, watch, nextTick } = Vue;
 const BASE = 'http://localhost:8000';
+const TELEMETRY_CHART_WIDTH = 320;
+const TELEMETRY_CHART_HEIGHT = 100;
+const TELEMETRY_CHART_LEFT_PAD = 45;
+const TELEMETRY_X_END_PERCENT = 0.7; // last point reaches about 70% of chart width
 
 // Helper: ordena por nível de severidade (critico → medio → baixo)
 const NIVEL_PRIORIDADE = { critico: 0, medio: 1, baixo: 2 };
@@ -356,18 +360,29 @@ createApp({
         Number((thresholdSensor.limite_alerta_critico_pct || 100) * thresholdSensor.limite_alerta / 100),
       ] : [];
       const extendedVals = vals.concat(thresholdValues.filter(v => Number.isFinite(v)));
-      const min = Math.min(...extendedVals);
-      const max = Math.max(...extendedVals);
+      const rawMin = Math.min(...extendedVals);
+      const rawMax = Math.max(...extendedVals);
+      const min = telemetryYAxis.min === null ? rawMin : Math.min(telemetryYAxis.min, rawMin);
+      const max = telemetryYAxis.max === null ? rawMax : Math.max(telemetryYAxis.max, rawMax);
       const chartRange = Math.max(max - min, 1);
-      const W = 320, H = 100;
+
+      if (telemetryYAxis.min === null || rawMin < telemetryYAxis.min) {
+        telemetryYAxis.min = rawMin;
+      }
+      if (telemetryYAxis.max === null || rawMax > telemetryYAxis.max) {
+        telemetryYAxis.max = rawMax;
+      }
+      const W = TELEMETRY_CHART_WIDTH;
+      const H = TELEMETRY_CHART_HEIGHT;
       const padding = 16;
-      const leftPad = 45;
+      const leftPad = TELEMETRY_CHART_LEFT_PAD;
       const chartW = W - leftPad;
+      const visibleChartW = chartW * TELEMETRY_X_END_PERCENT;
       const points = raw.map((l, i) => {
         const v = parseFloat(l.valor) || 0;
         const sensor = sensorMap.get(l.sensor) || {};
         return {
-          x: leftPad + (i / (raw.length - 1)) * chartW,
+          x: leftPad + (i / (raw.length - 1)) * visibleChartW,
           y: padding + (1 - ((v - min) / chartRange)) * (H - padding * 2),
           v,
           timestamp: l.timestamp,
@@ -384,8 +399,8 @@ createApp({
       });
       const xLabels = [
         { x: leftPad, label: formatChartTimestamp(raw[0].timestamp) },
-        { x: leftPad + chartW / 2, label: formatChartTimestamp(raw[Math.floor(raw.length / 2)].timestamp) },
-        { x: W, label: formatChartTimestamp(raw[raw.length - 1].timestamp) },
+        { x: leftPad + visibleChartW / 2, label: formatChartTimestamp(raw[Math.floor(raw.length / 2)].timestamp) },
+        { x: leftPad + visibleChartW, label: formatChartTimestamp(raw[raw.length - 1].timestamp) },
       ];
 
       const selectedSensor = dashTelemetriaSensor.value
@@ -418,7 +433,115 @@ createApp({
         xLabels,
         thresholds,
         leftPad,
+        chartW,
+        visibleChartW,
       };
+    });
+
+    const telemetryYAxis = reactive({ min: null, max: null });
+    const displayedChartTelemetria = ref(chartTelemetria.value);
+    const telemetrySlideOffset = ref(0);
+    const telemetryMovingDot = reactive({ x: 0, y: 0, visible: false });
+    let telemetryAnimationFrame = null;
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function easeOutQuad(t) {
+      return t * (2 - t);
+    }
+
+    function buildChartFromDots(dots, baseChart) {
+      const path = dots.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+      const lastPoint = dots[dots.length - 1];
+      return {
+        ...baseChart,
+        dots,
+        path,
+        area: path + ` L${lastPoint.x.toFixed(1)},100 L${baseChart.leftPad},100 Z`,
+      };
+    }
+
+    function updateDisplayedChartWithDots(dots, baseChart) {
+      if (!dots.length) return;
+      displayedChartTelemetria.value = buildChartFromDots(dots, baseChart);
+    }
+
+    function isSameTelemetrySource(currentChart, nextChart) {
+      if (!currentChart?.dots?.length || !nextChart?.dots?.length) return false;
+      const currentSensor = currentChart.dots[currentChart.dots.length - 1]?.sensorId;
+      const nextSensor = nextChart.dots[nextChart.dots.length - 1]?.sensorId;
+      return currentSensor !== undefined && currentSensor === nextSensor;
+    }
+
+    function animateChartTransition(nextChart) {
+      const currentChart = displayedChartTelemetria.value;
+      if (!currentChart || !currentChart.dots?.length || !nextChart?.dots?.length || currentChart.dots.length !== nextChart.dots.length) {
+        if (telemetryAnimationFrame) cancelAnimationFrame(telemetryAnimationFrame);
+        telemetrySlideOffset.value = 0;
+        telemetryMovingDot.visible = false;
+        displayedChartTelemetria.value = nextChart;
+        return;
+      }
+
+      if (!isSameTelemetrySource(currentChart, nextChart)) {
+        if (telemetryAnimationFrame) cancelAnimationFrame(telemetryAnimationFrame);
+        telemetrySlideOffset.value = 0;
+        telemetryMovingDot.visible = false;
+        displayedChartTelemetria.value = nextChart;
+        return;
+      }
+
+      const stepX = currentChart.dots[1].x - currentChart.dots[0].x;
+      const lastCurrentPoint = currentChart.dots[currentChart.dots.length - 1];
+      const nextLastPoint = nextChart.dots[nextChart.dots.length - 1];
+      const newPoint = { ...nextLastPoint, x: lastCurrentPoint.x + stepX };
+      if (newPoint.timestamp === lastCurrentPoint.timestamp) {
+        return;
+      }
+
+      const slideDots = [...currentChart.dots, newPoint];
+      displayedChartTelemetria.value = buildChartFromDots(slideDots, currentChart);
+      telemetrySlideOffset.value = 0;
+      telemetryMovingDot.visible = false;
+      if (telemetryAnimationFrame) cancelAnimationFrame(telemetryAnimationFrame);
+
+      const start = performance.now();
+      const duration = 2600;
+
+      function animate(now) {
+        const rawProgress = Math.min(Math.max((now - start) / duration, 0), 1);
+        const progress = easeOutQuad(rawProgress);
+        telemetrySlideOffset.value = lerp(0, -stepX, progress);
+
+        if (rawProgress < 1) {
+          telemetryAnimationFrame = requestAnimationFrame(animate);
+        } else {
+          telemetrySlideOffset.value = 0;
+          const finalDots = currentChart.dots.slice(1).map(dot => ({ ...dot, x: dot.x - stepX }));
+          const finalChart = buildChartFromDots([...finalDots, { ...newPoint, x: lastCurrentPoint.x }], currentChart);
+          displayedChartTelemetria.value = finalChart;
+        }
+      }
+
+      telemetryAnimationFrame = requestAnimationFrame(animate);
+    }
+
+    watch(chartTelemetria, (next, prev) => {
+      const nextDots = next?.dots || [];
+      if (nextDots.length < 2) {
+        displayedChartTelemetria.value = next;
+        telemetryMovingDot.visible = false;
+        telemetryYAxis.min = null;
+        telemetryYAxis.max = null;
+        return;
+      }
+      if (!displayedChartTelemetria.value?.dots?.length || next.dots.length !== displayedChartTelemetria.value.dots.length) {
+        displayedChartTelemetria.value = next;
+        return;
+      }
+      animateChartTransition(next);
     });
 
     const telemetriaSummary = computed(() => {
@@ -2227,7 +2350,7 @@ createApp({
       empresaNomeSensor, sensorEquipNome,
       onGlobalEmpresaChange,
       chartEquipStatus, chartAlertNivel, chartOrdens, chartTelemetria, chartCustoEvolucao,
-      telemetriaSummary,
+      telemetriaSummary, telemetryMovingDot, displayedChartTelemetria, telemetrySlideOffset,
       dashboardEquipamentos,
       donutArcs,
       availableSectors,

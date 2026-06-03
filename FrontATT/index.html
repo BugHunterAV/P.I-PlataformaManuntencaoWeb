@@ -47,6 +47,10 @@
     .btn-export.excel:hover { background: rgba(0, 212, 170, 0.2); }
     .btn-export.csv { background: rgba(77, 184, 255, 0.1); color: #4db8ff; border: 1px solid rgba(77, 184, 255, 0.3); }
     .btn-export.csv:hover { background: rgba(77, 184, 255, 0.2); }
+    .telemetry-moving-dot {
+      filter: drop-shadow(0 0 16px rgba(0, 212, 170, 0.75));
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -428,7 +432,7 @@
                 </div>
               </div>
               <div class="chart-body">
-                <div v-if="chartTelemetria.path" class="spark-wrap">
+                <div v-if="displayedChartTelemetria?.path" class="spark-wrap">
                   <svg width="100%" viewBox="0 0 320 140" preserveAspectRatio="xMidYMid meet" style="overflow:visible">
                     <defs>
                       <linearGradient id="spark-grad" x1="0" y1="0" x2="0" y2="1">
@@ -439,32 +443,39 @@
                     <line x1="45" y1="10" x2="320" y2="10" stroke="var(--edge)" stroke-width="0.5"/>
                     <line x1="45" y1="50" x2="320" y2="50" stroke="var(--edge)" stroke-width="0.5"/>
                     <line x1="45" y1="90" x2="320" y2="90" stroke="var(--edge)" stroke-width="0.5"/>
-                    <line v-for="t in chartTelemetria.thresholds" :key="t.name" x1="45" :y1="t.y" x2="320" :y2="t.y"
+                    <line v-for="t in displayedChartTelemetria.thresholds" :key="t.name" x1="45" :y1="t.y" x2="320" :y2="t.y"
                           :stroke="t.color" stroke-width="1.2" stroke-linecap="round" stroke-opacity=".75" :stroke-dasharray="t.dash" />
-                    <path :d="chartTelemetria.area" fill="url(#spark-grad)"/>
-                    <path :d="chartTelemetria.path" fill="none" stroke="var(--acid)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <g :transform="`translate(${telemetrySlideOffset}, 0)`">
+                      <path :d="displayedChartTelemetria.area" fill="url(#spark-grad)"/>
+                      <path class="spark-line" :d="displayedChartTelemetria.path" fill="none" stroke="var(--acid)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      <circle v-for="(dot,i) in displayedChartTelemetria.dots" :key="dot.timestamp || i"
+                              :cx="dot.x" :cy="dot.y" r="3"
+                              fill="var(--bg)" stroke="var(--acid)" stroke-width="1.5"
+                              style="cursor:pointer">
+                        <title>{{ `${dot.label}: ${dot.v.toFixed(2)} ${dot.unit || ''} — ${dot.timestamp ? dot.timestamp.slice(0,16).replace('T',' ') : ''}` }}</title>
+                      </circle>
+                      <circle v-if="telemetryMovingDot.visible"
+                              :cx="telemetryMovingDot.x" :cy="telemetryMovingDot.y"
+                              r="5" fill="var(--acid)" fill-opacity="0.95"
+                              stroke="var(--bg)" stroke-width="1.5"
+                              class="telemetry-moving-dot"/>
+                    </g>
                     <g class="spark-axis-labels">
-                      <g v-for="tick in chartTelemetria.yTicks" :key="tick.label">
+                      <g v-for="tick in displayedChartTelemetria.yTicks" :key="tick.label">
                         <text x="40" :y="tick.y - 4" class="spark-axis-text" text-anchor="end">{{ tick.label }}</text>
                       </g>
-                      <g v-for="label in chartTelemetria.xLabels" :key="label.label">
+                      <g v-for="label in displayedChartTelemetria.xLabels" :key="label.label">
                         <text :x="label.x" y="115" class="spark-axis-text" :text-anchor="label.x <= 45 ? 'start' : label.x >= 320 ? 'end' : 'middle'">{{ label.label }}</text>
                       </g>
                     </g>
-                    <circle v-for="(dot,i) in chartTelemetria.dots" :key="i"
-                            :cx="dot.x" :cy="dot.y" r="3"
-                            fill="var(--bg)" stroke="var(--acid)" stroke-width="1.5"
-                            style="cursor:pointer">
-                      <title>{{ `${dot.label}: ${dot.v.toFixed(2)} ${dot.unit || ''} — ${dot.timestamp ? dot.timestamp.slice(0,16).replace('T',' ') : ''}` }}</title>
-                    </circle>
                   </svg>
                   <div class="spark-labels">
-                    <span>min {{ chartTelemetria.min }}</span>
-                    <span>{{ chartTelemetria.count }} pontos</span>
-                    <span>max {{ chartTelemetria.max }}</span>
+                    <span>min {{ displayedChartTelemetria.min }}</span>
+                    <span>{{ displayedChartTelemetria.count }} pontos</span>
+                    <span>max {{ displayedChartTelemetria.max }}</span>
                   </div>
-                  <div class="spark-threshold-legend" v-if="chartTelemetria.thresholds?.length">
-                    <span class="spark-threshold-chip" v-for="t in chartTelemetria.thresholds" :key="t.name">
+                  <div class="spark-threshold-legend" v-if="displayedChartTelemetria.thresholds?.length">
+                    <span class="spark-threshold-chip" v-for="t in displayedChartTelemetria.thresholds" :key="t.name">
                       <span class="spark-threshold-line" :style="{background: t.color}"></span>
                       {{ t.name }} ({{ t.pct }}%) {{ t.display }} {{ t.unit }}
                     </span>
