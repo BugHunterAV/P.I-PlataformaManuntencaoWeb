@@ -1556,7 +1556,7 @@
   </div>
 
   <!-- Chat Window -->
-  <div v-if="chatOpen" class="ai-chat-window">
+  <div v-if="chatOpen" :class="['ai-chat-window', { expanded: chatExpanded }]">
     <!-- Window Header -->
     <div class="ai-chat-header">
       <div class="ai-header-info">
@@ -1569,11 +1569,14 @@
           </div>
         </div>
       </div>
-      <button class="ai-close-btn" @click="toggleChat">×</button>
+      <div class="ai-header-actions">
+        <button class="ai-expand-btn" @click="toggleChatExpand" :title="chatExpanded ? 'Recolher painel' : 'Expandir painel'">↔</button>
+        <button class="ai-close-btn" @click="toggleChat">×</button>
+      </div>
     </div>
 
     <!-- Window Body / Chat area -->
-    <div class="ai-chat-body" ref="chatScrollContainer">
+    <div class="ai-chat-body" ref="chatScrollContainer" @scroll="onChatScroll">
       <div v-for="(msg, index) in chatMessages" :key="index" :class="['ai-msg-row', msg.role]">
         <div class="ai-msg-avatar">{{ msg.role === 'ai' ? 'AI' : 'U' }}</div>
         <div class="ai-msg-bubble-wrap">
@@ -1594,11 +1597,14 @@
           </div>
         </div>
       </div>
+
+      <button v-if="!chatAtBottom && !chatLoading" class="ai-scroll-to-bottom" @click="scrollToBottom" type="button">Ir para o final ↓</button>
     </div>
 
     <!-- Quick Suggestions -->
     <div class="ai-suggestions-container">
-      <div class="ai-suggestions-title">💡 Perguntas Rápidas:</div>
+      <div class="ai-suggestions-title">💡 Sugestões de texto</div>
+      <div class="ai-suggestions-hint">Clique para preencher o campo abaixo e ajuste antes de enviar.</div>
       <div class="ai-suggestions-scroll">
         <!-- TÉCNICO -->
         <template v-if="me?.tipo_usuario === 'tecnico'">
@@ -1623,13 +1629,15 @@
 
     <!-- Window Footer / Input -->
     <div class="ai-chat-footer">
-      <input 
-        v-model="chatInput" 
-        type="text" 
-        :placeholder="chatPlaceholder" 
-        @keydown.enter="sendChatMessage" 
-        :disabled="chatLoading" 
-      />
+      <textarea
+        ref="chatInputField"
+        v-model="chatInput"
+        rows="1"
+        :placeholder="chatPlaceholder"
+        @input="resizeChatInput"
+        @keydown.enter.prevent="handleChatEnter"
+        :disabled="chatLoading"
+      ></textarea>
       <button @click="sendChatMessage" :disabled="chatLoading || !chatInput.trim()">
         Enviar
       </button>

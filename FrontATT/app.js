@@ -2002,7 +2002,10 @@ createApp({
     // carregado via /api/auth/me/. Assim o backend escolhe o contexto correto
     // e encaminha a requisição ao endpoint de Gemini apropriado para o papel.
     const chatOpen = ref(false);
+    const chatExpanded = ref(false);
+    const chatAtBottom = ref(true);
     const chatInput = ref('');
+    const chatInputField = ref(null);
     const chatLoading = ref(false);
     const chatMessages = ref([
       {
@@ -2039,10 +2042,46 @@ createApp({
       }
     }
 
+    function toggleChatExpand() {
+      chatExpanded.value = !chatExpanded.value;
+      nextTick(() => {
+        scrollToBottom();
+        resizeChatInput();
+      });
+    }
+
+    function resizeChatInput() {
+      nextTick(() => {
+        if (!chatInputField.value) return;
+        const el = chatInputField.value;
+        el.style.height = 'auto';
+        el.style.height = Math.min(el.scrollHeight, 200) + 'px';
+      });
+    }
+
+    function handleChatEnter(event) {
+      if (event.shiftKey) {
+        return;
+      }
+      sendChatMessage();
+    }
+
+    function setChatScrollState() {
+      if (!chatScrollContainer.value) return;
+      const el = chatScrollContainer.value;
+      chatAtBottom.value = el.scrollHeight - el.scrollTop - el.clientHeight < 20;
+    }
+
+    function onChatScroll() {
+      setChatScrollState();
+    }
+
     function scrollToBottom() {
       nextTick(() => {
         if (chatScrollContainer.value) {
-          chatScrollContainer.value.scrollTop = chatScrollContainer.value.scrollHeight;
+          const el = chatScrollContainer.value;
+          el.scrollTop = el.scrollHeight;
+          chatAtBottom.value = true;
         }
       });
     }
@@ -2128,7 +2167,12 @@ createApp({
 
       if (promptText) {
         chatInput.value = promptText;
-        sendChatMessage();
+        nextTick(() => {
+          resizeChatInput();
+          if (chatInputField.value) {
+            chatInputField.value.focus();
+          }
+        });
       }
     }
 
@@ -2191,10 +2235,10 @@ createApp({
       dashSetor, dashEquipamento, explainerCollapsed, dashboardMetrics, dashboardEquipmentOptions, availableDashboardSectors, dashboardKpisLoading, dashboardKpisError,
       equipModal, selectedSensorLabel, selectedSensorThresholds, sensorModalThresholds, equipModalChart, equipModalStats, equipModalFilteredOrdens,
       openEquipamentoDetails, closeEquipModal, fetchEquipamentoReadings,
-      chatOpen, chatInput, chatLoading, chatMessages, chatScrollContainer,
-      chatPlaceholder,
+      chatOpen, chatExpanded, chatAtBottom, chatInput, chatLoading, chatMessages, chatScrollContainer,
+      chatInputField, chatPlaceholder,
       darkMode, toggleTheme,
-      toggleChat, sendChatMessage, sendSuggestion, formatMarkdown
+      toggleChat, toggleChatExpand, sendChatMessage, sendSuggestion, onChatScroll, scrollToBottom, formatMarkdown
     };
   }
 }).mount('#app');

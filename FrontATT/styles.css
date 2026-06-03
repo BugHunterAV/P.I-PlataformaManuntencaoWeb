@@ -2161,17 +2161,23 @@ tbody tr:last-child td {
   right: 24px;
   width: 380px;
   height: 520px;
-  background: rgba(9, 13, 18, 0.85);
+  background: rgba(9, 13, 18, 0.9);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--wire);
-  border-radius: 12px;
+  border-radius: 16px;
   display: flex;
   flex-direction: column;
   z-index: 9999;
   box-shadow: var(--shadow-xl);
   overflow: hidden;
   animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.ai-chat-window.expanded {
+  width: min(520px, calc(100vw - 48px));
+  height: min(80vh, 720px);
+  right: 24px;
 }
 
 .ai-chat-window:focus-within {
@@ -2186,6 +2192,29 @@ tbody tr:last-child td {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.ai-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-expand-btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--wire);
+  background: rgba(38, 53, 69, 0.5);
+  color: var(--t1);
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.ai-expand-btn:hover {
+  border-color: var(--acid);
+  color: var(--acid);
 }
 
 .ai-header-info {
@@ -2258,7 +2287,8 @@ tbody tr:last-child td {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+  position: relative;
 }
 
 .ai-msg-row {
@@ -2306,11 +2336,12 @@ tbody tr:last-child td {
 }
 
 .ai-msg-bubble {
-  padding: 10px 14px;
-  border-radius: 12px;
-  font-size: 12px;
-  line-height: 1.45;
+  padding: 12px 16px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.65;
   color: var(--t1);
+  word-break: break-word;
 }
 
 .ai-msg-row.user .ai-msg-bubble {
@@ -2352,6 +2383,27 @@ tbody tr:last-child td {
   padding: 12px 16px;
 }
 
+.ai-scroll-to-bottom {
+  position: sticky;
+  bottom: 10px;
+  margin: 0 auto;
+  align-self: center;
+  background: rgba(30, 40, 52, 0.95);
+  border: 1px solid rgba(184, 255, 0, 0.2);
+  color: var(--t1);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 12px;
+  cursor: pointer;
+  backdrop-filter: blur(10px);
+  transition: transform 0.2s ease;
+}
+
+.ai-scroll-to-bottom:hover {
+  transform: translateY(-1px);
+  border-color: var(--acid);
+}
+
 .ai-msg-bubble.typing .dot {
   width: 5px;
   height: 5px;
@@ -2376,11 +2428,17 @@ tbody tr:last-child td {
 
 .ai-suggestions-title {
   font-family: var(--mono);
-  font-size: 8px;
+  font-size: 10px;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  color: var(--t3);
+  color: var(--t2);
   margin-bottom: 6px;
+}
+
+.ai-suggestions-hint {
+  font-size: 11px;
+  color: var(--t4);
+  margin-bottom: 8px;
 }
 
 .ai-suggestions-scroll {
@@ -2395,16 +2453,16 @@ tbody tr:last-child td {
 }
 
 .ai-suggestion-chip {
-  background: rgba(38, 53, 69, 0.2);
-  border: 1px solid var(--wire);
-  color: var(--t2);
+  background: rgba(38, 53, 69, 0.25);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: var(--t1);
   font-family: var(--body);
-  font-size: 10px;
-  padding: 4px 10px;
-  border-radius: 12px;
+  font-size: 11px;
+  padding: 8px 12px;
+  border-radius: 14px;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .ai-suggestion-chip:hover {
@@ -2415,32 +2473,36 @@ tbody tr:last-child td {
 
 /* Footer / Input box */
 .ai-chat-footer {
-  padding: 12px 16px;
-  background: rgba(5, 7, 10, 0.6);
+  padding: 14px 16px 16px;
+  background: rgba(5, 7, 10, 0.72);
   border-top: 1px solid var(--edge);
   display: flex;
-  gap: 8px;
+  gap: 10px;
   align-items: center;
 }
 
-.ai-chat-footer input {
+.ai-chat-footer textarea {
   flex: 1;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--wire);
-  border-radius: 6px;
-  padding: 8px 12px;
-  font-size: 11px;
+  min-height: 38px;
+  max-height: 180px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
   font-family: var(--body);
   color: var(--t1);
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, background-color 0.2s;
+  resize: none;
+  overflow: auto;
 }
 
-.ai-chat-footer input:focus {
+.ai-chat-footer textarea:focus {
   border-color: var(--acid);
 }
 
-.ai-chat-footer input:disabled {
+.ai-chat-footer textarea:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
