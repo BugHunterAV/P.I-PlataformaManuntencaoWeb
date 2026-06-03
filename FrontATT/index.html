@@ -323,15 +323,15 @@
               </div>
               <div class="chart-expand-indicator">{{ explainerCollapsed ? '+' : '−' }}</div>
             </button>
-            <div class="chart-body" v-show="!explainerCollapsed" style="font-size:12px; line-height:1.6; color:#fff;">
+            <div class="chart-body" v-show="!explainerCollapsed" style="font-size:12px; line-height:1.6; color:var(--t1);">
               <p><strong>MTTR</strong> indica quanto tempo, em média, uma ordem de serviço leva para ser concluída. Fórmula: <strong>MTTR = média(data_conclusao - data_abertura)</strong>. Ex: <strong>40,2h</strong> significa cerca de 40 horas de trabalho. Para este indicador, <strong>menor é melhor</strong>.</p>
               <p><strong>MTBF</strong> indica quanto tempo, em média, passa entre a conclusão de uma falha e a próxima falha registrada. Fórmula: <strong>MTBF = média(data_abertura_da_os_seguinte - data_conclusao_da_os_anterior)</strong>. Isso mede o tempo em que o equipamento permanece funcionando antes da próxima falha. Ex: <strong>40,2h</strong> significa cerca de 40 horas entre problemas. Aqui, <strong>maior é melhor</strong>.</p>
               <p><strong>Disponibilidade</strong> é a proporção do tempo em que o equipamento está operacional. Matemática: se o ativo funciona por MTBF horas e depois fica parado por MTTR horas, o ciclo total é <strong>MTBF + MTTR</strong>. Assim, a disponibilidade é a parte do tempo em funcionamento dentro do ciclo total:
                 <strong>Disponibilidade = MTBF / (MTBF + MTTR) × 100</strong>.
               </p>
               <p>Essa fórmula faz sentido porque o ativo só está disponível enquanto não falha. Se MTBF for alto e MTTR for baixo, o denominador cresce menos que o numerador, gerando um percentual próximo de 100%. Se MTTR sobe muito, a disponibilidade cai porque o tempo de paralisação pesa mais no ciclo.</p>
-              <p style="margin-top:10px; font-size:11px; color:#f5f7fb;">Não existe um limite global único: o que é bom depende do tipo de equipamento, setor e contexto da empresa. Use essas métricas como referência interna para comparar equipamentos, setores e evolução ao longo do tempo.</p>
-              <ul style="margin-top:10px; padding-left:18px; color:#f5f7fb; font-size:11px;">
+              <p style="margin-top:10px; font-size:11px; color:var(--t2);">Não existe um limite global único: o que é bom depende do tipo de equipamento, setor e contexto da empresa. Use essas métricas como referência interna para comparar equipamentos, setores e evolução ao longo do tempo.</p>
+              <ul style="margin-top:10px; padding-left:18px; color:var(--t2); font-size:11px;">
                 <li><strong>MTTR</strong>: valor baixo é desejável porque significa reparos mais rápidos.</li>
                 <li><strong>MTBF</strong>: valor alto é desejável porque significa menos falhas em intervalos maiores.</li>
                 <li><strong>Disponibilidade</strong>: quanto mais próximo de 100%, melhor.</li>
