@@ -11,12 +11,28 @@ class OrdemServicoSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         request = self.context.get('request')
-        if request and request.user.is_authenticated and request.user.tipo_usuario == 'tecnico':
-            responsavel = data.get('responsavel')
-            if responsavel and responsavel != request.user:
+        user = request.user if request and request.user.is_authenticated else None
+        equipamento = data.get('equipamento', getattr(self.instance, 'equipamento', None))
+        responsavel = data.get('responsavel', getattr(self.instance, 'responsavel', None))
+
+        if user and user.tipo_usuario != 'admin' and equipamento and equipamento.empresa_id != user.empresa_id:
+            raise serializers.ValidationError({'equipamento': 'O equipamento deve pertencer à sua empresa.'})
+
+        if responsavel and equipamento and responsavel.empresa_id != equipamento.empresa_id:
+            raise serializers.ValidationError({'responsavel': 'O responsável deve pertencer à empresa do equipamento.'})
+
+        if user and user.tipo_usuario == 'tecnico':
+            if responsavel and responsavel != user:
                 raise serializers.ValidationError({
                     'responsavel': 'Técnicos só podem assumir ordens para si mesmos.'
                 })
+
+            if self.instance and self.instance.responsavel and self.instance.responsavel != user:
+                raise serializers.ValidationError('Técnicos não podem editar ordens atribuídas a outro técnico.')
+
+        if self.instance and self.instance.status == 'concluida' and data.get('status') not in (None, 'concluida'):
+            raise serializers.ValidationError({'status': 'Uma ordem concluída não pode voltar para outro status.'})
+
         return data
 
     def create(self, validated_data):

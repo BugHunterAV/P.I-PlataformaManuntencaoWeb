@@ -752,7 +752,7 @@
               <option value="resolvido">Resolvido</option>
               <option value="ignorado">Ignorado</option>
             </select>
-            <button v-if="isAdmin" class="btn btn-primary" @click="openModal('alerta')">+ Novo</button>
+            <button v-if="isAdminOrGestor" class="btn btn-primary" @click="openModal('alerta')">+ Novo</button>
             <div class="export-btns">
               <span class="export-label">Exportar:</span>
               <button class="btn-export pdf" @click="exportData('alertas', 'pdf')">📄 PDF</button>
@@ -862,7 +862,7 @@
             <div>
               <div class="section-header">
                 <div class="section-title">Sensores <span class="live-dot" style="margin-left:8px"></span></div>
-                <button class="btn btn-primary btn-sm" @click="openModal('sensor')">+ Sensor</button>
+                <button v-if="isAdminOrGestor" class="btn btn-primary btn-sm" @click="openModal('sensor')">+ Sensor</button>
               </div>
               <div class="filter-bar" style="margin-bottom:12px; background:rgba(0,0,0,0.2); padding:8px; border-radius:6px; border:1px solid var(--border)">
                 <input class="filter-input" style="flex:1" v-model="filters.telemetria_sensores.search" placeholder="Buscar..." @input="debouncedFetch('ts',fetchTelemetria)" />
@@ -914,7 +914,7 @@
               <div class="section-header">
                 <div class="section-title">Últimas Leituras</div>
                 <div style="display:flex;gap:8px">
-                  <button class="btn btn-primary btn-sm" @click="openModal('leitura')">+ Leitura</button>
+                  <button v-if="isAdminOrGestor" class="btn btn-primary btn-sm" @click="openModal('leitura')">+ Leitura</button>
                   <button class="btn btn-ghost btn-sm" @click="fetchTelemetria">↺ Atualizar</button>
                 </div>
               </div>
@@ -960,7 +960,7 @@
           <div class="filter-bar">
             <input class="filter-input" v-model="filters.localizacoes.search" placeholder="Buscar localização..." @input="debouncedFetch('loc',fetchLocalizacoes)" />
             <input class="filter-input" v-model="filters.localizacoes.setor" placeholder="Filtrar por setor..." @input="debouncedFetch('locS',fetchLocalizacoes)" />
-            <button class="btn btn-primary" @click="openModal('localizacao')">+ Localização</button>
+            <button v-if="isAdminOrGestor" class="btn btn-primary" @click="openModal('localizacao')">+ Localização</button>
           </div>
           <div class="table-wrap">
             <div v-if="loading" class="loading"><div class="spinner"></div>Carregando...</div>

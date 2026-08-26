@@ -84,3 +84,13 @@ class TelemetriaAlertTests(APITestCase):
         self.client.post(self.leitura_url, {"sensor": sensor.id, "valor": 114.0})
         alerta.refresh_from_db()
         self.assertEqual(alerta.nivel, 'critico')
+
+    def test_tecnico_nao_pode_inserir_leitura(self):
+        tecnico = Usuario.objects.create_user(
+            username='tecnico_leitura', password='123', tipo_usuario='tecnico', empresa=self.empresa
+        )
+        self.client.force_authenticate(user=tecnico)
+
+        response = self.client.post(self.leitura_url, {'sensor': self.sensor.id, 'valor': 10.0}, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

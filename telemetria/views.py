@@ -9,17 +9,25 @@ class SensorViewSet(viewsets.ModelViewSet):
     serializer_class = SensorSerializer
     permission_classes = [IsAuthenticatedNoDeleteForTecnico]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['equipamento', 'tipo', 'ativo']
+    filterset_fields = ['equipamento', 'equipamento__empresa', 'tipo', 'ativo']
     search_fields = ['descricao']
 
     def get_queryset(self):
         user = self.request.user
         qs = Sensor.objects.select_related('equipamento')
-        if user.tipo_usuario == 'admin':
-            return qs.all()
-        if user.empresa:
-            return qs.filter(equipamento__empresa=user.empresa)
-        return qs.none()
+        if user.tipo_usuario != 'admin':
+            if user.empresa:
+                qs = qs.filter(equipamento__empresa=user.empresa)
+            else:
+                return qs.none()
+        equipamento_ids = self.request.query_params.get('equipamento__in')
+        if equipamento_ids:
+            try:
+                ids = [int(value) for value in equipamento_ids.split(',') if value.strip()]
+            except ValueError:
+                ids = []
+            qs = qs.filter(equipamento_id__in=ids)
+        return qs
 
 
 from django_filters import rest_framework as df_filters
@@ -43,8 +51,17 @@ class TelemetriaViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         qs = Telemetria.objects.select_related('sensor', 'sensor__equipamento').order_by('-timestamp')
-        if user.tipo_usuario == 'admin':
-            return qs
-        if user.empresa:
-            return qs.filter(sensor__equipamento__empresa=user.empresa)
-        return qs.none()
+        if user.tipo_usuario != 'admin':
+            if user.empresa:
+                qs = qs.filter(sensor__equipamento__empresa=user.empresa)
+            else:
+                return qs.none()
+
+        equipamento_ids = self.request.query_params.get('sensor__equipamento__in')
+        if equipamento_ids:
+            try:
+                ids = [int(value) for value in equipamento_ids.split(',') if value.strip()]
+            except ValueError:
+                ids = []
+            qs = qs.filter(sensor__equipamento_id__in=ids)
+        return qs

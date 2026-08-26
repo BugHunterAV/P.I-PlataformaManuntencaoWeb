@@ -37,15 +37,15 @@ class IsGestorOrReadOnly(permissions.BasePermission):
 
 class IsAuthenticatedNoDeleteForTecnico(permissions.BasePermission):
     """
-    Qualquer usuário autenticado pode GET, POST e PATCH/PUT.
-    Técnicos NÃO podem DELETE — apenas Gestores e Admins podem deletar registros.
+    Usuários autenticados podem consultar recursos.
+    Técnicos não podem alterar recursos administrativos nem deletar registros.
 
     """
     def has_permission(self, request, view):
         if not request.user or not request.user.is_authenticated:
             return False
 
-        if request.method == 'DELETE':
-            return request.user.tipo_usuario in ['gestor', 'admin'] or request.user.is_superuser
+        if request.method in permissions.SAFE_METHODS:
+            return True
 
-        return True
+        return request.user.tipo_usuario in ['gestor', 'admin'] or request.user.is_superuser

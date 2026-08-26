@@ -205,6 +205,13 @@ class DashboardSummaryView(APIView):
             status__in=['pendente', 'andamento']
         ).count()
 
+        ordem_counts = OrdemServico.objects.filter(
+            equipamento__in=equipamentos
+        ).values('status').annotate(total=Count('status'))
+        resumo_ordens = {status: 0 for status, _ in OrdemServico.STATUS_CHOICES}
+        for item in ordem_counts:
+            resumo_ordens[item['status']] = item['total']
+
         return Response({
             'resumo_status': resumo_status,
             'kpis_globais': {
@@ -215,6 +222,7 @@ class DashboardSummaryView(APIView):
             },
             'alertas_ativos': resumo_alertas,
             'os_abertas': os_abertas,
+            'resumo_ordens': resumo_ordens,
             'detalhes_equipamentos': individual_kpis,
         })
 

@@ -32,6 +32,9 @@ class IsOwnerOrGestorOrUnassigned(permissions.BasePermission):
 
         # Técnicos
         if user.tipo_usuario == 'tecnico':
+            if request.method == 'DELETE':
+                return False
+
             # Se a O.S. já tem um responsável e não é o usuário logado
             if obj.responsavel and obj.responsavel != user:
                 return False

@@ -33,6 +33,16 @@ def _filtrar_por_empresa(queryset, user, campo_empresa='empresa'):
     return queryset.none()
 
 
+def _filtrar_empresa_admin(queryset, user, empresa_id, campo_empresa):
+    if user.tipo_usuario == 'admin':
+        if empresa_id:
+            return queryset.filter(**{f'{campo_empresa}_id': empresa_id})
+        return queryset
+    if user.empresa:
+        return queryset.filter(**{campo_empresa: user.empresa})
+    return queryset.none()
+
+
 def _despachar_formato(formato, nome, titulo, colunas, linhas):
     """Despacha para o exporter correto baseado no formato solicitado."""
     if formato == 'csv':
@@ -110,6 +120,8 @@ class ExportarOrdensServicoView(APIView):
             qs = qs.filter(equipamento_id=equipamento_id)
         if responsavel_id:
             qs = qs.filter(responsavel_id=responsavel_id)
+        if user.tipo_usuario == 'admin' and request.query_params.get('empresa'):
+            qs = qs.filter(equipamento__empresa_id=request.query_params['empresa'])
 
         qs = qs.order_by('-data_abertura')
 
@@ -153,7 +165,7 @@ class ExportarEquipamentosView(APIView):
         qs = Equipamento.objects.select_related('empresa')
 
         # Isolamento multi-tenant
-        qs = _filtrar_por_empresa(qs, user, 'empresa')
+        qs = _filtrar_empresa_admin(qs, user, request.query_params.get('empresa'), 'empresa')
 
         # Filtros opcionais
         status = request.query_params.get('status')
@@ -224,6 +236,8 @@ class ExportarAlertasView(APIView):
             qs = qs.filter(status=status_param)
         if equipamento_id:
             qs = qs.filter(equipamento_id=equipamento_id)
+        if user.tipo_usuario == 'admin' and request.query_params.get('empresa'):
+            qs = qs.filter(equipamento__empresa_id=request.query_params['empresa'])
 
         qs = qs.order_by('-data_alerta')
 
@@ -280,6 +294,8 @@ class ExportarTelemetriaView(APIView):
             qs = qs.filter(sensor_id=sensor_id)
         if equipamento_id:
             qs = qs.filter(sensor__equipamento_id=equipamento_id)
+        if user.tipo_usuario == 'admin' and request.query_params.get('empresa'):
+            qs = qs.filter(sensor__equipamento__empresa_id=request.query_params['empresa'])
 
         # Limitar quantidade para não travar (padrão: 5000)
         try:
@@ -348,6 +364,8 @@ class ExportarHistoricoView(APIView):
             qs = qs.filter(data_execucao__gte=data_depois)
         if data_antes:
             qs = qs.filter(data_execucao__lte=data_antes)
+        if user.tipo_usuario == 'admin' and request.query_params.get('empresa'):
+            qs = qs.filter(ordem_servico__equipamento__empresa_id=request.query_params['empresa'])
 
         qs = qs.order_by('-data_execucao')
 

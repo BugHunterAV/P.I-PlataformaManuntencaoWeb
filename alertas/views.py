@@ -9,7 +9,7 @@ class AlertaViewSet(viewsets.ModelViewSet):
     serializer_class = AlertaSerializer
     permission_classes = [IsAuthenticatedNoDeleteForTecnico]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['equipamento', 'nivel', 'status']
+    filterset_fields = ['equipamento', 'equipamento__empresa', 'nivel', 'status']
     search_fields = ['tipo_alerta', 'descricao']
 
     def get_queryset(self):

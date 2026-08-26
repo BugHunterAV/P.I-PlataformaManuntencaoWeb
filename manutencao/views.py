@@ -6,6 +6,8 @@ from .serializers import OrdemServicoSerializer, HistoricoManutencaoSerializer
 from .permissions import IsOwnerOrGestorOrUnassigned
 from accounts.permissions import IsAuthenticatedNoDeleteForTecnico
 from rest_framework.permissions import IsAuthenticated
+from django.db import transaction
+from django.utils import timezone
 
 
 class HistoricoManutencaoFilter(df_filters.FilterSet):
@@ -15,35 +17,55 @@ class HistoricoManutencaoFilter(df_filters.FilterSet):
 
     class Meta:
         model = HistoricoManutencao
-        fields = ['ordem_servico', 'data_execucao_depois', 'data_execucao_antes']
+        fields = [
+            'ordem_servico', 'ordem_servico__equipamento__empresa',
+            'data_execucao_depois', 'data_execucao_antes'
+        ]
 
 
 class OrdemServicoViewSet(viewsets.ModelViewSet):
     serializer_class = OrdemServicoSerializer
-    permission_classes = [IsAuthenticatedNoDeleteForTecnico, IsOwnerOrGestorOrUnassigned]
+    permission_classes = [IsAuthenticated, IsOwnerOrGestorOrUnassigned]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['status', 'prioridade', 'equipamento', 'responsavel', 'tipo_os']
+    filterset_fields = ['status', 'prioridade', 'equipamento', 'equipamento__empresa', 'responsavel', 'tipo_os']
     search_fields = ['titulo', 'descricao']
     ordering_fields = ['data_abertura', 'prioridade', 'status']
     ordering = ['-data_abertura']
 
+    @staticmethod
+    def _ensure_history(ordem):
+        HistoricoManutencao.objects.get_or_create(
+            ordem_servico=ordem,
+            defaults={
+                'descricao_servico': ordem.descricao or ordem.titulo,
+                'data_execucao': timezone.localdate(),
+            },
+        )
+
+    @transaction.atomic
     def perform_create(self, serializer):
         validated = serializer.validated_data
         status = validated.get('status')
         responsavel = validated.get('responsavel')
         if status == 'concluida' and responsavel is None:
-            serializer.save(responsavel=self.request.user)
+            ordem = serializer.save(responsavel=self.request.user)
         else:
-            serializer.save()
+            ordem = serializer.save()
+        if ordem.status == 'concluida':
+            self._ensure_history(ordem)
 
+    @transaction.atomic
     def perform_update(self, serializer):
+        was_concluded = serializer.instance.status == 'concluida'
         validated = serializer.validated_data
         status = validated.get('status', serializer.instance.status)
         responsavel = validated.get('responsavel', serializer.instance.responsavel)
         if status == 'concluida' and responsavel is None:
-            serializer.save(responsavel=self.request.user)
+            ordem = serializer.save(responsavel=self.request.user)
         else:
-            serializer.save()
+            ordem = serializer.save()
+        if ordem.status == 'concluida' and not was_concluded:
+            self._ensure_history(ordem)
 
     def get_queryset(self):
         user = self.request.user

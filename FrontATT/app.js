@@ -58,6 +58,7 @@ createApp({
     const dashEquipamento = ref('');
     const explainerCollapsed = ref(true);
     const dashboardKpis = ref([]);
+    const dashboardSummary = ref(null);
     const dashboardKpisLoading = ref(false);
     const dashboardKpisError = ref(null);
 
@@ -162,6 +163,14 @@ createApp({
     // ═══════════════════════════════════════════════
 
     const chartEquipStatus = computed(() => {
+      if (!isTecnico.value && dashboardSummary.value?.resumo_status) {
+        const counts = dashboardSummary.value.resumo_status;
+        return [
+          { label: 'Ativo', value: counts.ativo || 0, color: '#00d4aa' },
+          { label: 'Manutenção', value: counts.manutencao || 0, color: '#ffaa00' },
+          { label: 'Inativo', value: counts.inativo || 0, color: '#ff3b3b' },
+        ].filter(s => s.value > 0);
+      }
       const eq = isTecnico.value ? dashboardEquipamentos.value : lists.equipamentos;
       if (!eq.length && kpis.value) {
         const op = kpis.value.equipamentos_operacionais ?? kpis.value.equipamentos_ativos ?? 0;
@@ -181,8 +190,12 @@ createApp({
     });
 
     const chartAlertNivel = computed(() => {
-      const counts = { critico: 0, medio: 0, baixo: 0 };
-      dashAlerts.value.forEach(a => { if (counts[a.nivel] !== undefined) counts[a.nivel]++; });
+      const counts = dashboardSummary.value?.alertas_ativos
+        ? { ...dashboardSummary.value.alertas_ativos }
+        : { critico: 0, medio: 0, baixo: 0 };
+      if (!dashboardSummary.value) {
+        dashAlerts.value.forEach(a => { if (counts[a.nivel] !== undefined) counts[a.nivel]++; });
+      }
       const max = Math.max(...Object.values(counts), 1);
       return [
         { label: 'Crítico', value: counts.critico, pct: (counts.critico / max) * 100, color: '#ff3b3b' },
@@ -192,8 +205,12 @@ createApp({
     });
 
     const chartOrdens = computed(() => {
-      const counts = { pendente: 0, andamento: 0, concluida: 0, cancelada: 0 };
-      lists.ordens.forEach(o => { if (counts[o.status] !== undefined) counts[o.status]++; });
+      const counts = dashboardSummary.value?.resumo_ordens
+        ? { ...dashboardSummary.value.resumo_ordens }
+        : { pendente: 0, andamento: 0, concluida: 0, cancelada: 0 };
+      if (!dashboardSummary.value) {
+        lists.ordens.forEach(o => { if (counts[o.status] !== undefined) counts[o.status]++; });
+      }
       const max = Math.max(...Object.values(counts), 1);
       return [
         { label: 'Pendente', value: counts.pendente, pct: (counts.pendente / max) * 100, color: '#4db8ff' },
@@ -229,6 +246,16 @@ createApp({
     });
 
     const dashboardMetrics = computed(() => {
+      const global = dashboardSummary.value?.kpis_globais;
+      if (global) {
+        return {
+          mttr: Number(global.mttr_medio || 0).toFixed(2),
+          mtbf: Number(global.mtbf_medio || 0).toFixed(2),
+          disponibilidade: Number(global.disponibilidade_media || 0).toFixed(2),
+          custo: Number(global.custo_total_manutencao || 0).toFixed(2),
+          total: dashboardSummary.value.detalhes_equipamentos?.length || 0,
+        };
+      }
       const items = dashboardKpisFiltered.value;
       if (!items.length) {
         return { mttr: '—', mtbf: '—', disponibilidade: '—', custo: '—', total: 0 };
@@ -907,12 +934,15 @@ createApp({
       dashboardKpisLoading.value = true;
       dashboardKpisError.value = null;
       try {
-        const data = await api('/api/dashboards/kpis/');
-        dashboardKpis.value = normList(data);
+        const query = globalEmpresa.value ? `?empresa_id=${encodeURIComponent(globalEmpresa.value)}` : '';
+        const data = await api('/api/dashboards/resumo/' + query);
+        dashboardSummary.value = data;
+        dashboardKpis.value = data?.detalhes_equipamentos || [];
       } catch (err) {
         dashboardKpisError.value = err?.message || 'Falha ao carregar KPIs';
         toast(dashboardKpisError.value, 'error');
         dashboardKpis.value = [];
+        dashboardSummary.value = null;
       } finally {
         dashboardKpisLoading.value = false;
       }
@@ -923,9 +953,9 @@ createApp({
         const empParam = globalEmpresa.value ? '&empresa=' + globalEmpresa.value : '';
         const [eqRes, alertRes, ordRes, histRes] = await Promise.allSettled([
           api('/api/equipamentos/?limit=200' + empParam),
-          api('/api/alertas/?status=ativo&limit=100&ordering=-criado_em'),
-          api('/api/ordens-servico/?limit=100'),
-          api('/api/historico/?limit=50'),
+          api('/api/alertas/?status=ativo&limit=100&ordering=-criado_em' + (globalEmpresa.value ? '&equipamento__empresa=' + globalEmpresa.value : '')),
+          api('/api/ordens-servico/?limit=100' + (globalEmpresa.value ? '&equipamento__empresa=' + globalEmpresa.value : '')),
+          api('/api/historico/?limit=50' + (globalEmpresa.value ? '&ordem_servico__equipamento__empresa=' + globalEmpresa.value : '')),
         ]);
 
         if (eqRes.status === 'fulfilled' && eqRes.value) lists.equipamentos = normList(eqRes.value);
@@ -1026,10 +1056,11 @@ createApp({
             minhas_ordens: minhasOrdens,
           };
         } else {
+          const summary = dashboardSummary.value;
           kpis.value = {
-            total_equipamentos: lists.equipamentos.length,
-            alertas_ativos: dashAlerts.value.length,
-            ordens_abertas: lists.ordens.filter(o => o.status === 'pendente' || o.status === 'andamento').length,
+            total_equipamentos: summary?.resumo_status?.total ?? lists.equipamentos.length,
+            alertas_ativos: summary?.alertas_ativos?.total ?? dashAlerts.value.length,
+            ordens_abertas: summary?.os_abertas ?? lists.ordens.filter(o => o.status === 'pendente' || o.status === 'andamento').length,
             leituras_hoje: leiturasTodayCount.value,
             leituras_total: leiturasTotalCount.value || lists.leituras.length,
           };
@@ -1066,18 +1097,10 @@ createApp({
         if (filters.alertas.search) p.set('search', filters.alertas.search);
         if (filters.alertas.nivel) p.set('nivel', filters.alertas.nivel);
         if (filters.alertas.status) p.set('status', filters.alertas.status);
+        if (globalEmpresa.value) p.set('equipamento__empresa', globalEmpresa.value);
         const d = await api('/api/alertas/?' + p);
         let items = normList(d);
         // Filtro por empresa: filtra client-side via IDs de equipamentos da empresa
-        if (globalEmpresa.value) {
-          const eqIds = new Set(lists.equipamentos.filter(eq => String(eq.empresa) === String(globalEmpresa.value)).map(eq => eq.id));
-          if (eqIds.size === 0) {
-            // Busca equipamentos da empresa para ter os IDs
-            const eqRes = await api('/api/equipamentos/?empresa=' + globalEmpresa.value + '&limit=999');
-            normList(eqRes).forEach(eq => eqIds.add(eq.id));
-          }
-          items = items.filter(a => eqIds.has(a.equipamento));
-        }
         sortByNivel(items);
         lists.alertas = items;
         Object.assign(pages.alertas, normPages(d));
@@ -1099,12 +1122,6 @@ createApp({
         if (globalEmpresa.value) p.set('equipamento__empresa', globalEmpresa.value);
         const d = await api('/api/ordens-servico/?' + p);
         let items = normList(d);
-        // Filtro client-side por empresa (caso o backend não suporte o param)
-        if (globalEmpresa.value && items.length > 0) {
-          const eqRes = await api('/api/equipamentos/?empresa=' + globalEmpresa.value + '&limit=999');
-          const eqIds = new Set(normList(eqRes).map(eq => eq.id));
-          items = items.filter(o => eqIds.has(o.equipamento));
-        }
         sortByNivel(items, 'prioridade');
         lists.ordens = items;
         if (!lists.usuarios.length) await fetchUsuariosAll();
@@ -1118,6 +1135,7 @@ createApp({
         if (filters.telemetria_sensores.search) ps.set('search', filters.telemetria_sensores.search);
         if (filters.telemetria_sensores.tipo) ps.set('tipo', filters.telemetria_sensores.tipo);
         if (filters.telemetria_sensores.ativo !== '') ps.set('ativo', filters.telemetria_sensores.ativo);
+        if (globalEmpresa.value) ps.set('equipamento__empresa', globalEmpresa.value);
 
         const pl = new URLSearchParams();
         if (filters.telemetria_leituras.valor_min) pl.set('valor_min', filters.telemetria_leituras.valor_min);
@@ -1129,14 +1147,6 @@ createApp({
         ]);
         let sItems = normList(s);
         let lItems = normList(l);
-        // Filtro client-side por empresa global
-        if (globalEmpresa.value) {
-          const eqRes = await api('/api/equipamentos/?empresa=' + globalEmpresa.value + '&limit=999');
-          const eqIds = new Set(normList(eqRes).map(eq => eq.id));
-          sItems = sItems.filter(sensor => eqIds.has(sensor.equipamento));
-          const sIds = new Set(sItems.map(sensor => sensor.id));
-          lItems = lItems.filter(l => sIds.has(l.sensor));
-        }
         lists.sensores = sItems;
         Object.assign(pages.sensores, normPages(s));
         lists.leituras = lItems;
@@ -1150,18 +1160,9 @@ createApp({
         if (filters.historico.search) p.set('search', filters.historico.search);
         if (filters.historico.data_de) p.set('data_execucao_depois', filters.historico.data_de);
         if (filters.historico.data_ate) p.set('data_execucao_antes', filters.historico.data_ate);
+        if (globalEmpresa.value) p.set('ordem_servico__equipamento__empresa', globalEmpresa.value);
         const d = await api('/api/historico/?' + p);
         let items = normList(d);
-        // Filtro client-side por empresa
-        if (globalEmpresa.value) {
-          const eqRes = await api('/api/equipamentos/?empresa=' + globalEmpresa.value + '&limit=999');
-          const eqIds = new Set(normList(eqRes).map(eq => eq.id));
-          // Precisamos buscar as ordens para saber o equipamento de cada histórico
-          const osRes = await api('/api/ordens-servico/?limit=999');
-          const osMap = {};
-          normList(osRes).forEach(o => { osMap[o.id] = o.equipamento; });
-          items = items.filter(h => eqIds.has(osMap[h.ordem_servico]));
-        }
         // Filtro local de custo (soma peças + mão de obra)
         if (filters.historico.custo_min) {
           const min = parseFloat(filters.historico.custo_min);
@@ -1366,10 +1367,6 @@ createApp({
           if (payload[k] === '' || payload[k] === 0) payload[k] = null;
         });
 
-        if (modal.type === 'leitura' && !payload.timestamp) {
-          payload.timestamp = new Date().toISOString();
-        }
-
         // Garante valores válidos para campos choice da OS
         if (modal.type === 'ordem' || modal.type === 'encerrar_os') {
           if (payload.status === 'concluida' && !payload.responsavel && me.value?.id) {
@@ -1391,25 +1388,6 @@ createApp({
           if ((modal.type === 'ordem' || modal.type === 'encerrar_os') && res) createdOsId = res.id;
         }
 
-        // Se for OS e foi marcada como concluída, cria histórico (apenas se mudou para concluída agora ou foi criada como concluída)
-        if ((modal.type === 'ordem' || modal.type === 'encerrar_os') && payload.status === 'concluida' && modal.oldStatus !== 'concluida') {
-          const cp = parseFloat(payload.custo_pecas) || 0;
-          const cmo = parseFloat(payload.custo_mao_de_obra) || 0;
-          if (createdOsId) {
-            const histPayload = {
-              ordem_servico: createdOsId,
-              custo_pecas: cp,
-              custo_mao_de_obra: cmo,
-              descricao_servico: payload.titulo ? (payload.titulo + ' (Conclusão)') : 'Conclusão da OS',
-              data_execucao: new Date().toISOString().slice(0, 10)
-            };
-            try {
-              await api('/api/historico/', { method: 'POST', body: JSON.stringify(histPayload) });
-            } catch (err) {
-              console.error('Erro ao salvar no histórico:', err);
-            }
-          }
-        }
         modal.open = false;
         toast(modal.type === 'change_password' ? 'Senha alterada com sucesso!' : (modal.editId ? 'Atualizado com sucesso!' : 'Criado com sucesso!'), 'success');
         if (modal.type === 'leitura') {
@@ -1689,13 +1667,18 @@ createApp({
       } else if (resource === 'alertas') {
         if (filters.alertas.nivel) p.set('nivel', filters.alertas.nivel);
         if (filters.alertas.status) p.set('status', filters.alertas.status);
+        if (globalEmpresa.value) p.set('empresa', globalEmpresa.value);
       } else if (resource === 'ordens-servico') {
         if (filters.ordens.status) p.set('status', filters.ordens.status);
         if (filters.ordens.prioridade) p.set('prioridade', filters.ordens.prioridade);
         if (filters.ordens.tipo_os) p.set('tipo_os', filters.ordens.tipo_os);
+        if (globalEmpresa.value) p.set('empresa', globalEmpresa.value);
       } else if (resource === 'historico') {
         if (filters.historico.data_de) p.set('data_execucao_depois', filters.historico.data_de);
         if (filters.historico.data_ate) p.set('data_execucao_antes', filters.historico.data_ate);
+        if (globalEmpresa.value) p.set('empresa', globalEmpresa.value);
+      } else if (resource === 'telemetria') {
+        if (globalEmpresa.value) p.set('empresa', globalEmpresa.value);
       } else if (resource === 'dashboard') {
         if (globalEmpresa.value) p.set('empresa_id', globalEmpresa.value);
       }
@@ -1723,27 +1706,8 @@ createApp({
         triggerDownload(blob, filename);
         return; // Backend export succeeded
       } catch (backendErr) {
-        console.warn('Exportação via backend falhou, usando fallback client-side:', backendErr.message);
-      }
-
-      // 2) Fallback: client-side generation
-      try {
-        const data = getExportData(resource);
-        if (!data) {
-          toast('Recurso não suportado para exportação local', 'error');
-          return;
-        }
-
-        if (format === 'csv') {
-          exportCSVClientSide(data, resource);
-        } else if (format === 'excel') {
-          exportExcelClientSide(data, resource);
-        } else if (format === 'pdf') {
-          exportPDFClientSide(data, resource);
-        }
-      } catch (clientErr) {
-        console.error('Exportação client-side falhou:', clientErr);
-        toast('Erro ao exportar dados: ' + clientErr.message, 'error');
+        console.error('Exportação via backend falhou:', backendErr);
+        toast('Não foi possível gerar a exportação. Tente novamente.', 'error');
       }
     }
 
@@ -2321,12 +2285,18 @@ createApp({
 
     function formatMarkdown(text) {
       if (!text) return '';
+      const escapeHtml = (value) => String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
       let lines = text.split('\n');
       let insideList = false;
       let result = [];
 
       for (let line of lines) {
-        let trimmed = line.trim();
+        let trimmed = escapeHtml(line.trim());
         if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
           if (!insideList) {
             result.push('<ul>');

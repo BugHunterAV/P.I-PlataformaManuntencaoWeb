@@ -114,3 +114,37 @@ class OSTests(APITestCase):
         response = self.client.post(self.os_url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['responsavel'], self.tecnico1.id)
+
+    def test_concluir_os_cria_historico_unico_no_backend(self):
+        os = OrdemServico.objects.create(
+            equipamento=self.motor,
+            titulo='OS com histórico',
+            descricao='Serviço concluído',
+            status='andamento',
+        )
+        self.client.force_authenticate(user=self.gestor)
+        url = reverse('ordens-servico-detail', args=[os.id])
+
+        response = self.client.patch(url, {'status': 'concluida'}, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(HistoricoManutencao.objects.filter(ordem_servico=os).count(), 1)
+        self.assertIsNotNone(os.__class__.objects.get(pk=os.id).data_conclusao)
+
+        self.client.patch(url, {'status': 'concluida'}, format='json')
+        self.assertEqual(HistoricoManutencao.objects.filter(ordem_servico=os).count(), 1)
+
+    def test_os_nao_aceita_equipamento_de_outra_empresa(self):
+        outra_empresa = Empresa.objects.create(nome='Outra', cnpj='555', email='o@o.com')
+        outro_motor = Equipamento.objects.create(
+            nome='Motor isolado', tipo='Motor', numero_serie='OS-002', empresa=outra_empresa
+        )
+        self.client.force_authenticate(user=self.gestor)
+
+        response = self.client.post(self.os_url, {
+            'equipamento': outro_motor.id,
+            'titulo': 'OS indevida',
+            'descricao': 'Teste',
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
