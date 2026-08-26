@@ -69,34 +69,64 @@ prompt = (PromptBuilder()
 Diagrama de classes
 -------------------
 
-              +-----------------------+
-              |       Prompt          |
-              +-----------------------+
-              | texto: str            |
-              +-----------------------+
+Simbolos POO: + publico, - privado, # protegido, {static} membro estatico.
+Nas ligacoes: ^-- heranca, ..|> implementacao, --> associacao,
+..> dependencia e *-- composicao.
 
-              +-----------------------+
-              |    PromptBuilder      |
-              +-----------------------+
-              | com_contexto()        |
-              | com_alertas()         |
-              | com_ordens()          |
-              | com_telemetria()      |
-              | com_financeiro()      |
-              | com_instrucoes()      |
-              | com_pergunta()        |
-              | build(): Prompt       |
-              +-----------+-----------+
-                          |
-                          | cria
-                          v
-              +-----------------------+
-              |   PromptDirector      |
-              +-----------------------+
-              | montar_chat()         |
-              | montar_analise_os()   |
-              | montar_financeiro()   |
-              +-----------------------+
+  +----------------------------------+
+  | <<interface>>                    |
+  | PromptBuilder                    |
+  +----------------------------------+
+  | +com_contexto(context): PromptBuilder |
+  | +com_alertas(alertas): PromptBuilder  |
+  | +com_ordens(ordens): PromptBuilder    |
+  | +com_telemetria(dados): PromptBuilder |
+  | +com_financeiro(dados): PromptBuilder |
+  | +com_instrucoes(texto): PromptBuilder |
+  | +com_pergunta(texto): PromptBuilder   |
+  | +build(): Prompt                       |
+  +----------------------------------+
+                    ^ ..|>
+                    |
+  +----------------------------------+
+  | PromptBuilderConcreto            |
+  +----------------------------------+
+  | -blocos: list[str]                |
+  +----------------------------------+
+  | +com_contexto(context): PromptBuilder |
+  | +com_alertas(alertas): PromptBuilder  |
+  | +com_ordens(ordens): PromptBuilder    |
+  | +com_telemetria(dados): PromptBuilder |
+  | +com_financeiro(dados): PromptBuilder |
+  | +com_instrucoes(texto): PromptBuilder |
+  | +com_pergunta(texto): PromptBuilder   |
+  | +build(): Prompt                       |
+  +----------------------------------+
+                    |
+                    | ..> cria
+                    v
+  +----------------------------------+
+  | Prompt                           |
+  +----------------------------------+
+  | -texto: str                      |
+  +----------------------------------+
+  | +obter_texto(): str              |
+  +----------------------------------+
+
+  +----------------------------------+
+  | PromptDirector                   |
+  +----------------------------------+
+  | +montar_chat(builder, contexto,  |
+  |  pergunta): Prompt               |
+  | +montar_analise_os(builder,      |
+  |  contexto, pergunta): Prompt     |
+  | +montar_financeiro(builder,      |
+  |  contexto, pergunta): Prompt     |
+  +----------------------------------+
+                 |
+                 | ..> coordena
+                 v
+          PromptBuilder
 
 O Builder e indicado aqui porque o problema principal e construir um objeto
 complexo por etapas. O produto nao e uma entidade do banco; e o texto final
@@ -130,32 +160,48 @@ Sugestao de participantes
 Diagrama de classes
 -------------------
 
-       +--------------------------+
-       |       Exportador         |  <<interface>>
-       +--------------------------+
-       | exportar(dados)          |
-       +------------+-------------+
+  +----------------------------------+
+  | <<interface>>                    |
+  | Exportador                       |
+  +----------------------------------+
+  | +exportar(nome, titulo,          |
+  |  colunas, linhas): HttpResponse  |
+  +----------------------------------+
                     ^
-        +-----------+-----------+----------------+
-        |                       |                |
-+---------------+     +----------------+  +----------------+
-| ExportadorCSV |     |ExportadorExcel |  | ExportadorPDF |
-+---------------+     +----------------+  +----------------+
-| exportar()    |     | exportar()     |  | exportar()    |
-+---------------+     +----------------+  +----------------+
+                    | ..|> implementa
+        +-----------+-----------+-----------+
+        |                       |           |
+  +-------------+       +-------------+ +-------------+
+  | Exportador  |       | Exportador  | | Exportador  |
+  | CSV         |       | Excel       | | PDF         |
+  +-------------+       +-------------+ +-------------+
+  | +exportar() |       | +exportar() | | +exportar() |
+  +-------------+       +-------------+ +-------------+
 
-       +-----------------------------------+
-       |          ExportadorFactory        |
-       +-----------------------------------+
-       | criar_exportador(formato)         |
-       +----------------+------------------+
-                        |
-                        | retorna
-                        v
-                 Exportador concreto
+  +----------------------------------+
+  | <<abstract>>                     |
+  | ExportadorCreator                |
+  +----------------------------------+
+  | +exportar(dados): HttpResponse   |
+  | #criar_exportador(): Exportador |
+  +----------------------------------+
+          ^                 ^                 ^
+          | ^-- heranca     | ^-- heranca     | ^-- heranca
+  +---------------+ +---------------+ +---------------+
+  | CriadorCSV    | | CriadorExcel  | | CriadorPDF   |
+  +---------------+ +---------------+ +---------------+
+  | #criar_       | | #criar_       | | #criar_      |
+  | exportador(): | | exportador(): | | exportador():|
+  | Exportador    | | Exportador    | | Exportador   |
+  +---------------+ +---------------+ +---------------+
+          | ..> cria       | ..> cria       | ..> cria
+          v                v                v
+     ExportadorCSV    ExportadorExcel   ExportadorPDF
 
 O Factory Method e o padrao mais diretamente aplicavel ao codigo atual, pois
-ja existe uma decisao centralizada de qual formato deve ser criado.
+ja existe uma decisao centralizada de qual formato deve ser criado. No desenho,
+o metodo protegido criar_exportador() e sobrescrito pelos criadores concretos;
+essa sobrescrita e o Factory Method.
 
 
 3. ABSTRACT FACTORY - FAMILIAS DE RELATORIOS
@@ -190,27 +236,45 @@ Exemplo de familias
 Diagrama de classes
 -------------------
 
- +----------------------------+       +----------------------------+
- | FabricaRelatorio           |       | ExportadorRelatorio        |
- | <<abstract factory>>       |       | <<abstract product>>       |
- +----------------------------+       +----------------------------+
- | criar_csv()                |------>| exportar()                 |
- | criar_excel()              |       +----------------------------+
- | criar_pdf()                |
- +-------------+--------------+
-               ^
-               |
-       +-------+--------+       +-------------------------+
-       |                |       | Familia operacional     |
- +-------------+  +-------------+  +---------------------+
- | Fabrica     |  | Fabrica     |  | CSV/Excel/PDF        |
- | Operacional |  | Executiva   |  | operacionais         |
- +------+------+  +------+------+  +---------------------+
-        |                |
-        | cria produtos  | cria produtos
-        v                v
-  CSV/Excel/PDF     CSV/Excel/PDF
-  operacionais      executivos
+  +----------------------------------+
+  | <<interface>>                    |
+  | FabricaRelatorio                 |
+  +----------------------------------+
+  | +criar_csv(): ExportadorCSV      |
+  | +criar_excel(): ExportadorExcel  |
+  | +criar_pdf(): ExportadorPDF      |
+  +----------------------------------+
+       ^ ..|> implementa       ^ ..|> implementa
+       |                       |
+  +----------------------+  +----------------------+
+  | FabricaRelatorio     |  | FabricaRelatorio     |
+  | Operacional           |  | Executivo            |
+  +----------------------+  +----------------------+
+  | +criar_csv()         |  | +criar_csv()         |
+  | +criar_excel()       |  | +criar_excel()       |
+  | +criar_pdf()         |  | +criar_pdf()         |
+  +----------------------+  +----------------------+
+       | ..> cria              | ..> cria
+       +-----------+-----------+-----------+
+                   |
+                   v
+  +------------------+  +------------------+  +------------------+
+  | <<interface>>    |  | <<interface>>    |  | <<interface>>    |
+  | ExportadorCSV    |  | ExportadorExcel  |  | ExportadorPDF    |
+  +------------------+  +------------------+  +------------------+
+  | +exportar(dados) |  | +exportar(dados) |  | +exportar(dados) |
+  +------------------+  +------------------+  +------------------+
+       ^ ..|>               ^ ..|>               ^ ..|
+       |                    |                    |
+  +------------------+  +------------------+  +------------------+
+  | CSVOperacional   |  | ExcelOperacional |  | PDFOperacional   |
+  +------------------+  +------------------+  +------------------+
+
+  +------------------+  +------------------+  +------------------+
+  | CSVExecutivo     |  | ExcelExecutivo   |  | PDFExecutivo     |
+  +------------------+  +------------------+  +------------------+
+       ..|>                 ..|>                 ..|>
+       (implementam as respectivas interfaces de formato)
 
 Relacao com Factory Method
 --------------------------
@@ -256,19 +320,34 @@ testes para os casos de chave ausente, chave alterada e erro de inicializacao.
 Diagrama conceitual, caso seja realmente necessario
 ---------------------------------------------------
 
-       +-------------------------+
-       | GeminiClientProvider    |  <<singleton>>
-       +-------------------------+
-       | _instance               |
-       | get_instance()          |
-       | get_client()            |
-       +------------+------------+
+  +----------------------------------+
+  | <<Singleton>>                    |
+  | GeminiClientProvider             |
+  +----------------------------------+
+  | -{static} instance:              |
+  |  GeminiClientProvider            |
+  | -client: GeminiClient            |
+  +----------------------------------+
+  | -GeminiClientProvider()          |
+  | +{static} get_instance():        |
+  |  GeminiClientProvider            |
+  | +get_client(): GeminiClient      |
+  +----------------------------------+
+                    *-- composicao
                     |
-                    | fornece uma instancia por processo
                     v
-       +-------------------------+
-       | Cliente Gemini          |
-       +-------------------------+
+  +----------------------------------+
+  | GeminiClient                     |
+  +----------------------------------+
+  | +generate_content(...): Response |
+  +----------------------------------+
+
+Simbolos POO usados neste diagrama:
+- - atributo ou operacao privada;
+- + operacao publica;
+- {static} membro da classe, compartilhado pela classe;
+- *-- composicao: o provider controla a instancia do cliente;
+- <<Singleton>> estereotipo que identifica o padrao.
 
 Esse diagrama representa uma alternativa futura, nao uma mudanca recomendada
 para a versao atual.
