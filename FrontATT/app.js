@@ -1,5 +1,5 @@
 const { createApp, ref, reactive, computed, onMounted, watch, nextTick } = Vue;
-const BASE = 'http://localhost:8000';
+const BASE = 'http://127.0.0.1:8001';
 const TELEMETRY_CHART_WIDTH = 320;
 const TELEMETRY_CHART_HEIGHT = 100;
 const TELEMETRY_CHART_LEFT_PAD = 45;
@@ -29,6 +29,8 @@ createApp({
     const loginForm = reactive({ username: '', password: '' });
     const kpis = ref(null);
     const dashAlerts = ref([]);
+    const dashAlertsCollapsed = ref(false);
+    const dashOrdensCollapsed = ref(false);
     const alertCount = ref(0);
     const toasts = ref([]);
     const globalEmpresa = ref('');  // Filtro global por empresa (admin)
@@ -85,7 +87,7 @@ createApp({
       alertas: { search: '', nivel: '', status: '' },
       ordens: { search: '', status: '', prioridade: '', tipo_os: '' },
       telemetria_sensores: { search: '', tipo: '', ativo: '' },
-      telemetria_leituras: { valor_min: '', valor_max: '' },
+      telemetria_leituras: { valor_min: '', valor_max: '', timestamp_de: '', timestamp_ate: '' },
       historico: { search: '', data_de: '', data_ate: '', custo_min: '', custo_max: '' },
       empresas: { search: '' },
       usuarios: { search: '' },
@@ -916,6 +918,32 @@ createApp({
     };
     function navigate(v) { view.value = v; fetchers[v]?.(); }
 
+    // Navegação dos cards clicáveis do técnico no dashboard
+    function navigateMinhasOrdens() {
+      filters.ordens.status = '';
+      filters.ordens.prioridade = '';
+      filters.ordens.tipo_os = '';
+      navigate('ordens');
+      // Após carregar, filtra client-side para mostrar apenas as atribuídas ao técnico
+      nextTick(() => {
+        const userId = me.value?.id;
+        if (userId) {
+          lists.ordens = lists.ordens.filter(o => o.responsavel === userId && o.status !== 'concluida' && o.status !== 'cancelada');
+        }
+      });
+    }
+
+    function navigateOsSemTecnico() {
+      filters.ordens.status = '';
+      filters.ordens.prioridade = '';
+      filters.ordens.tipo_os = '';
+      navigate('ordens');
+      // Após carregar, filtra client-side para mostrar apenas O.S. sem responsável
+      nextTick(() => {
+        lists.ordens = lists.ordens.filter(o => !o.responsavel && o.status !== 'concluida' && o.status !== 'cancelada');
+      });
+    }
+
     // ─ Fetchers ──────────────────────────────────────
     async function withLoading(fn) {
       loading.value = true;
@@ -1140,6 +1168,8 @@ createApp({
         const pl = new URLSearchParams();
         if (filters.telemetria_leituras.valor_min) pl.set('valor_min', filters.telemetria_leituras.valor_min);
         if (filters.telemetria_leituras.valor_max) pl.set('valor_max', filters.telemetria_leituras.valor_max);
+        if (filters.telemetria_leituras.timestamp_de) pl.set('timestamp_de', filters.telemetria_leituras.timestamp_de);
+        if (filters.telemetria_leituras.timestamp_ate) pl.set('timestamp_ate', filters.telemetria_leituras.timestamp_ate);
 
         const [s, l] = await Promise.all([
           api('/api/telemetria/sensores/?' + ps),
@@ -1380,6 +1410,24 @@ createApp({
           if (!tiposValidos.includes(payload.tipo_os)) payload.tipo_os = 'preventiva';
         }
 
+        // Se for encerrar O.S., mesclar o relato do técnico na descrição
+        if (modal.type === 'encerrar_os') {
+          const relato = fd.descricao_servico_realizado?.trim();
+          if (!relato) {
+            toast('Por favor, preencha o campo de serviço realizado.', 'error');
+            modal.saving = false;
+            return;
+          }
+          // Concatena a descrição original + relato do técnico
+          const original = fd._descricao_original || '';
+          payload.descricao = original
+            ? `${original}\n\n--- Serviço realizado (${new Date().toLocaleDateString('pt-BR')}) ---\n${relato}`
+            : relato;
+          // Remove campos internos
+          delete payload._descricao_original;
+          delete payload.descricao_servico_realizado;
+        }
+
         let createdOsId = modal.editId;
         if (modal.editId) {
           await api(cfg.endpoint + modal.editId + '/', { method: 'PUT', body: JSON.stringify(payload) });
@@ -1449,6 +1497,10 @@ createApp({
       modal.type = 'encerrar_os';
       modal.title = 'Encerrar Ordem de Serviço';
       fd.status = 'concluida';
+      // Salva a descrição original como histórico read-only
+      fd._descricao_original = item.descricao || '';
+      // Campo separado para o relato do técnico (começa vazio)
+      fd.descricao_servico_realizado = '';
       if (!fd.responsavel && me.value?.id) {
         fd.responsavel = me.value.id;
       }
@@ -1734,7 +1786,7 @@ createApp({
     }
     function nivelBadge(n) { return { critico: 'badge-red', medio: 'badge-yellow', baixo: 'badge-green' }[n] || 'badge-gray'; }
     function nivelColor(n) { return { critico: 'var(--signal)', medio: 'var(--warn)', baixo: 'var(--teal)' }[n] || 'var(--ink4)'; }
-    function statusBadge(s) { return { ativo: 'badge-red', resolvido: 'badge-green', ignorado: 'badge-gray' }[s] || 'badge-gray'; }
+    function statusBadge(s) { return { ativo: 'badge-blue', resolvido: 'badge-green', ignorado: 'badge-gray' }[s] || 'badge-gray'; }
     function eqStatusBadge(s) { return { ativo: 'badge-green', manutencao: 'badge-yellow', inativo: 'badge-gray' }[s] || 'badge-gray'; }
     function ordemStatusBadge(s) { return { pendente: 'badge-blue', andamento: 'badge-yellow', concluida: 'badge-green', cancelada: 'badge-gray' }[s] || 'badge-gray'; }
 
@@ -2341,6 +2393,7 @@ createApp({
       chartEquipStatus, chartAlertNivel, chartOrdens, chartTelemetria, chartCustoEvolucao,
       telemetriaSummary, telemetryMovingDot, displayedChartTelemetria, telemetrySlideOffset,
       dashboardEquipamentos,
+      dashAlertsCollapsed, dashOrdensCollapsed,
       donutArcs,
       availableSectors,
       leiturasHoje, leiturasTodayCount, leiturasTotalCount, dashTelemetriaEquip, dashTelemetriaSensor,
@@ -2352,7 +2405,8 @@ createApp({
       chatInputField, chatPlaceholder,
       darkMode, toggleTheme,
       toggleChat, toggleChatExpand, handleChatKeydown, resizeChatInput, sendChatMessage, sendSuggestion, onChatScroll, scrollToBottom, formatMarkdown,
-      testerMode, toggleTesterMode
+      testerMode, toggleTesterMode,
+      navigateMinhasOrdens, navigateOsSemTecnico
     };
   }
 }).mount('#app');
