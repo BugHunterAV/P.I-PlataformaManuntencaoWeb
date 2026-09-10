@@ -159,6 +159,9 @@
         <div class="nav-item" :class="{active:view==='usuarios'}" @click="navigate('usuarios')">
           <span class="nav-icon">◎</span> Usuários
         </div>
+        <div class="nav-item" :class="{active:view==='prompts'}" @click="navigate('prompts')">
+          <span class="nav-icon">🤖</span> Config. Prompts
+        </div>
       </template>
 
       <div class="sidebar-group-label">Conta</div>
@@ -1125,6 +1128,37 @@
             <button class="page-btn" :disabled="!pages.usuarios.prev" @click="fetchPage('usuarios',pages.usuarios.prev)">← Anterior</button>
             <span class="page-info">{{ lists.usuarios.length }} registros</span>
             <button class="page-btn" :disabled="!pages.usuarios.next" @click="fetchPage('usuarios',pages.usuarios.next)">Próxima →</button>
+          </div>
+        </div>
+
+        <!-- ══════════ PROMPTS ══════════ -->
+        <div v-if="view==='prompts'">
+          <div class="card card-full" style="max-width: 1000px; margin: 0 auto; margin-top: 24px;">
+            <div style="padding-bottom: 16px; margin-bottom: 24px; border-bottom: 1px solid var(--border);">
+              <h2 style="margin: 0; color: var(--ice); font-family: var(--mono); font-size: 20px;">Configurações de Prompts da IA</h2>
+              <p style="margin: 8px 0 0 0; color: var(--t4); font-size: 13px;">Personalize o comportamento e respostas do assistente NanaSmart AI.</p>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 24px;">
+              <div v-for="prompt in lists.prompts" :key="prompt.id" class="prompt-card" style="background: var(--bg); padding: 16px; border: 1px solid var(--border); border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
+                  <div>
+                    <div style="font-weight: 600; color: var(--t1); font-size: 15px; margin-bottom: 4px;">{{ prompt.label || prompt.key_display }}</div>
+                    <div style="font-size: 12px; color: var(--t4); font-family: var(--mono);">Chave: {{ prompt.key }}</div>
+                  </div>
+                  <div class="badge" :class="prompt.is_customized ? 'badge-blue' : 'badge-gray'">
+                    {{ prompt.is_customized ? 'Customizado' : 'Padrão' }}
+                  </div>
+                </div>
+                
+                <textarea v-model="prompt.edit_text" rows="5" class="input" style="width: 100%; font-family: var(--mono); font-size: 13px; line-height: 1.5; padding: 12px;"></textarea>
+                
+                <div style="display: flex; justify-content: flex-end; gap: 12px; margin-top: 12px;">
+                  <button v-if="prompt.is_customized || prompt.edit_text !== prompt.original_text" class="btn btn-outline" @click="resetPrompt(prompt.id)" style="color: var(--red); border-color: var(--red);">Restaurar Padrão de Fábrica</button>
+                  <button class="btn btn-primary" @click="savePrompt(prompt.id, prompt.edit_text)">Salvar Modificação</button>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 

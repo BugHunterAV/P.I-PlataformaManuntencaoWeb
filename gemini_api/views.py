@@ -1,21 +1,112 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework import status as http_status
 from drf_spectacular.utils import extend_schema
 
 from .cliente import generate_content, is_gemini_available
 from .context_service import build_base_context, get_financial_summary
+from .models import PromptConfig
 from .prompt_builder import (
     build_system_instruction,
     build_chat_prompt,
     build_os_analysis_prompt,
     build_unassigned_orders_prompt,
     build_finance_prompt,
+    get_all_defaults,
 )
 from .serializers import (
     GeminiMessageSerializer,
     GeminiResponseSerializer,
+    PromptConfigSerializer,
 )
+
+
+class IsAdminUser:
+    """Simple permission check: only admin users can access."""
+    def has_permission(self, request, view):
+        return (
+            request.user
+            and request.user.is_authenticated
+            and getattr(request.user, 'tipo_usuario', None) == 'admin'
+        )
+
+
+class PromptConfigListView(APIView):
+    """
+    GET  — List all prompt configs (auto-seeds defaults if empty).
+    """
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def get(self, request):
+        # Auto-seed: if no configs exist, create all defaults
+        defaults = get_all_defaults()
+        if not PromptConfig.objects.exists():
+            for key, original in defaults.items():
+                label = dict(PromptConfig.PROMPT_KEYS).get(key, key)
+                PromptConfig.objects.create(
+                    key=key,
+                    label=label,
+                    original_text=original,
+                    custom_text='',
+                )
+
+        # Ensure all keys exist (in case new ones were added)
+        existing_keys = set(PromptConfig.objects.values_list('key', flat=True))
+        for key, original in defaults.items():
+            if key not in existing_keys:
+                label = dict(PromptConfig.PROMPT_KEYS).get(key, key)
+                PromptConfig.objects.create(
+                    key=key,
+                    label=label,
+                    original_text=original,
+                    custom_text='',
+                )
+
+        configs = PromptConfig.objects.all()
+        serializer = PromptConfigSerializer(configs, many=True)
+        return Response(serializer.data)
+
+
+class PromptConfigDetailView(APIView):
+    """
+    GET    — Retrieve a single prompt config by ID.
+    PATCH  — Update custom_text (and optionally label).
+    POST   — Reset custom_text to empty (restores original).
+    """
+    permission_classes = [IsAuthenticated, IsAdminUser]
+
+    def get_object(self, pk):
+        try:
+            return PromptConfig.objects.get(pk=pk)
+        except PromptConfig.DoesNotExist:
+            return None
+
+    def get(self, request, pk):
+        obj = self.get_object(pk)
+        if not obj:
+            return Response({'detail': 'Não encontrado.'}, status=http_status.HTTP_404_NOT_FOUND)
+        serializer = PromptConfigSerializer(obj)
+        return Response(serializer.data)
+
+    def patch(self, request, pk):
+        obj = self.get_object(pk)
+        if not obj:
+            return Response({'detail': 'Não encontrado.'}, status=http_status.HTTP_404_NOT_FOUND)
+        serializer = PromptConfigSerializer(obj, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def post(self, request, pk):
+        """Reset: clears custom_text so the original is used."""
+        obj = self.get_object(pk)
+        if not obj:
+            return Response({'detail': 'Não encontrado.'}, status=http_status.HTTP_404_NOT_FOUND)
+        obj.custom_text = ''
+        obj.save()
+        serializer = PromptConfigSerializer(obj)
+        return Response(serializer.data)
 
 
 class GeminiBaseView(APIView):

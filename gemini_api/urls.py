@@ -4,6 +4,8 @@ from .views import (
     GeminiOsAnalysisView,
     GeminiUnassignedOrdersView,
     GeminiFinanceView,
+    PromptConfigListView,
+    PromptConfigDetailView,
 )
 
 urlpatterns = [
@@ -11,4 +13,8 @@ urlpatterns = [
     path('ordens/analise/', GeminiOsAnalysisView.as_view(), name='gemini_ordens_analise'),
     path('ordens/sem-atribuicao/', GeminiUnassignedOrdersView.as_view(), name='gemini_ordens_sem_atribuicao'),
     path('gestao/financeira/', GeminiFinanceView.as_view(), name='gemini_gestao_financeira'),
+    path('prompts/', PromptConfigListView.as_view(), name='gemini_prompts_list'),
+    path('prompts/<int:pk>/', PromptConfigDetailView.as_view(), name='gemini_prompts_detail'),
+    path('prompts/<int:pk>/reset/', PromptConfigDetailView.as_view(), name='gemini_prompts_reset'),
 ]
+

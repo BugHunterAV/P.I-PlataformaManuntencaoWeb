@@ -67,7 +67,7 @@ createApp({
     const lists = reactive({
       equipamentos: [], alertas: [], ordens: [],
       sensores: [], leituras: [], historico: [], empresas: [],
-      usuarios: [], localizacoes: []
+      usuarios: [], localizacoes: [], prompts: []
     });
     const leiturasTodayCount = ref(0);
     const leiturasTotalCount = ref(0);
@@ -157,7 +157,7 @@ createApp({
       ordens: 'Ordens de Serviço', telemetria: 'Telemetria',
       historico: 'Histórico de Manutenção', empresas: 'Empresas',
       usuarios: 'Usuários', localizacoes: 'Localizações',
-      perfil: 'Meu Perfil'
+      perfil: 'Meu Perfil', prompts: 'Configurações de Prompts da IA'
     }[view.value] || ''));
 
     // ═══════════════════════════════════════════════
@@ -915,6 +915,7 @@ createApp({
       empresas: () => fetchEmpresas(),
       usuarios: () => fetchUsuarios(),
       localizacoes: () => fetchLocalizacoes(),
+      prompts: () => fetchPrompts(),
     };
     function navigate(v) { view.value = v; fetchers[v]?.(); }
 
@@ -1227,6 +1228,40 @@ createApp({
         lists.usuarios = items;
         Object.assign(pages.usuarios, normPages(d));
       });
+    }
+
+    async function fetchPrompts() {
+      await withLoading(async () => {
+        const d = await api('/api/gemini/prompts/');
+        lists.prompts = d.map(p => ({
+          ...p,
+          edit_text: p.custom_text || p.original_text
+        }));
+      });
+    }
+
+    async function savePrompt(promptId, customText) {
+      try {
+        await api(`/api/gemini/prompts/${promptId}/`, {
+          method: 'PATCH',
+          body: JSON.stringify({ custom_text: customText })
+        });
+        showToast('Prompt salvo com sucesso!', 'success');
+        fetchPrompts();
+      } catch (e) {
+        showToast('Erro ao salvar prompt', 'error');
+      }
+    }
+
+    async function resetPrompt(promptId) {
+      if (!confirm('Tem certeza que deseja restaurar o prompt original?')) return;
+      try {
+        await api(`/api/gemini/prompts/${promptId}/reset/`, { method: 'POST' });
+        showToast('Prompt restaurado para o original!', 'success');
+        fetchPrompts();
+      } catch (e) {
+        showToast('Erro ao restaurar prompt', 'error');
+      }
     }
 
     async function fetchLocalizacoes() {
@@ -2383,7 +2418,7 @@ createApp({
       isAdmin, isAdminOrGestor, isTecnico, userInitial, viewTitle, osSemTecnicoCount,
       doLogin, logout, navigate, debouncedFetch,
       fetchEquipamentos, fetchAlertas, fetchOrdens, fetchTelemetria,
-      fetchHistorico, fetchEmpresas, fetchUsuarios, fetchLocalizacoes, fetchPage, fetchDashboard,
+      fetchHistorico, fetchEmpresas, fetchUsuarios, fetchLocalizacoes, fetchPrompts, fetchPage, fetchDashboard,
       openModal, editItem, saveItem, deleteItem, exportData, assumirOS, openEncerrarOS, assumirOSFromAlerta,
       formatNumber, fmtDate, nivelBadge, nivelColor, statusBadge, eqStatusBadge,
       ordemStatusBadge, prioridadeBadge,
@@ -2401,6 +2436,7 @@ createApp({
       dashSetor, dashEquipamento, explainerCollapsed, dashboardMetrics, dashboardEquipmentOptions, availableDashboardSectors, dashboardKpisLoading, dashboardKpisError,
       equipModal, selectedSensorLabel, selectedSensorThresholds, sensorModalThresholds, equipModalChart, equipModalStats, equipModalFilteredOrdens,
       openEquipamentoDetails, closeEquipModal, fetchEquipamentoReadings,
+      savePrompt, resetPrompt,
       chatOpen, chatExpanded, chatAtBottom, chatInput, chatLoading, chatMessages, chatScrollContainer,
       chatInputField, chatPlaceholder,
       darkMode, toggleTheme,

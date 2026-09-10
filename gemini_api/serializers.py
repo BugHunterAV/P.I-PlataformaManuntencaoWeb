@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from .models import PromptConfig
+
 
 class GeminiHistoryItemSerializer(serializers.Serializer):
     role = serializers.ChoiceField(choices=['user', 'model'], default='user')
@@ -18,3 +20,19 @@ class GeminiMessageSerializer(serializers.Serializer):
 class GeminiResponseSerializer(serializers.Serializer):
     response = serializers.CharField()
     model_used = serializers.CharField(required=False, allow_null=True)
+
+
+class PromptConfigSerializer(serializers.ModelSerializer):
+    is_customized = serializers.BooleanField(read_only=True)
+    effective_text = serializers.CharField(read_only=True)
+    key_display = serializers.CharField(source='get_key_display', read_only=True)
+
+    class Meta:
+        model = PromptConfig
+        fields = [
+            'id', 'key', 'key_display', 'label',
+            'custom_text', 'original_text',
+            'is_customized', 'effective_text',
+            'updated_at',
+        ]
+        read_only_fields = ['id', 'key', 'original_text', 'updated_at']
