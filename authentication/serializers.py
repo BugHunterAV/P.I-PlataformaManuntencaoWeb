@@ -11,7 +11,7 @@ class MeSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'email',
             'first_name', 'last_name',
-            'tipo_usuario', 'cargo', 'telefone',
+            'tipo_usuario', 'cargo', 'telefone', 'foto_perfil',
             'empresa', 'empresa_nome',
             'is_staff', 'is_superuser',
         ]

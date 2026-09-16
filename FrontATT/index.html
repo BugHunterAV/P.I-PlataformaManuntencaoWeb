@@ -166,7 +166,10 @@
 
       <div class="sidebar-group-label">Conta</div>
       <div class="nav-item" :class="{active:view==='perfil'}" @click="navigate('perfil')">
-        <span class="nav-icon">👤</span> Meu Perfil
+        <span class="nav-icon" style="overflow: hidden; display: inline-flex; justify-content: center; align-items: center; border-radius: 50%; vertical-align: middle;">
+          <img v-if="me?.foto_perfil" :src="me.foto_perfil" alt="Foto" style="width:20px; height:20px; object-fit:cover; border-radius:50%;" />
+          <span v-else>👤</span>
+        </span> Meu Perfil
       </div>
 
       <div class="sidebar-footer">
@@ -341,6 +344,34 @@
                 <li><strong>MTBF</strong>: valor alto é desejável porque significa menos falhas em intervalos maiores.</li>
                 <li><strong>Disponibilidade</strong>: quanto mais próximo de 100%, melhor.</li>
               </ul>
+            </div>
+          </div>
+
+          <!-- Painel de Tendências -->
+          <div v-if="!isTecnico && trendAlerts.length > 0" class="dash-section-label" style="margin-top:24px; color:var(--warn)">
+            <span style="font-size:16px; margin-right:6px">⚠️</span> Tendências de Falha (Risco Preditivo)
+          </div>
+          <div v-if="!isTecnico && trendAlerts.length > 0" class="dash-grid" style="margin-bottom:20px">
+            <div v-for="trend in trendAlerts" :key="trend.sensor_id" 
+                 class="chart-card trend-card kpi-clickable" 
+                 :class="'risk-' + trend.risk_level"
+                 @click="openEquipamentoDetails(trend.sensor_info.equipamento_id)">
+              <div class="trend-card-header">
+                <div class="trend-sensor-name">{{ trend.sensor_info.nome }} ({{ trend.sensor_info.tipo_display }})</div>
+                <div class="trend-risk-badge">{{ trend.risk_level.toUpperCase() }}</div>
+              </div>
+              <div class="trend-card-body">
+                <div class="trend-eq-name">{{ trend.sensor_info.equipamento_nome }}</div>
+                <div class="trend-direction">
+                  <span class="trend-dir-icon" v-if="trend.direction === 'increasing'">📈</span>
+                  <span class="trend-dir-icon" v-if="trend.direction === 'decreasing'">📉</span>
+                  Tendência {{ trend.direction === 'increasing' ? 'Crescente' : 'Decrescente' }}
+                </div>
+                <div class="trend-projection" v-if="trend.projected_breach_hours !== null">
+                  <span v-if="trend.projected_breach_hours === 0" style="color:var(--danger); font-weight:600">Limite ultrapassado!</span>
+                  <span v-else>Projeção: limite em <strong>{{ trend.projected_breach_hours }}h</strong></span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -815,6 +846,13 @@
 
         <!-- ══════════ ORDENS ══════════ -->
         <div v-if="view==='ordens'">
+          <div class="os-priority-tabs">
+            <button class="os-priority-tab" :class="{active: filtroFilaPrioridade==='todas'}" @click="filtroFilaPrioridade='todas'">Fila Completa</button>
+            <button class="os-priority-tab" :class="{active: filtroFilaPrioridade==='baixa'}" @click="filtroFilaPrioridade='baixa'"><span class="tab-dot" style="background:var(--mint)"></span>Baixa</button>
+            <button class="os-priority-tab" :class="{active: filtroFilaPrioridade==='media'}" @click="filtroFilaPrioridade='media'"><span class="tab-dot" style="background:var(--warn)"></span>Média</button>
+            <button class="os-priority-tab" :class="{active: filtroFilaPrioridade==='alta'}" @click="filtroFilaPrioridade='alta'"><span class="tab-dot" style="background:var(--acid)"></span>Alta</button>
+            <button class="os-priority-tab" :class="{active: filtroFilaPrioridade==='critica'}" @click="filtroFilaPrioridade='critica'"><span class="tab-dot" style="background:var(--danger)"></span>Crítica</button>
+          </div>
           <div class="filter-bar">
             <input class="filter-input" v-model="filters.ordens.search" placeholder="Buscar ordem..." @input="debouncedFetch('or',fetchOrdens)" />
             <select class="filter-select" v-model="filters.ordens.status" @change="fetchOrdens">
@@ -826,9 +864,10 @@
             </select>
             <select class="filter-select" v-model="filters.ordens.prioridade" @change="fetchOrdens">
               <option value="">Todas as prioridades</option>
-              <option value="baixo">Baixo</option>
-              <option value="medio">Médio</option>
-              <option value="critico">Crítico</option>
+              <option value="baixa">Baixa</option>
+              <option value="media">Média</option>
+              <option value="alta">Alta</option>
+              <option value="critica">Crítica</option>
             </select>
             <select class="filter-select" v-model="filters.ordens.tipo_os" @change="fetchOrdens">
               <option value="">Todos os tipos</option>
@@ -850,17 +889,21 @@
 
           <!-- OS CARDS GRID -->
           <div v-else class="os-cards-grid">
-            <div v-for="o in lists.ordens" :key="o.id"
+            <div v-for="o in ordensFilaPrioridade" :key="o.id"
                  class="os-card"
-                 :style="{'--os-priority-color': o.prioridade==='critico'?'var(--danger)':o.prioridade==='medio'?'var(--warn)':'var(--mint)'}"
+                 :class="'priority-' + o.prioridade"
+                 :style="{'--os-priority-color': o.prioridade==='critica'?'var(--danger)':o.prioridade==='alta'?'var(--acid)':o.prioridade==='media'?'var(--warn)':'var(--mint)'}"
                  @click="openEquipamentoDetails(o.equipamento, o)">
               <div class="os-card-header">
-                <div class="os-card-title">{{ o.titulo }}</div>
+                <div class="os-card-title">
+                  {{ prioridadeIcon(o.prioridade) }} {{ o.titulo }}
+                </div>
                 <div class="os-card-id">#{{ o.id }}</div>
               </div>
               <div class="os-card-meta">
                 <div class="os-card-meta-item equip">
                   <span class="meta-icon">⚙</span> {{ eqNome(o.equipamento) }}
+                  <span v-if="getEquipamentoInfo(o.equipamento)?.criticidade === 'alta'" class="criticidade-badge">ALTA CRITICIDADE</span>
                 </div>
                 <div class="os-card-meta-item" v-if="locSetor(o.equipamento) !== '—'">
                   <span class="meta-icon">📍</span> {{ locSetor(o.equipamento) }}
@@ -868,7 +911,7 @@
               </div>
               <div class="os-card-badges">
                 <span class="badge" :class="ordemStatusBadge(o.status)"><span class="badge-dot"></span>{{ o.status || '—' }}</span>
-                <span class="badge" :class="prioridadeBadge(o.prioridade)">{{ o.prioridade || '—' }}</span>
+                <span class="badge" :class="prioridadeBadge(o.prioridade)">{{ prioridadeLabel(o.prioridade) }}</span>
                 <span v-if="o.tipo_os" class="badge badge-gray" style="font-size:9px">{{ o.tipo_os }}</span>
               </div>
               <div class="os-card-meta">
@@ -881,8 +924,9 @@
                 <div class="os-card-date">{{ fmtDate(o.data_abertura || o.criado_em) }}</div>
                 <div class="os-card-actions" @click.stop>
                   <button v-if="isAdminOrGestor" class="btn btn-ghost btn-sm" @click.stop="editItem('ordem',o)">Editar</button>
-                  <button v-if="!o.responsavel" class="btn btn-primary btn-sm" :disabled="o._assumindo" @click.stop="assumirOS(o)">{{ o._assumindo ? '...' : 'Assumir' }}</button>
-                  <button v-if="o.responsavel === me?.id && o.status !== 'concluida' && o.status !== 'cancelada'" class="btn btn-success btn-sm" @click.stop="openEncerrarOS(o)">Encerrar</button>
+                  <button v-if="!o.responsavel" class="btn btn-primary btn-sm" :disabled="o._assumindo" @click.stop="assumirOS(o)">{{ o._assumindo ? '...' : 'Assumir OS' }}</button>
+                  <button v-if="o.responsavel === me?.id && o.status === 'pendente'" class="btn btn-primary btn-sm" :disabled="o._assumindo" @click.stop="iniciarAtendimento(o)">{{ o._assumindo ? '...' : 'Iniciar Atendimento' }}</button>
+                  <button v-if="o.responsavel === me?.id && o.status === 'andamento'" class="btn btn-success btn-sm" @click.stop="openEncerrarOS(o)">Encerrar</button>
                   <button v-if="isAdmin" class="btn btn-danger btn-sm" @click.stop="deleteItem('ordens-servico',o.id)">✕</button>
                 </div>
               </div>
@@ -1097,7 +1141,10 @@
           <div v-else class="usuario-cards-grid">
             <div v-for="u in lists.usuarios" :key="u.id" class="usuario-card">
               <div class="usuario-card-header">
-                <div class="usuario-avatar" :class="u.tipo_usuario">{{ (u.username || '?')[0] }}</div>
+                <div class="usuario-avatar" :class="u.tipo_usuario" style="overflow: hidden;">
+                  <img v-if="u.foto_perfil" :src="u.foto_perfil" alt="Foto" style="width: 100%; height: 100%; object-fit: cover;" />
+                  <span v-else>{{ (u.username || '?')[0] }}</span>
+                </div>
                 <div class="usuario-card-info">
                   <div class="usuario-card-name">{{ [u.first_name,u.last_name].filter(Boolean).join(' ')||u.username }}</div>
                   <div class="usuario-card-username">@{{ u.username }}</div>
@@ -1167,9 +1214,14 @@
           <div class="profile-container" style="background: var(--bg2); padding: 24px; border-radius: 12px; border: 1px solid var(--border); display: flex; gap: 24px; align-items: flex-start; max-width: 600px; margin: 0 auto; margin-top: 24px;">
             
             <div class="profile-avatar-wrap" style="text-align: center;">
-              <div class="profile-avatar" style="width: 100px; height: 100px; border-radius: 50%; background: var(--acid); color: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: 700; margin-bottom: 12px;">
-                {{ userInitial }}
+              <div class="profile-avatar editable-avatar" style="width: 100px; height: 100px; border-radius: 50%; background: var(--acid); color: var(--bg); display: flex; align-items: center; justify-content: center; font-size: 36px; font-weight: 700; margin-bottom: 12px; position: relative; overflow: hidden; cursor: pointer;" @click="$refs.fileInput.click()">
+                <img v-if="me?.foto_perfil" :src="me.foto_perfil" alt="Foto de perfil" style="width: 100%; height: 100%; object-fit: cover;" />
+                <span v-else>{{ userInitial }}</span>
+                <div class="profile-avatar-overlay">
+                  <span>📷</span>
+                </div>
               </div>
+              <input type="file" ref="fileInput" accept="image/*" style="display: none;" @change="uploadFotoPerfil" />
               <div class="badge" :class="me?.tipo_usuario==='admin'?'badge-red':me?.tipo_usuario==='tecnico'?'badge-blue':'badge-green'">
                 {{ me?.tipo_usuario || 'Usuário' }}
               </div>
@@ -1265,6 +1317,16 @@
               </select>
               <span v-if="formErrors.status" class="field-error">{{ formErrors.status }}</span>
             </div>
+            <div class="field" :class="{hasError:formErrors.criticidade}">
+              <label>Criticidade</label>
+              <select v-model="fd.criticidade">
+                <option value="normal">Normal</option>
+                <option value="alta">Alta</option>
+              </select>
+              <span v-if="formErrors.criticidade" class="field-error">{{ formErrors.criticidade }}</span>
+            </div>
+          </div>
+          <div class="field-row">
             <div class="field" :class="{hasError:formErrors.empresa}">
               <label>Empresa *</label>
               <select v-model.number="fd.empresa">
@@ -1273,6 +1335,7 @@
               </select>
               <span v-if="formErrors.empresa" class="field-error">{{ formErrors.empresa }}</span>
             </div>
+            <div class="field"></div>
           </div>
         </template>
 
@@ -1344,9 +1407,10 @@
             <div class="field" :class="{hasError:formErrors.prioridade}">
               <label>Prioridade</label>
               <select v-model="fd.prioridade">
-                <option value="baixo">Baixo</option>
-                <option value="medio">Médio</option>
-                <option value="critico">Crítico</option>
+                <option value="baixa">Baixa</option>
+                <option value="media">Média</option>
+                <option value="alta">Alta</option>
+                <option value="critica">Crítica</option>
               </select>
               <span v-if="formErrors.prioridade" class="field-error">{{ formErrors.prioridade }}</span>
             </div>
@@ -1843,13 +1907,49 @@
           </div>
         </div>
 
-        <div class="detail-filter-row">
-          <label class="filter-label">Sensor</label>
-          <select class="filter-select" v-model="equipModal.selectedSensor">
-            <option v-if="!equipModal.sensors.length" value="">Nenhum sensor disponível</option>
-            <option v-for="s in equipModal.sensors" :key="s.id" :value="s.id">{{ s.nome }}{{ s.tipo ? ' (' + s.tipo + ')' : '' }}</option>
-          </select>
-          <span class="detail-refresh">Atualizado em: {{ equipModal.lastRefresh ? (new Date(equipModal.lastRefresh)).toLocaleTimeString('pt-BR') : '—' }}</span>
+        <div class="detail-filter-row" style="flex-wrap: wrap;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <label class="filter-label">Sensor</label>
+            <select class="filter-select" v-model="equipModal.selectedSensor">
+              <option v-if="!equipModal.sensors.length" value="">Nenhum sensor disponível</option>
+              <option v-for="s in equipModal.sensors" :key="s.id" :value="s.id">{{ s.nome }}{{ s.tipo ? ' (' + s.tipo + ')' : '' }}</option>
+            </select>
+          </div>
+          
+          <div v-if="equipModal.selectedSensor" style="display:flex; align-items:center; gap:8px; margin-left:auto;">
+            <!-- Badge de Tendência -->
+            <div v-if="trendDataCache[equipModal.selectedSensor] && !trendDataCache[equipModal.selectedSensor].insufficient_data" 
+                 class="trend-risk-badge" :class="'risk-' + trendDataCache[equipModal.selectedSensor].risk_level"
+                 style="font-size:12px; padding:4px 10px;">
+              <span v-if="trendDataCache[equipModal.selectedSensor].direction === 'increasing'">📈</span>
+              <span v-else-if="trendDataCache[equipModal.selectedSensor].direction === 'decreasing'">📉</span>
+              <span v-else>➡️</span>
+              Tendência {{ trendDataCache[equipModal.selectedSensor].direction === 'increasing' ? 'Crescente' : trendDataCache[equipModal.selectedSensor].direction === 'decreasing' ? 'Decrescente' : 'Estável' }}
+            </div>
+            
+            <button class="btn btn-ghost btn-sm" @click="openTrendConfig(equipModal.selectedSensor, equipModal.equipamento.id)" title="Configurar Análise">
+              ⚙️
+            </button>
+            <button class="btn btn-primary btn-sm" 
+                    @click="analyzeSensorTrendAI(equipModal.selectedSensor)" 
+                    :disabled="trendAILoading[equipModal.selectedSensor]"
+                    style="display:flex; align-items:center; gap:6px;">
+              <span v-if="trendAILoading[equipModal.selectedSensor]" class="spinner" style="width:14px;height:14px;border-width:2px;margin:0;"></span>
+              <span v-else>🤖</span> Analisar com IA
+            </button>
+          </div>
+          
+          <span class="detail-refresh" style="width:100%; text-align:right;">Atualizado em: {{ equipModal.lastRefresh ? (new Date(equipModal.lastRefresh)).toLocaleTimeString('pt-BR') : '—' }}</span>
+        </div>
+
+        <!-- AI Analysis Result Card -->
+        <div v-if="equipModal.selectedSensor && trendDataCache[equipModal.selectedSensor]?.ai_analysis" class="ai-card" style="margin-top:16px;">
+          <div class="ai-card-header">
+            <span style="font-size:18px;">🤖</span> Diagnóstico Preditivo por IA
+          </div>
+          <div class="ai-card-body">
+            <div v-html="formatMarkdown(trendDataCache[equipModal.selectedSensor].ai_analysis)"></div>
+          </div>
         </div>
 
         <div v-if="selectedSensorThresholds" class="detail-top-row" style="margin-top: 16px; gap:10px;">
@@ -1985,6 +2085,60 @@
               Nenhuma ordem de serviço registrada para este equipamento.
             </div>
           </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Configuração de Análise de Tendência -->
+  <div v-if="trendConfigModal.open" class="modal-backdrop" @click.self="trendConfigModal.open = false">
+    <div class="modal">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title">⚙️ Análise de Tendência</div>
+          <div style="margin-top:4px;font-size:14px;color:var(--t2);">Configuração Preditiva</div>
+        </div>
+        <button class="modal-close" @click="trendConfigModal.open = false">×</button>
+      </div>
+      <div class="modal-body">
+        <div v-if="trendConfigModal.loading" class="loading"><div class="spinner"></div></div>
+        <form v-else @submit.prevent="saveTrendConfig">
+          <div v-if="trendConfigModal.isGlobal" class="field-error-global" style="background:rgba(255,255,255,0.05); color:var(--t2); border-color:var(--edge); display:flex; align-items:center; gap:8px;">
+            <span>ℹ️</span> Este sensor está usando a configuração global padrão. Salvar este formulário criará uma configuração específica para ele.
+          </div>
+          
+          <div class="field">
+            <label>Período de Análise (Horas)</label>
+            <input type="number" v-model.number="trendConfigModal.form.periodo_horas" required min="1" max="720">
+            <div style="font-size:11px; color:var(--t4); margin-top:4px;">Janela de tempo para analisar as leituras do sensor.</div>
+          </div>
+          
+          <div class="field">
+            <label>Número de Leituras (Máximo)</label>
+            <select v-model.number="trendConfigModal.form.num_leituras" required>
+              <option value="20">20 Leituras</option>
+              <option value="50">50 Leituras</option>
+              <option value="100">100 Leituras</option>
+              <option value="200">200 Leituras</option>
+            </select>
+          </div>
+          
+          <div class="field">
+            <label>Nível de Sensibilidade</label>
+            <select v-model="trendConfigModal.form.sensibilidade" required>
+              <option value="alta">Alta (qualquer leve variação é detectada)</option>
+              <option value="media">Média (recomendado para a maioria)</option>
+              <option value="baixa">Baixa (apenas grandes variações)</option>
+            </select>
+          </div>
+          
+          <div class="modal-actions" style="margin-top:24px;">
+            <button type="button" class="btn btn-ghost" @click="trendConfigModal.open = false" :disabled="trendConfigModal.saving">Cancelar</button>
+            <button type="submit" class="btn btn-primary" :disabled="trendConfigModal.saving">
+              <span v-if="trendConfigModal.saving" class="spinner" style="width:14px;height:14px;border-width:2px;margin-right:6px"></span>
+              Salvar Configuração
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   </div>

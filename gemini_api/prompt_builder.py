@@ -55,6 +55,15 @@ DEFAULTS['finance'] = (
     "Explique quais métricas devem ser monitoradas e quais ações trazer para reduzir retrabalho e tempo de parada."
 )
 
+DEFAULTS['trend_analysis'] = (
+    "INSTRUÇÃO:\n"
+    "Analise a tendência do sensor descrita acima e forneça:\n"
+    "1. **Diagnóstico**: Avaliação objetiva do comportamento do sensor e o que ele indica\n"
+    "2. **Causa Provável**: Possíveis causas técnicas para esta tendência\n"
+    "3. **Recomendações de Manutenção**: Ações práticas a serem tomadas, priorizadas por urgência\n\n"
+    "Use linguagem técnica mas acessível. Se a tendência for estável e saudável, indique que o equipamento está operando normalmente."
+)
+
 
 def get_all_defaults():
     """Return a copy of the default prompt texts dictionary."""
@@ -170,3 +179,64 @@ def build_finance_prompt(user, context, message):
     builder = PromptBuilderConcreto()
     prompt = PromptDirector.montar_financeiro(builder, context, context_str, instruction, message)
     return prompt.obter_texto()
+
+
+def build_trend_analysis_prompt(user, context, message, trend_data=None):
+    """
+    Constrói prompt para análise de tendência de sensor com IA.
+    trend_data: dict retornado por analyze_sensor_trend()
+    """
+    if not trend_data:
+        return message
+
+    sensor = trend_data.get('sensor_info', {})
+    direction_labels = {
+        'increasing': 'CRESCENTE ↑',
+        'decreasing': 'DECRESCENTE ↓',
+        'stable': 'ESTÁVEL →',
+    }
+    risk_labels = {
+        'critico': '🔴 CRÍTICO',
+        'alto': '🟠 ALTO',
+        'medio': '🟡 MÉDIO',
+        'baixo': '🟢 BAIXO',
+    }
+
+    blocks = [
+        "DADOS DE TENDÊNCIA DO SENSOR:",
+        f"- Sensor: {sensor.get('nome', '?')} ({sensor.get('tipo_display', '?')})",
+        f"- Equipamento: {sensor.get('equipamento_nome', '?')}",
+        f"- Unidade de medida: {sensor.get('unidade_medida', '?')}",
+        f"- Direção da tendência: {direction_labels.get(trend_data.get('direction'), '?')}",
+        f"- Variação por hora (slope): {trend_data.get('slope_per_hour', 0)} {sensor.get('unidade_medida', '')}/hora",
+        f"- Valor atual: {trend_data.get('current_value', '?')} {sensor.get('unidade_medida', '')}",
+        f"- Limite operacional: {sensor.get('limite_alerta', '?')} {sensor.get('unidade_medida', '')}",
+        f"- Nível de risco calculado: {risk_labels.get(trend_data.get('risk_level'), '?')}",
+    ]
+
+    breach = trend_data.get('projected_breach_hours')
+    if breach is not None:
+        if breach == 0:
+            blocks.append("- Projeção: ⚠️ LIMITE JÁ ULTRAPASSADO")
+        else:
+            blocks.append(f"- Projeção de violação do limite: {breach} horas")
+    else:
+        blocks.append("- Projeção de violação do limite: sem risco projetado")
+
+    blocks.append(f"- Leituras analisadas: {trend_data.get('readings_count', 0)}")
+
+    # Últimas leituras resumidas
+    readings = trend_data.get('readings_summary', [])
+    if readings:
+        recent = readings[-10:]  # últimas 10
+        readings_str = ", ".join([f"{r['valor']}" for r in recent])
+        blocks.append(f"- Últimos valores: [{readings_str}]")
+
+    instruction = _get_effective_text('trend_analysis')
+    blocks += [f"\n{instruction}"]
+
+    if message and message.strip():
+        blocks += ["\nOBSERVAÇÃO ADICIONAL DO USUÁRIO:", message]
+
+    return "\n".join(blocks)
+>>>>>>> 4c78b3f (Atualiza funcionalidades do sistema)

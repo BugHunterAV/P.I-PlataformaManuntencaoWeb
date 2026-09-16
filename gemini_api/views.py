@@ -13,8 +13,10 @@ from .prompt_builder import (
     build_os_analysis_prompt,
     build_unassigned_orders_prompt,
     build_finance_prompt,
+    build_trend_analysis_prompt,
     get_all_defaults,
 )
+from telemetria.trend_analysis import analyze_sensor_trend
 from .serializers import (
     GeminiMessageSerializer,
     GeminiResponseSerializer,
@@ -231,6 +233,30 @@ class GeminiFinanceView(GeminiBaseView):
         request=GeminiMessageSerializer,
         responses=GeminiResponseSerializer,
         description="Solicite orientação financeira e de redução de custos para manutenção.",
+    )
+    def post(self, request):
+        return super().post(request)
+
+
+class GeminiTrendAnalysisView(GeminiBaseView):
+    system_purpose = "diagnosticar tendências de falha em sensores e sugerir ações preditivas"
+    missing_api_suffix = "Adicione a variável GEMINI_API_KEY ao `.env` para habilitar a análise de tendências."
+
+    def get_prompt(self, user, context, message):
+        sensor_id = self.request.data.get('sensor_id')
+        if not sensor_id:
+            raise ValueError("O parâmetro 'sensor_id' é obrigatório no corpo da requisição para análise de tendência.")
+        
+        trend_data = analyze_sensor_trend(sensor_id)
+        if not trend_data:
+            raise ValueError("Sensor não encontrado ou não possui dados de tendência.")
+            
+        return build_trend_analysis_prompt(user, context, message, trend_data)
+
+    @extend_schema(
+        request=GeminiMessageSerializer,
+        responses=GeminiResponseSerializer,
+        description="Analise a tendência de um sensor específico para obter diagnóstico e recomendações preditivas.",
     )
     def post(self, request):
         return super().post(request)

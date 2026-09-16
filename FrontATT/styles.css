@@ -3040,6 +3040,90 @@ html.light-mode .clickable-row:hover {
   transform: translateY(-1px);
 }
 
+/* ════════════ FILA DE TRABALHO / TABS ════════════ */
+.os-priority-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.os-priority-tab {
+  background: var(--s2);
+  border: 1px solid var(--edge);
+  color: var(--t2);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.os-priority-tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: var(--wire);
+}
+
+html.light-mode .os-priority-tab {
+  background: #fff;
+  border-color: #e2e8f0;
+}
+
+html.light-mode .os-priority-tab:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.os-priority-tab.active {
+  background: var(--acid);
+  color: #000;
+  border-color: var(--acid);
+}
+
+.os-priority-tab .tab-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.criticidade-badge {
+  background: rgba(220, 38, 38, 0.15);
+  color: #ff3b3b;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-left: 6px;
+}
+
+@keyframes pulse-critical {
+  0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
+}
+
+.os-card.priority-critica {
+  border-color: rgba(220, 38, 38, 0.3);
+  background: linear-gradient(to right, rgba(220, 38, 38, 0.05), var(--s2));
+  animation: pulse-critical 2s infinite;
+}
+
+.os-card.priority-critica:hover {
+  border-color: #ff3b3b;
+}
+
+html.light-mode .os-card.priority-critica {
+  background: linear-gradient(to right, rgba(220, 38, 38, 0.02), #fff);
+}
+
 /* ════════════ EMPTY STATES MELHORADOS ════════════ */
 .empty {
   display: flex;
@@ -3991,4 +4075,140 @@ html.light-mode .dash-stream-card {
 html.light-mode .chart-card:hover {
   border-color: rgba(0,0,0,0.12);
   box-shadow: 0 8px 24px rgba(0,0,0,0.08), inset 0 1px 1px rgba(255,255,255,1);
+}
+
+/* ═══════════════════════════════════════════════
+   TREND ANALYSIS MODULE
+═══════════════════════════════════════════════ */
+.trend-card {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  gap: 12px;
+  border-left: 3px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.trend-card.risk-critico { border-left-color: var(--danger); }
+.trend-card.risk-alto { border-left-color: #ff9800; }
+.trend-card.risk-medio { border-left-color: var(--warn); }
+.trend-card.risk-baixo { border-left-color: var(--success); }
+
+.trend-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.trend-sensor-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--t1);
+}
+
+.trend-risk-badge {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+.risk-critico .trend-risk-badge { background: rgba(255, 60, 60, 0.15); color: var(--danger); }
+.risk-alto .trend-risk-badge { background: rgba(255, 152, 0, 0.15); color: #ff9800; }
+.risk-medio .trend-risk-badge { background: rgba(255, 204, 0, 0.15); color: var(--warn); }
+.risk-baixo .trend-risk-badge { background: rgba(0, 212, 170, 0.15); color: var(--success); }
+
+.trend-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--t2);
+}
+
+.trend-eq-name {
+  font-size: 11px;
+  color: var(--t4);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.trend-direction {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: var(--t1);
+}
+
+.trend-dir-icon { font-size: 14px; }
+
+.trend-projection {
+  margin-top: 4px;
+  font-size: 11px;
+  background: rgba(255,255,255,0.03);
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--edge);
+}
+
+/* AI Card */
+.ai-card {
+  background: rgba(14, 19, 25, 0.7);
+  border: 1px solid rgba(0, 212, 170, 0.2);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.ai-card-header {
+  background: rgba(0, 212, 170, 0.1);
+  padding: 12px 16px;
+  font-weight: 600;
+  color: var(--acid);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid rgba(0, 212, 170, 0.1);
+}
+
+.ai-card-body {
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--t2);
+}
+
+.ai-card-body p { margin-bottom: 12px; }
+.ai-card-body p:last-child { margin-bottom: 0; }
+.ai-card-body strong { color: var(--t1); }
+.ai-card-body ul { padding-left: 20px; margin-bottom: 12px; }
+.ai-card-body li { margin-bottom: 6px; }
+
+/* Light Mode Overrides for AI */
+html.light-mode .ai-card {
+  background: #f9fbfc;
+  border-color: rgba(0, 212, 170, 0.3);
+}
+html.light-mode .ai-card-header {
+  background: rgba(0, 212, 170, 0.08);
+  color: #00a181;
+}
+html.light-mode .ai-card-body strong { color: #1a202c; }
+
+/* Profile Avatar Upload Styles */
+.editable-avatar:hover .profile-avatar-overlay {
+  opacity: 1;
+}
+.profile-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  border-radius: 50%;
 }

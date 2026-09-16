@@ -36,6 +36,13 @@ class Equipamento(models.Model):
         ('inativo', 'Inativo'),
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ativo')
+
+    CRITICIDADE_CHOICES = (
+        ('normal', 'Normal'),
+        ('alta', 'Alta'),
+    )
+    criticidade = models.CharField(max_length=20, choices=CRITICIDADE_CHOICES, default='normal',
+                                   help_text="Define a criticidade do equipamento para priorização de manutenções")
     
     def __str__(self):
         return f"{self.nome} (SN: {self.numero_serie})"
@@ -55,16 +62,17 @@ class PlanoManutencao(models.Model):
     Exemplo: "Troca de Óleo" a cada 100 horas.
     """
     PRIORIDADE_CHOICES = (
-        ('baixo', 'Baixo'),
-        ('medio', 'Médio'),
-        ('critico', 'Crítico'),
+        ('baixa', 'Baixa'),
+        ('media', 'Média'),
+        ('alta', 'Alta'),
+        ('critica', 'Crítica'),
     )
 
     equipamento     = models.ForeignKey(Equipamento, on_delete=models.CASCADE, related_name='planos_manutencao')
     nome_servico    = models.CharField(max_length=200, help_text="Ex: Troca de Óleo, Revisão de Rolamentos")
     descricao       = models.TextField(help_text="Detalhes do serviço a ser realizado")
     intervalo_horas = models.FloatField(help_text="A cada quantas horas este serviço deve ser realizado")
-    prioridade      = models.CharField(max_length=20, choices=PRIORIDADE_CHOICES, default='medio')
+    prioridade      = models.CharField(max_length=20, choices=PRIORIDADE_CHOICES, default='media')
     ativo           = models.BooleanField(default=True)
 
     # Controle de execução

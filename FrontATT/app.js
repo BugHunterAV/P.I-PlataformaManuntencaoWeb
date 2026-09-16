@@ -1,12 +1,12 @@
 const { createApp, ref, reactive, computed, onMounted, watch, nextTick } = Vue;
-const BASE = 'http://127.0.0.1:8001';
+const BASE = 'http://127.0.0.1:8000';
 const TELEMETRY_CHART_WIDTH = 320;
 const TELEMETRY_CHART_HEIGHT = 100;
 const TELEMETRY_CHART_LEFT_PAD = 45;
 const TELEMETRY_X_END_PERCENT = 0.7; // last point reaches about 70% of chart width
 
-// Helper: ordena por nível de severidade (critico → medio → baixo)
-const NIVEL_PRIORIDADE = { critico: 0, medio: 1, baixo: 2 };
+// Helper: ordena por nível de severidade (critica → alta → media → baixa)
+const NIVEL_PRIORIDADE = { critica: 0, alta: 1, media: 2, baixa: 3 };
 function sortByNivel(items, campo = 'nivel') {
   return items.sort((a, b) => (NIVEL_PRIORIDADE[a[campo]] ?? 3) - (NIVEL_PRIORIDADE[b[campo]] ?? 3));
 }
@@ -31,6 +31,7 @@ createApp({
     const dashAlerts = ref([]);
     const dashAlertsCollapsed = ref(false);
     const dashOrdensCollapsed = ref(false);
+    const filtroFilaPrioridade = ref('todas');
     const alertCount = ref(0);
     const toasts = ref([]);
     const globalEmpresa = ref('');  // Filtro global por empresa (admin)
@@ -68,6 +69,15 @@ createApp({
       equipamentos: [], alertas: [], ordens: [],
       sensores: [], leituras: [], historico: [], empresas: [],
       usuarios: [], localizacoes: [], prompts: []
+    });
+    const trendAlerts = ref([]); // Painel de tendências de risco
+    const trendDataCache = reactive({}); // sensor_id -> dados de tendência + ai_analysis
+    const trendAILoading = reactive({}); // sensor_id -> booleano
+    const trendConfigModal = reactive({
+      open: false, loading: false, saving: false,
+      sensorId: '', equipamentoId: '',
+      form: { periodo_horas: 24, num_leituras: 50, sensibilidade: 'media' },
+      isGlobal: false
     });
     const leiturasTodayCount = ref(0);
     const leiturasTotalCount = ref(0);
@@ -151,6 +161,19 @@ createApp({
     const isAdminOrGestor = computed(() => ['admin', 'gestor'].includes(me.value?.tipo_usuario));
     const isTecnico = computed(() => me.value?.tipo_usuario === 'tecnico');
     const osSemTecnicoCount = computed(() => lists.ordens.filter(o => !o.responsavel && o.status !== 'concluida' && o.status !== 'cancelada').length);
+    
+    const ordensFilaPrioridade = computed(() => {
+      let pendentes = lists.ordens.filter(o => o.status !== 'concluida' && o.status !== 'cancelada');
+      if (filtroFilaPrioridade.value !== 'todas') {
+        pendentes = pendentes.filter(o => o.prioridade === filtroFilaPrioridade.value);
+      }
+      return pendentes.sort((a, b) => {
+        const pa = NIVEL_PRIORIDADE[a.prioridade] ?? 99;
+        const pb = NIVEL_PRIORIDADE[b.prioridade] ?? 99;
+        return pa - pb;
+      });
+    });
+
     const userInitial = computed(() => (me.value?.username || 'U')[0].toUpperCase());
     const viewTitle = computed(() => ({
       dashboard: 'Dashboard', equipamentos: 'Equipamentos', alertas: 'Alertas',
@@ -1095,10 +1118,129 @@ createApp({
           };
         }
 
+        if (!isTecnico.value) {
+          await fetchTrendAlerts();
+        }
+
         // Busca localizações para filtro de setor no custo
         api('/api/localizacao/?limit=999').then(d => { if (d) lists.localizacoes = normList(d); }).catch(() => { });
 
       } catch { toast('Erro ao carregar dashboard', 'error'); }
+    }
+
+    async function fetchTrendAlerts() {
+      try {
+        const data = await api('/api/telemetria/tendencias/');
+        if (Array.isArray(data)) {
+          trendAlerts.value = data;
+        }
+      } catch (err) {
+        console.error('Erro ao buscar tendências:', err);
+      }
+    }
+
+    async function analyzeSensorTrendAI(sensorId) {
+      if (!sensorId) return;
+      trendAILoading[sensorId] = true;
+      try {
+        const data = await api('/api/gemini/tendencia/', {
+          method: 'POST',
+          body: JSON.stringify({ 
+            sensor_id: sensorId,
+            message: "Gere um diagnóstico preditivo para a tendência atual deste sensor." 
+          })
+        });
+        if (data && data.response) {
+          if (!trendDataCache[sensorId]) trendDataCache[sensorId] = {};
+          trendDataCache[sensorId].ai_analysis = data.response;
+        }
+      } catch (err) {
+        toast('Erro ao analisar tendência com IA', 'error');
+      } finally {
+        trendAILoading[sensorId] = false;
+      }
+    }
+
+    async function fetchTrendForSensor(sensorId) {
+      if (!sensorId) return null;
+      try {
+        const data = await api(`/api/telemetria/tendencias/?sensor_id=${sensorId}`);
+        if (data && !data.detail) {
+          if (!trendDataCache[sensorId]) trendDataCache[sensorId] = {};
+          // Preserve ai_analysis se existir
+          trendDataCache[sensorId] = { ...data, ai_analysis: trendDataCache[sensorId].ai_analysis };
+          return data;
+        }
+      } catch (err) {
+        console.error('Erro ao buscar tendência do sensor', err);
+      }
+      return null;
+    }
+
+    async function openTrendConfig(sensorId, equipamentoId) {
+      trendConfigModal.sensorId = sensorId;
+      trendConfigModal.equipamentoId = equipamentoId;
+      trendConfigModal.loading = true;
+      trendConfigModal.open = true;
+      trendConfigModal.isGlobal = false;
+      
+      try {
+        // Fetch specific config
+        const data = await api(`/api/telemetria/trend-config/?sensor=${sensorId}`);
+        const results = normList(data);
+        if (results && results.length > 0) {
+          const config = results[0];
+          trendConfigModal.form = {
+            id: config.id,
+            periodo_horas: config.periodo_horas,
+            num_leituras: config.num_leituras,
+            sensibilidade: config.sensibilidade,
+          };
+          trendConfigModal.isGlobal = false;
+        } else {
+          // Defaults if no specific config
+          trendConfigModal.form = { periodo_horas: 24, num_leituras: 50, sensibilidade: 'media' };
+          trendConfigModal.isGlobal = true;
+        }
+      } catch (err) {
+        toast('Erro ao carregar configuração de tendência', 'error');
+      } finally {
+        trendConfigModal.loading = false;
+      }
+    }
+
+    async function saveTrendConfig() {
+      trendConfigModal.saving = true;
+      try {
+        const payload = {
+          sensor: trendConfigModal.sensorId,
+          periodo_horas: trendConfigModal.form.periodo_horas,
+          num_leituras: trendConfigModal.form.num_leituras,
+          sensibilidade: trendConfigModal.form.sensibilidade,
+          ativo: true
+        };
+        
+        let url = '/api/telemetria/trend-config/';
+        let method = 'POST';
+        
+        if (trendConfigModal.form.id) {
+          url += `${trendConfigModal.form.id}/`;
+          method = 'PUT';
+        }
+        
+        await api(url, { method, body: JSON.stringify(payload) });
+        toast('Configuração de tendência salva', 'success');
+        trendConfigModal.open = false;
+        
+        // Refresh trend data if open
+        if (equipModal.open) {
+          fetchTrendForSensor(trendConfigModal.sensorId);
+        }
+      } catch (err) {
+        toast('Erro ao salvar configuração', 'error');
+      } finally {
+        trendConfigModal.saving = false;
+      }
     }
 
     async function fetchEquipamentos() {
@@ -1318,7 +1460,7 @@ createApp({
     const modalConfig = {
       equipamento: {
         title: 'Equipamento', endpoint: '/api/equipamentos/',
-        defaults: { nome: '', tipo: '', modelo: '', fabricante: '', numero_serie: '', status: 'ativo', empresa: null, data_instalacao: '', descricao: '' }
+        defaults: { nome: '', tipo: '', modelo: '', fabricante: '', numero_serie: '', status: 'ativo', criticidade: 'normal', empresa: null, data_instalacao: '', descricao: '' }
       },
       alerta: {
         title: 'Alerta', endpoint: '/api/alertas/',
@@ -1327,11 +1469,11 @@ createApp({
 
       ordem: {
         title: 'Ordem de Serviço', endpoint: '/api/ordens-servico/',
-        defaults: { titulo: '', tipo_os: 'preventiva', prioridade: 'medio', status: 'pendente', equipamento: null, responsavel: null, descricao: '', custo_pecas: null, custo_mao_de_obra: null }
+        defaults: { titulo: '', tipo_os: 'preventiva', prioridade: 'media', status: 'pendente', equipamento: null, responsavel: null, descricao: '', custo_pecas: null, custo_mao_de_obra: null }
       },
       encerrar_os: {
         title: 'Encerrar O.S.', endpoint: '/api/ordens-servico/',
-        defaults: { titulo: '', tipo_os: 'preventiva', prioridade: 'medio', status: 'concluida', equipamento: null, responsavel: null, descricao: '', custo_pecas: null, custo_mao_de_obra: null }
+        defaults: { titulo: '', tipo_os: 'preventiva', prioridade: 'media', status: 'concluida', equipamento: null, responsavel: null, descricao: '', custo_pecas: null, custo_mao_de_obra: null }
       },
 
       empresa: {
@@ -1437,10 +1579,10 @@ createApp({
           if (payload.status === 'concluida' && !payload.responsavel && me.value?.id) {
             payload.responsavel = me.value.id;
           }
-          const prioridadesValidas = ['baixo', 'medio', 'critico'];
+          const prioridadesValidas = ['baixa', 'media', 'alta', 'critica'];
           const statusValidos = ['pendente', 'andamento', 'concluida', 'cancelada'];
           const tiposValidos = ['preventiva', 'corretiva', 'preditiva'];
-          if (!prioridadesValidas.includes(payload.prioridade)) payload.prioridade = 'medio';
+          if (!prioridadesValidas.includes(payload.prioridade)) payload.prioridade = 'media';
           if (!statusValidos.includes(payload.status)) payload.status = 'pendente';
           if (!tiposValidos.includes(payload.tipo_os)) payload.tipo_os = 'preventiva';
         }
@@ -1524,6 +1666,24 @@ createApp({
         } catch (err) {
           console.warn('Falha ao carregar usuários:', err);
         }
+      }
+    }
+
+    async function iniciarAtendimento(o) {
+      if (!me.value?.id) return;
+      if (o._assumindo) return;
+      o._assumindo = true;
+      const payload = { responsavel: me.value.id, status: 'andamento' };
+      try {
+        await api('/api/ordens-servico/' + o.id + '/', { method: 'PATCH', body: JSON.stringify(payload) });
+        toast('Atendimento iniciado!', 'success');
+        o.responsavel = me.value.id;
+        o.status = 'andamento';
+      } catch(e) {
+        toast('Erro ao iniciar atendimento.', 'error');
+        return;
+      } finally {
+        o._assumindo = false;
       }
     }
 
@@ -1826,7 +1986,9 @@ createApp({
     function ordemStatusBadge(s) { return { pendente: 'badge-blue', andamento: 'badge-yellow', concluida: 'badge-green', cancelada: 'badge-gray' }[s] || 'badge-gray'; }
 
     // AJUSTE: Classes baseadas nas novas prioridades do Django
-    function prioridadeBadge(p) { return { critico: 'badge-red', medio: 'badge-yellow', baixo: 'badge-green' }[p] || 'badge-gray'; }
+    function prioridadeBadge(p) { return { critica: 'badge-red', alta: 'badge-orange', media: 'badge-yellow', baixa: 'badge-green' }[p] || 'badge-gray'; }
+    function prioridadeIcon(p) { return { critica: '🔴', alta: '🟠', media: '🟡', baixa: '🟢' }[p] || '⚪'; }
+    function prioridadeLabel(p) { return { critica: 'Crítica', alta: 'Alta', media: 'Média', baixa: 'Baixa' }[p] || '—'; }
 
     function makeLineChart(readings, W = 360, H = 180) {
       const raw = Array.isArray(readings) ? readings.slice(0, 20).reverse() : [];
@@ -1979,6 +2141,10 @@ createApp({
       if (id == null) return '—';
       const eq = lists.equipamentos.find(e => e.id === id);
       return eq ? `${eq.nome} (#${eq.id})` : `#${id}`;
+    }
+    function getEquipamentoInfo(id) {
+      if (id == null) return null;
+      return lists.equipamentos.find(e => e.id === id) || null;
     }
     function osTitulo(id) {
       if (id == null) return '—';
@@ -2411,6 +2577,38 @@ createApp({
       return result.join('');
     }
 
+    async function uploadFotoPerfil(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('foto_perfil', file);
+
+      try {
+        const res = await fetch(`${BASE}/api/auth/me/`, {
+          method: 'PATCH',
+          headers: { 'Authorization': `Bearer ${token.value}` },
+          body: formData
+        });
+        if (!res.ok) throw new Error('Falha ao enviar foto');
+        const data = await res.json();
+        me.value = data;
+        
+        // Atualiza na lista de usuários também, se estiver carregada
+        const uIndex = lists.usuarios.findIndex(u => u.id === data.id);
+        if (uIndex !== -1) {
+          lists.usuarios[uIndex] = { ...lists.usuarios[uIndex], foto_perfil: data.foto_perfil };
+        }
+        
+        toasts.value.push({ msg: 'Foto de perfil atualizada!', type: 'success' });
+        setTimeout(() => toasts.value.shift(), 3000);
+      } catch (err) {
+        console.error(err);
+        toasts.value.push({ msg: 'Erro ao enviar foto.', type: 'error' });
+        setTimeout(() => toasts.value.shift(), 3000);
+      }
+    }
+
     return {
       token, me, view, loading, loginLoading, loginError, loginForm,
       kpis, dashAlerts, alertCount, toasts, lists, pages, filters,
@@ -2419,21 +2617,23 @@ createApp({
       doLogin, logout, navigate, debouncedFetch,
       fetchEquipamentos, fetchAlertas, fetchOrdens, fetchTelemetria,
       fetchHistorico, fetchEmpresas, fetchUsuarios, fetchLocalizacoes, fetchPrompts, fetchPage, fetchDashboard,
-      openModal, editItem, saveItem, deleteItem, exportData, assumirOS, openEncerrarOS, assumirOSFromAlerta,
+      openModal, editItem, saveItem, deleteItem, exportData, assumirOS, iniciarAtendimento, openEncerrarOS, assumirOSFromAlerta,
       formatNumber, fmtDate, nivelBadge, nivelColor, statusBadge, eqStatusBadge,
-      ordemStatusBadge, prioridadeBadge,
-      eqNome, osTitulo, osEquipNome, eqEmpresaNome, empresaNome, sensorNome, locSetor, custoTotal, countSensores, usuarioNome,
+      ordemStatusBadge, prioridadeBadge, prioridadeIcon, prioridadeLabel,
+      eqNome, getEquipamentoInfo, osTitulo, osEquipNome, eqEmpresaNome, empresaNome, sensorNome, locSetor, custoTotal, countSensores, usuarioNome,
       empresaNomeSensor, sensorEquipNome,
       onGlobalEmpresaChange,
       chartEquipStatus, chartAlertNivel, chartOrdens, chartTelemetria, chartCustoEvolucao,
       telemetriaSummary, telemetryMovingDot, displayedChartTelemetria, telemetrySlideOffset,
       dashboardEquipamentos,
-      dashAlertsCollapsed, dashOrdensCollapsed,
+      dashAlertsCollapsed, dashOrdensCollapsed, filtroFilaPrioridade, ordensFilaPrioridade,
       donutArcs,
       availableSectors,
       leiturasHoje, leiturasTodayCount, leiturasTotalCount, dashTelemetriaEquip, dashTelemetriaSensor,
       dashTelemetriaSensoresFiltrados, dashCustoSetor,
       dashSetor, dashEquipamento, explainerCollapsed, dashboardMetrics, dashboardEquipmentOptions, availableDashboardSectors, dashboardKpisLoading, dashboardKpisError,
+      trendAlerts, trendDataCache, trendAILoading, trendConfigModal,
+      analyzeSensorTrendAI, openTrendConfig, saveTrendConfig,
       equipModal, selectedSensorLabel, selectedSensorThresholds, sensorModalThresholds, equipModalChart, equipModalStats, equipModalFilteredOrdens,
       openEquipamentoDetails, closeEquipModal, fetchEquipamentoReadings,
       savePrompt, resetPrompt,
@@ -2442,7 +2642,8 @@ createApp({
       darkMode, toggleTheme,
       toggleChat, toggleChatExpand, handleChatKeydown, resizeChatInput, sendChatMessage, sendSuggestion, onChatScroll, scrollToBottom, formatMarkdown,
       testerMode, toggleTesterMode,
-      navigateMinhasOrdens, navigateOsSemTecnico
+      navigateMinhasOrdens, navigateOsSemTecnico,
+      uploadFotoPerfil
     };
   }
 }).mount('#app');

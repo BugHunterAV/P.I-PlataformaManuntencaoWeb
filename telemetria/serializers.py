@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Sensor, Telemetria
+from .models import Sensor, Telemetria, TrendConfig
 
 class SensorSerializer(serializers.ModelSerializer):
     class Meta:
@@ -33,4 +33,13 @@ class SensorSerializer(serializers.ModelSerializer):
 class TelemetriaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Telemetria
+        fields = '__all__'
+
+
+class TrendConfigSerializer(serializers.ModelSerializer):
+    sensor_nome = serializers.CharField(source='sensor.nome', read_only=True, default=None)
+    equipamento_nome = serializers.CharField(source='sensor.equipamento.nome', read_only=True, default=None)
+
+    class Meta:
+        model = TrendConfig
         fields = '__all__'

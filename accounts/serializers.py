@@ -9,4 +9,4 @@ class EmpresaSerializer(serializers.ModelSerializer):
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'empresa', 'tipo_usuario', 'cargo', 'telefone']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'empresa', 'tipo_usuario', 'cargo', 'telefone', 'foto_perfil']

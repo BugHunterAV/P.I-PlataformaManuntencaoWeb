@@ -74,3 +74,45 @@ class Telemetria(models.Model):
 
     def __str__(self):
         return f"{self.sensor.tipo}: {self.valor} {self.sensor.unidade_medida} em {self.timestamp}"
+
+
+class TrendConfig(models.Model):
+    """
+    Configuração de análise de tendência por sensor.
+    Se sensor=null, é a configuração global padrão.
+    """
+    SENSIBILIDADE_CHOICES = (
+        ('baixa', 'Baixa'),
+        ('media', 'Média'),
+        ('alta', 'Alta'),
+    )
+
+    sensor = models.OneToOneField(
+        Sensor, on_delete=models.CASCADE,
+        related_name='trend_config',
+        null=True, blank=True,
+        help_text="Se null, é a configuração global padrão"
+    )
+    periodo_horas = models.IntegerField(
+        default=24,
+        help_text="Período de análise em horas"
+    )
+    num_leituras = models.IntegerField(
+        default=50,
+        help_text="Número máximo de leituras para análise"
+    )
+    sensibilidade = models.CharField(
+        max_length=20,
+        choices=SENSIBILIDADE_CHOICES,
+        default='media'
+    )
+    ativo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Configuração de Tendência"
+        verbose_name_plural = "Configurações de Tendência"
+
+    def __str__(self):
+        if self.sensor:
+            return f"TrendConfig: {self.sensor.nome} ({self.sensor.equipamento.nome})"
+        return "TrendConfig: Global (padrão)"
