@@ -239,4 +239,4 @@ def build_trend_analysis_prompt(user, context, message, trend_data=None):
         blocks += ["\nOBSERVAÇÃO ADICIONAL DO USUÁRIO:", message]
 
     return "\n".join(blocks)
->>>>>>> 4c78b3f (Atualiza funcionalidades do sistema)
+
