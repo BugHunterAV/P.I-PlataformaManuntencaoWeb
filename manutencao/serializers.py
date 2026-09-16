@@ -19,7 +19,8 @@ class OrdemServicoSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'equipamento': 'O equipamento deve pertencer à sua empresa.'})
 
         if responsavel and equipamento and responsavel.empresa_id != equipamento.empresa_id:
-            raise serializers.ValidationError({'responsavel': 'O responsável deve pertencer à empresa do equipamento.'})
+            if responsavel.tipo_usuario != 'admin':
+                raise serializers.ValidationError({'responsavel': 'O responsável deve pertencer à empresa do equipamento.'})
 
         if user and user.tipo_usuario == 'tecnico':
             if responsavel and responsavel != user:
