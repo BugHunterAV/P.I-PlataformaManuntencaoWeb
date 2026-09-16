@@ -1,6 +1,5 @@
-
-
-
+from .prompt_builder_pattern import PromptBuilderConcreto
+from .prompt_director import PromptDirector
 
 def _truncate_lines(lines, max_lines=15):
     if len(lines) <= max_lines:
@@ -108,7 +107,7 @@ def build_chat_prompt(user, context, message):
     # Build contextualisation header (may be customized)
     custom_context = _get_custom_prompt('chat_context')
     if custom_context:
-        blocks = [custom_context.format(
+        context_str = custom_context.format(
             company_name=context['company_name'],
             total_equipment=context['total_equipment'],
             active_equipment=context['active_equipment'],
@@ -116,85 +115,58 @@ def build_chat_prompt(user, context, message):
             inactive_equipment=context['inactive_equipment'],
             open_orders_count=context['open_orders'].count(),
             unassigned_orders_count=context['unassigned_orders'].count(),
-        ).split('\n')]
-        blocks = blocks[0]  # flatten from split
+        )
     else:
-        blocks = [
-            "CONTEXTUALIZAÇÃO RÁPIDA:",
-            f"- Empresa: {context['company_name']}",
-            f"- Total de equipamentos: {context['total_equipment']}",
-            f"- Equipamentos ativos: {context['active_equipment']} | em manutenção: {context['maintenance_equipment']} | inativos: {context['inactive_equipment']}",
-            f"- Ordens em aberto: {context['open_orders'].count()}",
+        context_str = (
+            "CONTEXTUALIZAÇÃO RÁPIDA:\n"
+            f"- Empresa: {context['company_name']}\n"
+            f"- Total de equipamentos: {context['total_equipment']}\n"
+            f"- Equipamentos ativos: {context['active_equipment']} | em manutenção: {context['maintenance_equipment']} | inativos: {context['inactive_equipment']}\n"
+            f"- Ordens em aberto: {context['open_orders'].count()}\n"
             f"- Ordens sem atribuição: {context['unassigned_orders'].count()}"
-        ]
+        )
 
-    alert_lines = _truncate_lines([f"- {line}" for line in context['alert_summary']], max_lines=5)
-    if alert_lines:
-        blocks += ["\nALERTAS RELEVANTES:"] + alert_lines
-
-    order_lines = _truncate_lines([f"- {line}" for line in context['open_order_summary']], max_lines=5)
-    if order_lines:
-        blocks += ["\nORDENS EM ABERTO:"] + order_lines
-
-    equipment_lines = _truncate_lines([f"- {line}" for line in context['equipment_kpis']], max_lines=5)
-    if equipment_lines:
-        blocks += ["\nKPIs DE EQUIPAMENTOS:"] + equipment_lines
-
-    telemetry_lines = _truncate_lines(context['telemetry'], max_lines=5)
-    if telemetry_lines:
-        blocks += ["\nTELEMETRIA RECENTE:"] + telemetry_lines
-
-    blocks += ["\nPERGUNTA DO USUÁRIO:", message]
-    return "\n".join(blocks)
+    builder = PromptBuilderConcreto()
+    prompt = PromptDirector.montar_chat(builder, context, context_str, message)
+    return prompt.obter_texto()
 
 
 def build_os_analysis_prompt(user, context, message):
-    blocks = [
-        "CONTEXTUALIZAÇÃO DE ORDENS DE SERVIÇO:",
-        f"- Total de ordens em aberto: {context['open_orders'].count()}",
-        f"- Ordens sem atribuição: {context['unassigned_orders'].count()}",
-        f"- Ordens atribuídas a este técnico: {context['assigned_orders'].count() if user.tipo_usuario == 'tecnico' else 'não aplicável'}",
-    ]
-
-    if context['assigned_order_summary']:
-        blocks += ["\nORDENS ATRIBUÍDAS:"] + _truncate_lines(context['assigned_order_summary'], max_lines=5)
-
-    if context['unassigned_order_summary']:
-        blocks += ["\nORDENS SEM ATRIBUIÇÃO:"] + _truncate_lines(context['unassigned_order_summary'], max_lines=5)
+    context_str = (
+        "CONTEXTUALIZAÇÃO DE ORDENS DE SERVIÇO:\n"
+        f"- Total de ordens em aberto: {context['open_orders'].count()}\n"
+        f"- Ordens sem atribuição: {context['unassigned_orders'].count()}\n"
+        f"- Ordens atribuídas a este técnico: {context['assigned_orders'].count() if user.tipo_usuario == 'tecnico' else 'não aplicável'}"
+    )
 
     instruction = _get_effective_text('os_analysis')
-    blocks += [f"\n{instruction}"]
-    blocks += ["\nPERGUNTA DO USUÁRIO:", message]
-    return "\n".join(blocks)
+    builder = PromptBuilderConcreto()
+    prompt = PromptDirector.montar_analise_os(builder, context, context_str, instruction, message)
+    return prompt.obter_texto()
 
 
 def build_unassigned_orders_prompt(user, context, message):
-    blocks = [
-        "CONTEXTUALIZAÇÃO DE ORDENS NÃO ATRIBUÍDAS:",
-        f"- Total de ordens sem atribuição: {context['unassigned_orders'].count()}",
-    ]
-    if context['unassigned_order_summary']:
-        blocks += ["\nORDENS SEM ATRIBUIÇÃO (EXEMPLOS):"] + _truncate_lines(context['unassigned_order_summary'], max_lines=5)
+    context_str = (
+        "CONTEXTUALIZAÇÃO DE ORDENS NÃO ATRIBUÍDAS:\n"
+        f"- Total de ordens sem atribuição: {context['unassigned_orders'].count()}"
+    )
 
     instruction = _get_effective_text('unassigned_orders')
-    blocks += [f"\n{instruction}"]
-    blocks += ["\nPERGUNTA DO USUÁRIO:", message]
-    return "\n".join(blocks)
+    builder = PromptBuilderConcreto()
+    prompt = PromptDirector.montar_ordens_nao_atribuidas(builder, context, context_str, instruction, message)
+    return prompt.obter_texto()
 
 
 def build_finance_prompt(user, context, message):
     financial = context['financial_summary']
-    blocks = [
-        "CONTEXTUALIZAÇÃO FINANCEIRA:",
-        f"- Custo total de manutenção registrado: R$ {financial['total_cost']:.2f}",
-        f"- Média de custo por OS concluída: R$ {financial['average_cost_per_os']:.2f}",
-        f"- Ordens concluídas com histórico financeiro: {financial['completed_orders']}",
-    ]
-
-    if financial['top_equipment_costs']:
-        blocks += ["\nEQUIPAMENTOS COM MAIOR CUSTO:"] + financial['top_equipment_costs']
+    context_str = (
+        "CONTEXTUALIZAÇÃO FINANCEIRA:\n"
+        f"- Custo total de manutenção registrado: R$ {financial['total_cost']:.2f}\n"
+        f"- Média de custo por OS concluída: R$ {financial['average_cost_per_os']:.2f}\n"
+        f"- Ordens concluídas com histórico financeiro: {financial['completed_orders']}"
+    )
 
     instruction = _get_effective_text('finance')
-    blocks += [f"\n{instruction}"]
-    blocks += ["\nPERGUNTA DO USUÁRIO:", message]
-    return "\n".join(blocks)
+    builder = PromptBuilderConcreto()
+    prompt = PromptDirector.montar_financeiro(builder, context, context_str, instruction, message)
+    return prompt.obter_texto()

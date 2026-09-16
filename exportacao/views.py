@@ -9,9 +9,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
 
-from .utils.csv_exporter import exportar_csv
-from .utils.excel_exporter import exportar_excel
-from .utils.pdf_exporter import exportar_pdf
+from .utils import ExportadorFactory
 
 from manutencao.models import OrdemServico, HistoricoManutencao
 from ativos.models import Equipamento
@@ -45,13 +43,10 @@ def _filtrar_empresa_admin(queryset, user, empresa_id, campo_empresa):
 
 def _despachar_formato(formato, nome, titulo, colunas, linhas):
     """Despacha para o exporter correto baseado no formato solicitado."""
-    if formato == 'csv':
-        return exportar_csv(nome, colunas, linhas)
-    elif formato == 'excel':
-        return exportar_excel(nome, colunas, linhas, titulo_planilha=titulo)
-    elif formato == 'pdf':
-        return exportar_pdf(nome, titulo, colunas, linhas)
-    else:
+    try:
+        exportador = ExportadorFactory.criar(formato)
+        return exportador.exportar(nome, titulo, colunas, linhas)
+    except ValueError:
         return Response(
             {'error': f'Formato "{formato}" inválido. Use: csv, excel ou pdf.'},
             status=400
