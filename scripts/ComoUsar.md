@@ -17,6 +17,8 @@ Este documento descreve brevemente os scripts disponíveis em `scripts/` e como 
 - Parâmetros disponíveis:
   - `--empresas`: número de empresas a criar (default: `2`)
   - `--equipamentos`: número de equipamentos por empresa (default: `10`)
+  - `--days`: dias de histórico de telemetria e manutenção (default: `120`)
+  - `--clean-only`: apenas limpa o banco de dados sem popular
 
 **Observações**
 - O script já configura o ambiente Django automaticamente.
