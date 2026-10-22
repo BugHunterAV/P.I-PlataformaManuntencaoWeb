@@ -68,6 +68,8 @@ class OrdemServicoViewSet(viewsets.ModelViewSet):
             self._ensure_history(ordem)
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return OrdemServico.objects.none()
         user = self.request.user
         qs = OrdemServico.objects.select_related('equipamento', 'responsavel')
         
@@ -96,6 +98,8 @@ class HistoricoManutencaoViewSet(viewsets.ModelViewSet):
     search_fields = ['descricao_servico']
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return HistoricoManutencao.objects.none()
         user = self.request.user
         qs = HistoricoManutencao.objects.select_related('ordem_servico')
         if user.tipo_usuario == 'admin':

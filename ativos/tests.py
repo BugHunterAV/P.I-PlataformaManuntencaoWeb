@@ -26,6 +26,53 @@ class AtivosTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['horimetro'], 0.0)
 
+    def test_gestor_cannot_create_equipment_for_another_company(self):
+        outra_empresa = Empresa.objects.create(
+            nome='Outra', cnpj='112', email='outra@a.com'
+        )
+        response = self.client.post(self.equip_url, {
+            'nome': 'Motor de outra empresa',
+            'tipo': 'outro',
+            'numero_serie': 'SN-CROSS',
+            'empresa': outra_empresa.id,
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(Equipamento.objects.filter(numero_serie='SN-CROSS').exists())
+
+    def test_gestor_cannot_create_location_or_plan_for_another_company(self):
+        outra_empresa = Empresa.objects.create(
+            nome='Outra', cnpj='113', email='outra2@a.com'
+        )
+        equipamento = Equipamento.objects.create(
+            nome='Motor privado',
+            tipo='outro',
+            numero_serie='SN-PRIVATE',
+            empresa=outra_empresa,
+        )
+
+        location_response = self.client.post(
+            reverse('localizacao-list'),
+            {'equipamento': equipamento.id, 'setor': 'Privado'},
+            format='json',
+        )
+        plan_response = self.client.post(
+            reverse('planos-manutencao-list'),
+            {
+                'equipamento': equipamento.id,
+                'nome_servico': 'Plano privado',
+                'descricao': 'Teste',
+                'intervalo_horas': 100,
+                'prioridade': 'media',
+                'ativo': True,
+            },
+            format='json',
+        )
+
+        self.assertEqual(location_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(plan_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(PlanoManutencao.objects.filter(equipamento=equipamento).exists())
+
 class PlanoManutencaoTests(APITestCase):
     def setUp(self):
         self.empresa = Empresa.objects.create(nome="Beta", cnpj="222", email="b@b.com")
@@ -47,10 +94,11 @@ class PlanoManutencaoTests(APITestCase):
             "nome_servico": "Troca de Óleo",
             "descricao": "Serviço de teste",
             "intervalo_horas": 100.0,
-            "prioridade": "medio",
+            "prioridade": "media",
             "ativo": True
         }
-        self.client.post(self.plano_url, plano_data)
+        response = self.client.post(self.plano_url, plano_data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
         
         # 1. Atualiza para 250h (não deve gerar OS)
         self.motor.horimetro = 250.0

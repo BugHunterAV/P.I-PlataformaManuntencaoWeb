@@ -13,6 +13,8 @@ class EquipamentoViewSet(viewsets.ModelViewSet):
     search_fields = ['nome', 'fabricante', 'modelo', 'numero_serie']
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Equipamento.objects.none()
         user = self.request.user
         if user.tipo_usuario == 'admin':
             return Equipamento.objects.all()
@@ -29,6 +31,8 @@ class EquipamentoLocalizacaoViewSet(viewsets.ModelViewSet):
     search_fields = ['setor']
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return EquipamentoLocalizacao.objects.none()
         user = self.request.user
         qs = EquipamentoLocalizacao.objects.select_related('equipamento')
         if user.tipo_usuario == 'admin':
@@ -51,10 +55,12 @@ class PlanoManutencaoViewSet(viewsets.ModelViewSet):
     search_fields = ['nome_servico', 'descricao']
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return PlanoManutencao.objects.none()
         user = self.request.user
         qs = PlanoManutencao.objects.select_related('equipamento')
         if user.tipo_usuario == 'admin':
             return qs.all()
         if user.empresa:
             return qs.filter(equipamento__empresa=user.empresa)
-        return qs.none()
+        return qs.none()

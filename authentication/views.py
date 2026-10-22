@@ -4,6 +4,8 @@ from rest_framework.permissions import IsAuthenticated
 from .serializers import MeSerializer, ChangePasswordSerializer
 
 from rest_framework.parsers import MultiPartParser, FormParser
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 
 class MeView(APIView):
     """
@@ -15,10 +17,12 @@ class MeView(APIView):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
+    @extend_schema(responses=MeSerializer)
     def get(self, request):
         serializer = MeSerializer(request.user)
         return Response(serializer.data)
 
+    @extend_schema(request=MeSerializer, responses=MeSerializer)
     def patch(self, request):
         serializer = MeSerializer(request.user, data=request.data, partial=True)
         if serializer.is_valid():
@@ -41,6 +45,10 @@ class ChangePasswordView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        request=ChangePasswordSerializer,
+        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT},
+    )
     def post(self, request):
         serializer = ChangePasswordSerializer(data=request.data)
         if not serializer.is_valid():

@@ -15,7 +15,7 @@ class ExportadorExcel(Exportador):
         """
         wb = Workbook()
         ws = wb.active
-        ws.title = titulo
+        ws.title = titulo[:31]
 
         # ── Estilos ──────────────────────────────────────────────────────
         header_font = Font(name='Calibri', bold=True, color='FFFFFF', size=11)

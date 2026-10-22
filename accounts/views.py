@@ -3,16 +3,18 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from .models import Empresa, Usuario
 from .serializers import EmpresaSerializer, UsuarioSerializer
-from .permissions import IsGestor
+from .permissions import IsCompanyManager, IsGestor
 
 
 class EmpresaViewSet(viewsets.ModelViewSet):
     serializer_class = EmpresaSerializer
-    permission_classes = [IsGestor]
+    permission_classes = [IsCompanyManager]
     filter_backends = [filters.SearchFilter]
     search_fields = ['nome', 'cnpj']
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Empresa.objects.none()
         user = self.request.user
         # Se for admin geral, vê todas as empresas
         if user.tipo_usuario == 'admin':
@@ -31,6 +33,8 @@ class UsuarioViewSet(viewsets.ModelViewSet):
     search_fields = ['first_name', 'last_name', 'email', 'username']
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Usuario.objects.none()
         user = self.request.user
         # Se for admin geral, vê todos os usuários de todas as empresas
         if user.tipo_usuario == 'admin':

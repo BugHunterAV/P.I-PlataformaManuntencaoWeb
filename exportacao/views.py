@@ -8,6 +8,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django.utils import timezone
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 
 from .utils import ExportadorFactory
 
@@ -86,6 +88,7 @@ class ExportarOrdensServicoView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: OpenApiTypes.BINARY, 400: OpenApiTypes.OBJECT})
     def get(self, request, formato):
         user = request.user
         qs = OrdemServico.objects.select_related('equipamento', 'responsavel')
@@ -155,6 +158,7 @@ class ExportarEquipamentosView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: OpenApiTypes.BINARY, 400: OpenApiTypes.OBJECT})
     def get(self, request, formato):
         user = request.user
         qs = Equipamento.objects.select_related('empresa')
@@ -208,6 +212,7 @@ class ExportarAlertasView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: OpenApiTypes.BINARY, 400: OpenApiTypes.OBJECT})
     def get(self, request, formato):
         user = request.user
         qs = Alerta.objects.select_related('equipamento')
@@ -269,6 +274,7 @@ class ExportarTelemetriaView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: OpenApiTypes.BINARY, 400: OpenApiTypes.OBJECT})
     def get(self, request, formato):
         user = request.user
         qs = Telemetria.objects.select_related('sensor', 'sensor__equipamento')
@@ -334,6 +340,7 @@ class ExportarHistoricoView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: OpenApiTypes.BINARY, 400: OpenApiTypes.OBJECT})
     def get(self, request, formato):
         user = request.user
         qs = HistoricoManutencao.objects.select_related(
@@ -397,6 +404,7 @@ class ExportarDashboardView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses={200: OpenApiTypes.BINARY, 400: OpenApiTypes.OBJECT})
     def get(self, request, formato):
         from manutencao.dashboards.views import KpiService
         from datetime import timedelta

@@ -148,3 +148,33 @@ class OSTests(APITestCase):
         }, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_gestor_cannot_create_history_for_another_company_order(self):
+        outra_empresa = Empresa.objects.create(
+            nome='Outra empresa histórico', cnpj='556', email='hist@example.com'
+        )
+        outro_motor = Equipamento.objects.create(
+            nome='Motor privado',
+            tipo='Motor',
+            numero_serie='OS-HIST-CROSS',
+            empresa=outra_empresa,
+        )
+        outra_os = OrdemServico.objects.create(
+            equipamento=outro_motor,
+            titulo='OS privada',
+            descricao='Teste',
+        )
+
+        self.client.force_authenticate(user=self.gestor)
+        response = self.client.post(
+            reverse('historico-list'),
+            {
+                'ordem_servico': outra_os.id,
+                'descricao_servico': 'Histórico indevido',
+                'data_execucao': '2026-10-22',
+            },
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(HistoricoManutencao.objects.filter(ordem_servico=outra_os).exists())

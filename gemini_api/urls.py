@@ -7,6 +7,7 @@ from .views import (
     GeminiTrendAnalysisView,
     PromptConfigListView,
     PromptConfigDetailView,
+    PromptConfigResetView,
 )
 
 urlpatterns = [
@@ -17,6 +18,5 @@ urlpatterns = [
     path('tendencia/', GeminiTrendAnalysisView.as_view(), name='gemini_tendencia'),
     path('prompts/', PromptConfigListView.as_view(), name='gemini_prompts_list'),
     path('prompts/<int:pk>/', PromptConfigDetailView.as_view(), name='gemini_prompts_detail'),
-    path('prompts/<int:pk>/reset/', PromptConfigDetailView.as_view(), name='gemini_prompts_reset'),
+    path('prompts/<int:pk>/reset/', PromptConfigResetView.as_view(), name='gemini_prompts_reset'),
 ]
-

@@ -135,3 +135,86 @@ class GeminiApiTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn('message', response.data)
         self.assertGreater(len(response.data['message']), 0)
+
+    def test_trend_analysis_rejects_sensor_from_another_company(self):
+        outra_empresa = Empresa.objects.create(
+            nome='Outra Empresa',
+            cnpj='88888888888888',
+            email='outra@example.com',
+        )
+        outro_equipamento = Equipamento.objects.create(
+            empresa=outra_empresa,
+            nome='Outra Bomba',
+            tipo='bomba_hidraulica',
+            numero_serie='BPT-002',
+        )
+        outro_sensor = Sensor.objects.create(
+            equipamento=outro_equipamento,
+            nome='Sensor privado',
+            tipo='pressao',
+            unidade_medida='bar',
+            limite_alerta=10.0,
+        )
+        self.client.force_authenticate(user=self.gestor)
+
+        response = self.client.post(
+            reverse('gemini_tendencia'),
+            {'message': 'Analise o sensor', 'sensor_id': outro_sensor.id},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_trend_analysis_rejects_invalid_sensor_id(self):
+        self.client.force_authenticate(user=self.gestor)
+
+        response = self.client.post(
+            reverse('gemini_tendencia'),
+            {'message': 'Analise o sensor', 'sensor_id': 'invalid'},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_admin_can_edit_and_reset_prompt_configuration(self):
+        admin = Usuario.objects.create_user(
+            username='admin_prompts',
+            password='password123',
+            tipo_usuario='admin',
+        )
+        self.client.force_authenticate(user=admin)
+
+        list_response = self.client.get(reverse('gemini_prompts_list'))
+        self.assertEqual(list_response.status_code, status.HTTP_200_OK)
+        prompt_id = list_response.data[0]['id']
+
+        detail_url = reverse('gemini_prompts_detail', args=[prompt_id])
+        update_response = self.client.patch(
+            detail_url,
+            {'custom_text': 'Instrução customizada'},
+            format='json',
+        )
+        self.assertEqual(update_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(update_response.data['custom_text'], 'Instrução customizada')
+
+        reset_response = self.client.post(
+            reverse('gemini_prompts_reset', args=[prompt_id]),
+            format='json',
+        )
+        self.assertEqual(reset_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(reset_response.data['custom_text'], '')
+
+    @patch('gemini_api.views.is_gemini_available', return_value=True)
+    @patch('gemini_api.views.generate_content', return_value=('Análise simulada', 'teste'))
+    def test_trend_analysis_uses_authorized_sensor(self, mock_generate, mock_available):
+        self.client.force_authenticate(user=self.gestor)
+
+        response = self.client.post(
+            reverse('gemini_tendencia'),
+            {'message': 'Analise o sensor', 'sensor_id': self.equipamento.sensores.first().id},
+            format='json',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['model_used'], 'teste')
+        mock_generate.assert_called_once()

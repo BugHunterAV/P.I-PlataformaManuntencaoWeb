@@ -13,6 +13,8 @@ class AlertaViewSet(viewsets.ModelViewSet):
     search_fields = ['tipo_alerta', 'descricao']
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Alerta.objects.none()
         user = self.request.user
         qs = Alerta.objects.select_related('equipamento').order_by('-data_alerta')
         if user.tipo_usuario == 'admin':

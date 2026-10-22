@@ -77,6 +77,110 @@ class UserProfileTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Usuario.objects.filter(username="novo_tecnico").count(), 1)
 
+    def test_update_own_profile(self):
+        response = self.client.patch(
+            reverse('me'),
+            {'first_name': 'Nome atualizado'},
+            format='multipart',
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.first_name, 'Nome atualizado')
+
+    def test_gestor_cannot_create_an_admin_user(self):
+        gestor = Usuario.objects.create_user(
+            username='gestor_user_admin',
+            password='password123',
+            tipo_usuario='gestor',
+            empresa=self.empresa,
+        )
+        self.client.force_authenticate(user=gestor)
+
+        response = self.client.post(self.url, {
+            'username': 'forbidden_admin',
+            'email': 'forbidden@example.com',
+            'tipo_usuario': 'admin',
+            'empresa': self.empresa.id,
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(Usuario.objects.filter(username='forbidden_admin').exists())
+
+    def test_gestor_cannot_create_users_in_another_company(self):
+        gestor = Usuario.objects.create_user(
+            username='gestor_cross_company',
+            password='password123',
+            tipo_usuario='gestor',
+            empresa=self.empresa,
+        )
+        outra_empresa = Empresa.objects.create(
+            nome='Outra', cnpj='222', email='outra@example.com'
+        )
+        self.client.force_authenticate(user=gestor)
+
+        response = self.client.post(self.url, {
+            'username': 'cross_company_user',
+            'email': 'cross@example.com',
+            'tipo_usuario': 'tecnico',
+            'empresa': outra_empresa.id,
+        }, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(Usuario.objects.filter(username='cross_company_user').exists())
+
+    def test_gestor_cannot_create_or_delete_companies(self):
+        gestor = Usuario.objects.create_user(
+            username='gestor_company_admin',
+            password='password123',
+            tipo_usuario='gestor',
+            empresa=self.empresa,
+        )
+        self.client.force_authenticate(user=gestor)
+
+        create_response = self.client.post(reverse('empresas-list'), {
+            'nome': 'Empresa indevida',
+            'cnpj': '333',
+            'email': 'indevida@example.com',
+        }, format='json')
+        delete_response = self.client.delete(
+            reverse('empresas-detail', args=[self.empresa.id])
+        )
+
+        self.assertEqual(create_response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(delete_response.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class ChangePasswordTests(APITestCase):
+    def setUp(self):
+        self.user = Usuario.objects.create_user(
+            username='password_change_user',
+            password='old-password-123',
+            tipo_usuario='tecnico',
+        )
+        self.client.force_authenticate(user=self.user)
+        self.url = reverse('change-password')
+
+    def test_change_password_with_valid_current_password(self):
+        response = self.client.post(self.url, {
+            'senha_atual': 'old-password-123',
+            'nova_senha': 'S0lidPass#2026',
+            'confirmar_nova_senha': 'S0lidPass#2026',
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password('S0lidPass#2026'))
+
+    def test_change_password_rejects_mismatched_confirmation(self):
+        response = self.client.post(self.url, {
+            'senha_atual': 'old-password-123',
+            'nova_senha': 'S0lidPass#2026',
+            'confirmar_nova_senha': 'DifferentPass#2026',
+        })
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
 
 class PermissionPolicyFactoryTests(APITestCase):
     def setUp(self):

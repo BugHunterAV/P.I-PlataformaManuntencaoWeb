@@ -15,7 +15,10 @@ class MeSerializer(serializers.ModelSerializer):
             'empresa', 'empresa_nome',
             'is_staff', 'is_superuser',
         ]
-        read_only_fields = fields
+        read_only_fields = [
+            'id', 'tipo_usuario', 'empresa', 'empresa_nome',
+            'is_staff', 'is_superuser',
+        ]
 
 
 class ChangePasswordSerializer(serializers.Serializer):

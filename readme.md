@@ -22,7 +22,7 @@ O projeto foi construído com foco em modularidade, segurança, escalabilidade, 
 ## 🛠 Tecnologias Utilizadas
 
 **Back-end:**
-- Python 3.11+
+- Python 3.10+
 - Django 5.2
 - Django REST Framework 3.16
 - `djangorestframework-simplejwt` — autenticação JWT
@@ -34,7 +34,7 @@ O projeto foi construído com foco em modularidade, segurança, escalabilidade, 
 - `Faker` — geração de dados realistas no seed
 - `WeasyPrint` + `ReportLab` — geração de PDF
 - `openpyxl` — geração de Excel (.xlsx)
-- PostgreSQL (produção) / SQLite (desenvolvimento rápido)
+- PostgreSQL (banco configurado no projeto; SQLite não está habilitado na configuração atual)
 
 **Front-end (`FrontATT/`):**
 - Vue.js 3 (via CDN, sem build step)
@@ -62,6 +62,8 @@ pip install -r requirements.txt
 - Certifique-se de que o serviço do PostgreSQL está rodando
 - Crie um banco de dados chamado `manutencao`
 - Ajuste usuário e senha em `app/settings.py` se necessário
+
+> A configuração atual é voltada ao desenvolvimento (`DEBUG=True` e `ALLOWED_HOSTS` vazio). Antes de publicar o sistema, configure esses valores e as credenciais do banco para o ambiente de produção.
 
 **4. Crie o arquivo de variáveis de ambiente:**
 
@@ -126,7 +128,7 @@ O projeto conta com **3 scripts** na pasta `scripts/` para facilitar o desenvolv
 
 Popula o banco com uma estrutura completa, multi-tenant e realista: empresas, usuários com cargos reais, equipamentos industriais, sensores, 120 dias de histórico de telemetria, ordens de serviço, histórico de manutenção e alertas.
 
-> ⚠️ **Atenção:** o seed **apaga todos os dados existentes** antes de inserir os novos. Use com cuidado.
+> ⚠️ **Atenção:** o seed apaga registros dos modelos de empresas, usuários não-superusuários, ativos, telemetria, alertas, ordens, configurações de tendência e prompts Gemini antes de popular novamente. O superusuário não é apagado. Use com cuidado e não execute em um banco com dados que queira preservar.
 
 **Padrão** (2 empresas, 10 equipamentos cada):
 ```bash
@@ -202,7 +204,7 @@ python scripts/stress_telemetry.py --leituras 1000 --threads 20
 
 ---
 
-## 🔑 Credenciais Padrão (após o seed)
+## 🔑 Credenciais Padrão (no primeiro seed de um banco limpo)
 
 | Perfil | Usuário | Senha |
 |---|---|---|
@@ -210,6 +212,7 @@ python scripts/stress_telemetry.py --leituras 1000 --threads 20
 | Gestores e Técnicos | *(gerado pelo Faker, formato `nome.sobrenome`)* | `123` |
 
 > Consulte o painel admin (`/admin/`) para ver todos os usuários criados pelo seed.
+> O seed preserva superusuários existentes. Se já houver um usuário `admin`, a senha pode não ser `admin`; redefina-a pelo Django antes de usar.
 
 ---
 
@@ -263,7 +266,7 @@ P.I-PlataformaManuntencaoWeb/
 | **Sensor** | Equipamento | ForeignKey | CASCADE — sensores removidos com o equipamento |
 | **Telemetria** | Sensor | ForeignKey | CASCADE — leituras removidas com o sensor |
 | **Alerta** | Equipamento | ForeignKey | CASCADE — alertas removidos com o equipamento |
-| **OrdemServico** | Equipamento | ForeignKey | PROTECT — não permite excluir equipamento com OS aberta |
+| **OrdemServico** | Equipamento | ForeignKey | CASCADE — excluir o equipamento também exclui suas ordens de serviço |
 | **OrdemServico** | Usuario (responsável) | ForeignKey | SET_NULL — responsável excluído → campo fica nulo |
 | **HistoricoManutencao** | OrdemServico | OneToOneField | CASCADE — histórico removido com a OS |
 
@@ -387,6 +390,8 @@ Com o servidor rodando, acesse:
 | ReDoc (documentação limpa) | http://localhost:8000/api/schema/redoc/ |
 | Painel Administrativo Django | http://localhost:8000/admin/ |
 
+O front-end usa Vue.js e dependências carregadas por CDN e está configurado para chamar a API em `http://127.0.0.1:8000`. Para usá-lo, abra `FrontATT/index.html` no navegador com acesso à internet e a API disponível nesse endereço.
+
 ---
 
 ## 🔗 Endpoints da API — Lista Completa
@@ -400,6 +405,7 @@ Com o servidor rodando, acesse:
 | POST | `/api/auth/login/` | Login — retorna tokens JWT (access + refresh) |
 | POST | `/api/auth/refresh/` | Renovar o token de acesso |
 | GET | `/api/auth/me/` | Dados do usuário atualmente logado |
+| PATCH | `/api/auth/me/` | Atualizar dados editáveis do próprio perfil |
 | POST | `/api/auth/change-password/` | Trocar senha do usuário logado |
 
 ### 🏢 Empresas
@@ -512,6 +518,16 @@ Com o servidor rodando, acesse:
 
 **Filtros:** `?sensor=1`, `?sensor__equipamento=2`
 
+### 📈 Análise de Tendências
+
+| Método | Endpoint | Descrição |
+|---|---|---|
+| GET | `/api/telemetria/tendencias/` | Tendências atípicas dos sensores visíveis ao usuário |
+| GET | `/api/telemetria/tendencias/?sensor_id=1` | Tendência de um sensor da própria empresa (ou qualquer empresa para admin) |
+| GET | `/api/telemetria/tendencias/?all=true` | Tendências de todos os sensores visíveis |
+| GET/POST | `/api/telemetria/trend-config/` | Listar/criar configuração de tendência |
+| GET/PATCH/PUT/DELETE | `/api/telemetria/trend-config/{id}/` | Consultar/alterar/excluir configuração |
+
 ### 📊 Dashboards e KPIs
 
 | Método | Endpoint | Descrição |
@@ -527,6 +543,10 @@ Com o servidor rodando, acesse:
 | POST | `/api/gemini/ordens/analise/` | Análise de ordens abertas e recomendações |
 | POST | `/api/gemini/ordens/sem-atribuicao/` | Priorização de ordens sem responsável |
 | POST | `/api/gemini/gestao/financeira/` | Orientação financeira (Gestor/Admin) |
+| POST | `/api/gemini/tendencia/` | Análise Gemini de tendência de um sensor autorizado |
+| GET | `/api/gemini/prompts/` | Listar configurações de prompts (Admin) |
+| GET/PATCH | `/api/gemini/prompts/{id}/` | Consultar/editar configuração de prompt (Admin) |
+| POST | `/api/gemini/prompts/{id}/reset/` | Restaurar prompt original (Admin) |
 
 ### 📤 Exportação de Relatórios
 
@@ -570,7 +590,7 @@ Com o servidor rodando, acesse:
 - **Classificação de O.S.:** Preditiva (horímetro e sensores), Corretiva (manual/emergência), Preventiva (manual)
 - Regras de visibilidade restrita para técnicos (Sigilo de O.S.)
 - Dashboard com KPIs: MTBF, MTTR, Disponibilidade e resumo geral
-- Banco de dados PostgreSQL (pronto para produção)
+- PostgreSQL configurado (credenciais, `DEBUG` e `ALLOWED_HOSTS` ainda precisam ser definidos para produção)
 - Seed completo e ultra-realista com 120 dias de histórico de telemetria
 - **Simulador de telemetria em tempo real** com detecção dinâmica de sensores
 - Documentação automática Swagger e ReDoc

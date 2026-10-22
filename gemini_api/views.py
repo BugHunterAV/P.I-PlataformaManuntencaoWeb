@@ -17,6 +17,7 @@ from .prompt_builder import (
     get_all_defaults,
 )
 from telemetria.trend_analysis import analyze_sensor_trend
+from telemetria.models import Sensor
 from .serializers import (
     GeminiMessageSerializer,
     GeminiResponseSerializer,
@@ -40,6 +41,10 @@ class PromptConfigListView(APIView):
     """
     permission_classes = [IsAuthenticated, IsAdminUser]
 
+    @extend_schema(
+        operation_id='gemini_prompts_list',
+        responses=PromptConfigSerializer(many=True),
+    )
     def get(self, request):
         # Auto-seed: if no configs exist, create all defaults
         defaults = get_all_defaults()
@@ -77,6 +82,7 @@ class PromptConfigDetailView(APIView):
     POST   — Reset custom_text to empty (restores original).
     """
     permission_classes = [IsAuthenticated, IsAdminUser]
+    serializer_class = PromptConfigSerializer
 
     def get_object(self, pk):
         try:
@@ -84,6 +90,10 @@ class PromptConfigDetailView(APIView):
         except PromptConfig.DoesNotExist:
             return None
 
+    @extend_schema(
+        operation_id='gemini_prompt_detail',
+        responses=PromptConfigSerializer,
+    )
     def get(self, request, pk):
         obj = self.get_object(pk)
         if not obj:
@@ -91,6 +101,10 @@ class PromptConfigDetailView(APIView):
         serializer = PromptConfigSerializer(obj)
         return Response(serializer.data)
 
+    @extend_schema(
+        request=PromptConfigSerializer,
+        responses=PromptConfigSerializer,
+    )
     def patch(self, request, pk):
         obj = self.get_object(pk)
         if not obj:
@@ -100,6 +114,7 @@ class PromptConfigDetailView(APIView):
         serializer.save()
         return Response(serializer.data)
 
+    @extend_schema(responses=PromptConfigSerializer)
     def post(self, request, pk):
         """Reset: clears custom_text so the original is used."""
         obj = self.get_object(pk)
@@ -109,6 +124,17 @@ class PromptConfigDetailView(APIView):
         obj.save()
         serializer = PromptConfigSerializer(obj)
         return Response(serializer.data)
+
+
+class PromptConfigResetView(PromptConfigDetailView):
+    http_method_names = ['post', 'options']
+
+    @extend_schema(
+        operation_id='gemini_prompt_reset',
+        responses=PromptConfigSerializer,
+    )
+    def post(self, request, pk):
+        return super().post(request, pk)
 
 
 class GeminiBaseView(APIView):
@@ -259,4 +285,25 @@ class GeminiTrendAnalysisView(GeminiBaseView):
         description="Analise a tendência de um sensor específico para obter diagnóstico e recomendações preditivas.",
     )
     def post(self, request):
+        try:
+            sensor_id = int(request.data.get('sensor_id'))
+        except (TypeError, ValueError):
+            return Response(
+                {'sensor_id': 'Informe um ID de sensor inteiro.'},
+                status=http_status.HTTP_400_BAD_REQUEST
+            )
+
+        sensors = Sensor.objects.filter(pk=sensor_id, ativo=True)
+        if request.user.tipo_usuario != 'admin':
+            if not request.user.empresa:
+                sensors = sensors.none()
+            else:
+                sensors = sensors.filter(equipamento__empresa=request.user.empresa)
+
+        if not sensors.exists():
+            return Response(
+                {'detail': 'Sensor não encontrado ou inativo.'},
+                status=http_status.HTTP_404_NOT_FOUND
+            )
+
         return super().post(request)

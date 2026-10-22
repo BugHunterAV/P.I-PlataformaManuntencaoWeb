@@ -94,3 +94,139 @@ class TelemetriaAlertTests(APITestCase):
         response = self.client.post(self.leitura_url, {'sensor': self.sensor.id, 'valor': 10.0}, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_gestor_cannot_write_telemetry_resources_for_another_company(self):
+        outra_empresa = Empresa.objects.create(
+            nome='Outra Gamma', cnpj='334', email='outra@g.com'
+        )
+        outro_motor = Equipamento.objects.create(
+            nome='Motor de outra empresa',
+            numero_serie='TEL-CROSS',
+            empresa=outra_empresa,
+        )
+        outro_sensor = Sensor.objects.create(
+            equipamento=outro_motor,
+            nome='Sensor privado',
+            tipo='temperatura',
+            unidade_medida='°C',
+            limite_alerta=100,
+        )
+
+        sensor_response = self.client.post(
+            reverse('sensores-list'),
+            {
+                'equipamento': outro_motor.id,
+                'nome': 'Sensor indevido',
+                'tipo': 'temperatura',
+                'unidade_medida': '°C',
+                'limite_alerta': 100,
+            },
+            format='json',
+        )
+        reading_response = self.client.post(
+            self.leitura_url,
+            {'sensor': outro_sensor.id, 'valor': 80},
+            format='json',
+        )
+        alert_response = self.client.post(
+            reverse('alertas-list'),
+            {
+                'equipamento': outro_motor.id,
+                'tipo_alerta': 'Alerta indevido',
+                'nivel': 'critico',
+                'descricao': 'Teste',
+                'status': 'ativo',
+            },
+            format='json',
+        )
+        trend_response = self.client.post(
+            reverse('trend-config-list'),
+            {
+                'sensor': outro_sensor.id,
+                'periodo_horas': 24,
+                'num_leituras': 50,
+                'sensibilidade': 'media',
+                'ativo': True,
+            },
+            format='json',
+        )
+        global_config_response = self.client.post(
+            reverse('trend-config-list'),
+            {
+                'sensor': None,
+                'periodo_horas': 24,
+                'num_leituras': 50,
+                'sensibilidade': 'media',
+                'ativo': True,
+            },
+            format='json',
+        )
+
+        for response in (
+            sensor_response,
+            reading_response,
+            alert_response,
+            trend_response,
+            global_config_response,
+        ):
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class TrendDashboardTests(APITestCase):
+    def setUp(self):
+        self.empresa = Empresa.objects.create(
+            nome='Empresa A', cnpj='TREND-001', email='a@example.com'
+        )
+        self.outra_empresa = Empresa.objects.create(
+            nome='Empresa B', cnpj='TREND-002', email='b@example.com'
+        )
+        self.gestor = Usuario.objects.create_user(
+            username='gestor_tendencia',
+            password='password123',
+            tipo_usuario='gestor',
+            empresa=self.empresa,
+        )
+        self.equipamento = Equipamento.objects.create(
+            empresa=self.empresa,
+            nome='Motor A',
+            numero_serie='TREND-EQ-001',
+        )
+        self.sensor = Sensor.objects.create(
+            equipamento=self.equipamento,
+            nome='Temperatura A',
+            tipo='temperatura',
+            unidade_medida='°C',
+            limite_alerta=100,
+        )
+        outro_equipamento = Equipamento.objects.create(
+            empresa=self.outra_empresa,
+            nome='Motor B',
+            numero_serie='TREND-EQ-002',
+        )
+        self.sensor_outra_empresa = Sensor.objects.create(
+            equipamento=outro_equipamento,
+            nome='Temperatura B',
+            tipo='temperatura',
+            unidade_medida='°C',
+            limite_alerta=100,
+        )
+        self.client.force_authenticate(user=self.gestor)
+        self.url = reverse('trend-dashboard')
+
+    def test_sensor_trend_is_available_to_its_company(self):
+        response = self.client.get(self.url, {'sensor_id': self.sensor.id})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['sensor_id'], self.sensor.id)
+
+    def test_sensor_trend_is_hidden_from_other_companies(self):
+        response = self.client.get(
+            self.url, {'sensor_id': self.sensor_outra_empresa.id}
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_invalid_sensor_id_returns_bad_request(self):
+        response = self.client.get(self.url, {'sensor_id': 'invalid'})
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

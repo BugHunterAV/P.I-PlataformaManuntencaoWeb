@@ -1,8 +1,10 @@
-from django.db import models
 from rest_framework import viewsets, filters
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db import models
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema
 from .models import Sensor, Telemetria, TrendConfig
 from .serializers import SensorSerializer, TelemetriaSerializer, TrendConfigSerializer
 from .trend_analysis import analyze_sensor_trend, get_all_sensor_trends
@@ -17,6 +19,8 @@ class SensorViewSet(viewsets.ModelViewSet):
     search_fields = ['descricao']
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Sensor.objects.none()
         user = self.request.user
         qs = Sensor.objects.select_related('equipamento')
         if user.tipo_usuario != 'admin':
@@ -53,6 +57,8 @@ class TelemetriaViewSet(viewsets.ModelViewSet):
     filterset_class = TelemetriaFilter
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return Telemetria.objects.none()
         user = self.request.user
         qs = Telemetria.objects.select_related('sensor', 'sensor__equipamento').order_by('-timestamp')
         if user.tipo_usuario != 'admin':
@@ -79,14 +85,13 @@ class TrendConfigViewSet(viewsets.ModelViewSet):
     filterset_fields = ['sensor', 'ativo']
 
     def get_queryset(self):
+        if getattr(self, 'swagger_fake_view', False):
+            return TrendConfig.objects.none()
         user = self.request.user
         qs = TrendConfig.objects.select_related('sensor', 'sensor__equipamento')
         if user.tipo_usuario != 'admin':
             if user.empresa:
-                qs = qs.filter(
-                    models.Q(sensor__equipamento__empresa=user.empresa) |
-                    models.Q(sensor__isnull=True)
-                )
+                qs = qs.filter(sensor__equipamento__empresa=user.empresa)
             else:
                 return qs.none()
         return qs
@@ -103,10 +108,36 @@ class TrendDashboardView(APIView):
     """
     permission_classes = [IsAuthenticatedNoDeleteForTecnico]
 
+    @extend_schema(responses=OpenApiTypes.ANY)
     def get(self, request):
         sensor_id = request.query_params.get('sensor_id')
 
         if sensor_id:
+            try:
+                sensor_id = int(sensor_id)
+            except (TypeError, ValueError):
+                return Response(
+                    {'detail': 'O parâmetro sensor_id deve ser um número inteiro.'},
+                    status=400
+                )
+
+            sensor_queryset = Sensor.objects.filter(pk=sensor_id, ativo=True)
+            if request.user.tipo_usuario != 'admin':
+                if not request.user.empresa:
+                    return Response(
+                        {'detail': 'Sensor não encontrado ou inativo.'},
+                        status=404
+                    )
+                sensor_queryset = sensor_queryset.filter(
+                    equipamento__empresa=request.user.empresa
+                )
+
+            if not sensor_queryset.exists():
+                return Response(
+                    {'detail': 'Sensor não encontrado ou inativo.'},
+                    status=404
+                )
+
             trend = analyze_sensor_trend(int(sensor_id))
             if trend is None:
                 return Response(

@@ -1,6 +1,9 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from rest_framework import serializers
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema, inline_serializer
 from django.db.models import Avg, F, ExpressionWrapper, DurationField, Count, Sum, Q
 from django.utils import timezone
 from manutencao.models import OrdemServico, HistoricoManutencao
@@ -85,6 +88,7 @@ class DashboardSummaryView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(responses=OpenApiTypes.OBJECT)
     def get(self, request):
         user = request.user
         empresa_id = request.query_params.get('empresa_id')
@@ -238,6 +242,22 @@ class KpiDashboardView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
+    @extend_schema(
+        responses=inline_serializer(
+            name='KpiDashboardItem',
+            many=True,
+            fields={
+                'equipamento': serializers.CharField(),
+                'equipamento_id': serializers.IntegerField(),
+                'status': serializers.CharField(),
+                'mttr_hours': serializers.FloatField(),
+                'mtbf_hours': serializers.FloatField(),
+                'disponibilidade_porcentagem': serializers.FloatField(allow_null=True),
+                'total_manutencoes': serializers.IntegerField(),
+                'custo_total_manutencao': serializers.FloatField(),
+            },
+        )
+    )
     def get(self, request, *args, **kwargs):
         user = request.user
         equipamento_id = request.query_params.get('equipamento_id')

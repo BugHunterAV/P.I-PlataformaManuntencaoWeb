@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import OrdemServico, HistoricoManutencao
+from accounts.validation import validate_company_resource
 
 class OrdemServicoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -60,3 +61,17 @@ class HistoricoManutencaoSerializer(serializers.ModelSerializer):
     class Meta:
         model = HistoricoManutencao
         fields = '__all__'
+
+    def validate(self, data):
+        request = self.context.get('request')
+        ordem = data.get(
+            'ordem_servico',
+            getattr(self.instance, 'ordem_servico', None),
+        )
+        if ordem:
+            validate_company_resource(
+                request.user if request else None,
+                ordem.equipamento,
+                'ordem_servico',
+            )
+        return data

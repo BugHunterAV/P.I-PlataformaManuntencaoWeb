@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from decimal import Decimal
 from ativos.models import Equipamento
 from accounts.models import Usuario
 
@@ -59,7 +60,7 @@ class HistoricoManutencao(models.Model):
     custo_mao_de_obra = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     
     @property
-    def custo_total(self):
+    def custo_total(self) -> Decimal:
         return self.custo_pecas + self.custo_mao_de_obra
 
     def __str__(self):
