@@ -37,6 +37,17 @@ class OrdemServico(models.Model):
         ('critica', 'Crítica'),
     )
     prioridade = models.CharField(max_length=20, choices=PRIORIDADE_CHOICES, default='baixa')
+    GRAVIDADE_CHOICES = (
+        ('ausente', 'Não informada'), ('baixa', 'Baixa'), ('moderada', 'Moderada'),
+        ('alta', 'Alta'), ('critica', 'Crítica'),
+    )
+    gravidade_condicao = models.CharField(max_length=20, choices=GRAVIDADE_CHOICES, default='ausente')
+    risco_seguranca = models.BooleanField(default=False)
+    prioridade_manual = models.BooleanField(default=False)
+    prioridade_automatica = models.CharField(max_length=20, choices=PRIORIDADE_CHOICES, blank=True)
+    justificativa_prioridade = models.TextField(blank=True)
+    criticidade_na_abertura = models.CharField(max_length=1, blank=True, null=True)
+    justificativa_criticidade_na_abertura = models.TextField(blank=True)
     
     # Datas
     data_abertura = models.DateTimeField(default=timezone.now) # Preenche com a hora atual, mas aceita valores manuais

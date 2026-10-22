@@ -4,6 +4,7 @@ from django.urls import reverse
 from .models import OrdemServico, HistoricoManutencao
 from ativos.models import Equipamento, Empresa
 from accounts.models import Usuario
+from .services import PrioridadeOSService
 
 class OSTests(APITestCase):
     def setUp(self):
@@ -178,3 +179,37 @@ class OSTests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertFalse(HistoricoManutencao.objects.filter(ordem_servico=outra_os).exists())
+
+
+class PriorizacaoTests(APITestCase):
+    def setUp(self):
+        self.empresa = Empresa.objects.create(nome='Prioridade', cnpj='992', email='prioridade@a.com')
+        self.gestor = Usuario.objects.create_user(username='gestor_prio', password='123', tipo_usuario='gestor', empresa=self.empresa)
+        self.equipamento = Equipamento.objects.create(empresa=self.empresa, nome='Linha crítica', numero_serie='PRIO-01', criticidade='A')
+
+    def test_matriz_criticidade_e_gravidade_e_risco_de_seguranca(self):
+        self.assertEqual(PrioridadeOSService.calcular(self.equipamento, 'corretiva', 'moderada')[0], 'alta')
+        self.assertEqual(PrioridadeOSService.calcular(self.equipamento, 'corretiva', 'critica')[0], 'critica')
+        self.assertEqual(PrioridadeOSService.calcular(self.equipamento, 'corretiva', 'baixa', True)[0], 'critica')
+
+    def test_critica_ausente_tem_tratamento_explicito(self):
+        self.equipamento.criticidade = None
+        self.equipamento.save()
+        prioridade, justificativa, _ = PrioridadeOSService.calcular(self.equipamento, 'corretiva', 'alta')
+        self.assertEqual(prioridade, 'alta')
+        self.assertIn('sem criticidade avaliada', justificativa)
+
+    def test_preventiva_de_equipamento_a_nao_vira_emergencia(self):
+        prioridade, _, _ = PrioridadeOSService.calcular(self.equipamento, 'preventiva', 'ausente', prioridade_plano='media')
+        self.assertEqual(prioridade, 'media')
+
+    def test_api_preserva_contexto_da_abertura_e_prioridade_manual_de_gestor(self):
+        self.client.force_authenticate(self.gestor)
+        resposta = self.client.post(reverse('ordens-servico-list'), {
+            'equipamento': self.equipamento.id, 'titulo': 'Inspeção', 'descricao': 'Condição observada',
+            'tipo_os': 'corretiva', 'gravidade_condicao': 'moderada',
+        }, format='json')
+        self.assertEqual(resposta.status_code, status.HTTP_201_CREATED, resposta.data)
+        self.assertEqual(resposta.data['prioridade'], 'alta')
+        self.assertEqual(resposta.data['criticidade_na_abertura'], 'A')
+        self.assertTrue(resposta.data['justificativa_prioridade'])

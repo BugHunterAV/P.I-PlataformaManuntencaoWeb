@@ -1460,7 +1460,7 @@ createApp({
     const modalConfig = {
       equipamento: {
         title: 'Equipamento', endpoint: '/api/equipamentos/',
-        defaults: { nome: '', tipo: '', modelo: '', fabricante: '', numero_serie: '', status: 'ativo', criticidade: 'normal', empresa: null, data_instalacao: '', descricao: '' }
+        defaults: { nome: '', tipo: '', modelo: '', fabricante: '', numero_serie: '', status: 'ativo', criticidade: null, justificativa_criticidade: '', empresa: null, data_instalacao: '', descricao: '' }
       },
       alerta: {
         title: 'Alerta', endpoint: '/api/alertas/',
@@ -1469,7 +1469,7 @@ createApp({
 
       ordem: {
         title: 'Ordem de Serviço', endpoint: '/api/ordens-servico/',
-        defaults: { titulo: '', tipo_os: 'preventiva', prioridade: 'media', status: 'pendente', equipamento: null, responsavel: null, descricao: '', custo_pecas: null, custo_mao_de_obra: null }
+        defaults: { titulo: '', tipo_os: 'preventiva', prioridade: 'media', gravidade_condicao: 'ausente', risco_seguranca: false, status: 'pendente', equipamento: null, responsavel: null, descricao: '', custo_pecas: null, custo_mao_de_obra: null }
       },
       encerrar_os: {
         title: 'Encerrar O.S.', endpoint: '/api/ordens-servico/',

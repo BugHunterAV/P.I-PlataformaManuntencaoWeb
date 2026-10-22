@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import OrdemServico, HistoricoManutencao
 from accounts.validation import validate_company_resource
+from .services import PrioridadeOSService
 
 class OrdemServicoSerializer(serializers.ModelSerializer):
     class Meta:
@@ -8,7 +9,11 @@ class OrdemServicoSerializer(serializers.ModelSerializer):
         fields = '__all__'
         
         # A magia da segurança Sênior acontece aqui:
-        read_only_fields = ['data_abertura', 'data_conclusao']
+        read_only_fields = [
+            'data_abertura', 'data_conclusao', 'prioridade_automatica',
+            'justificativa_prioridade', 'criticidade_na_abertura',
+            'justificativa_criticidade_na_abertura', 'prioridade_manual',
+        ]
 
     def validate(self, data):
         request = self.context.get('request')
@@ -39,6 +44,14 @@ class OrdemServicoSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         request = self.context.get('request')
+        prioridade_informada = 'prioridade' in self.initial_data
+        if prioridade_informada and request and request.user.tipo_usuario in ['gestor', 'admin']:
+            validated_data['prioridade_manual'] = True
+            validated_data['prioridade_automatica'] = validated_data['prioridade']
+            validated_data['justificativa_prioridade'] = 'Prioridade definida manualmente por usuário autorizado.'
+        else:
+            validated_data.pop('prioridade', None)
+            PrioridadeOSService.preencher(validated_data, validated_data['equipamento'])
         if request and request.user.is_authenticated and request.user.tipo_usuario == 'tecnico':
             responsavel = validated_data.get('responsavel')
             if responsavel is None and validated_data.get('status') in ['andamento', 'concluida']:
@@ -47,6 +60,22 @@ class OrdemServicoSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         request = self.context.get('request')
+        prioridade_informada = 'prioridade' in self.initial_data
+        if prioridade_informada and request and request.user.tipo_usuario in ['gestor', 'admin']:
+            validated_data['prioridade_manual'] = True
+            validated_data['prioridade_automatica'] = validated_data['prioridade']
+            validated_data['justificativa_prioridade'] = 'Prioridade definida manualmente por usuário autorizado.'
+        elif not instance.prioridade_manual:
+            validated_data.pop('prioridade', None)
+            dados_calculo = {
+                'tipo_os': validated_data.get('tipo_os', instance.tipo_os),
+                'gravidade_condicao': validated_data.get('gravidade_condicao', instance.gravidade_condicao),
+                'risco_seguranca': validated_data.get('risco_seguranca', instance.risco_seguranca),
+            }
+            PrioridadeOSService.preencher(dados_calculo, validated_data.get('equipamento', instance.equipamento))
+            validated_data.update(dados_calculo)
+        else:
+            validated_data.pop('prioridade', None)
         if request and request.user.is_authenticated and request.user.tipo_usuario == 'tecnico':
             responsavel = validated_data.get('responsavel', instance.responsavel)
             if instance.responsavel is None and responsavel is None:

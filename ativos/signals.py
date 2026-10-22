@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from gemini_api.cliente import get_media_quebras_equipamentos
 from manutencao.models import OrdemServico
+from manutencao.services import PrioridadeOSService
 
 
 
@@ -37,6 +38,9 @@ def verificar_planos_por_horimetro(sender, instance, **kwargs):
             continue  # Não duplica
 
         # 🚀 DISPARO: Cria a O.S. preditiva
+        dados = PrioridadeOSService.preencher({
+            'tipo_os': 'preditiva', 'gravidade_condicao': 'ausente', 'risco_seguranca': False,
+        }, instance, prioridade_plano=plano.prioridade)
         OrdemServico.objects.create(
             equipamento=instance,
             titulo=f"[PREDITIVA] {plano.nome_servico}",
@@ -47,9 +51,8 @@ def verificar_planos_por_horimetro(sender, instance, **kwargs):
                 f"Intervalo do plano: a cada {plano.intervalo_horas:.0f}h\n\n"
                 f"Detalhes do serviço:\n{plano.descricao}"
             ),
-            tipo_os='preditiva',
-            prioridade=plano.prioridade,
             status='pendente',
+            **dados,
         )
 
         # Atualiza o registro do plano para o próximo ciclo

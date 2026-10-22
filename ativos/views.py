@@ -1,7 +1,8 @@
 from rest_framework import viewsets, filters
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Equipamento, EquipamentoLocalizacao, PlanoManutencao
-from .serializers import EquipamentoSerializer, EquipamentoLocalizacaoSerializer, PlanoManutencaoSerializer
+from .models import Equipamento, EquipamentoLocalizacao, PlanoManutencao, TipoEquipamento, HistoricoCriticidadeEquipamento
+from .serializers import (EquipamentoSerializer, EquipamentoLocalizacaoSerializer, PlanoManutencaoSerializer,
+                          TipoEquipamentoSerializer, HistoricoCriticidadeEquipamentoSerializer)
 from accounts.permissions import IsGestorOrReadOnly
 
 
@@ -9,7 +10,7 @@ class EquipamentoViewSet(viewsets.ModelViewSet):
     serializer_class = EquipamentoSerializer
     permission_classes = [IsGestorOrReadOnly]
     filter_backends = [DjangoFilterBackend, filters.SearchFilter]
-    filterset_fields = ['empresa', 'status', 'tipo', 'localizacao__setor']
+    filterset_fields = ['empresa', 'status', 'tipo', 'tipo_equipamento', 'criticidade', 'localizacao__setor']
     search_fields = ['nome', 'fabricante', 'modelo', 'numero_serie']
 
     def get_queryset(self):
@@ -21,6 +22,29 @@ class EquipamentoViewSet(viewsets.ModelViewSet):
         if user.empresa:
             return Equipamento.objects.filter(empresa=user.empresa)
         return Equipamento.objects.none()
+
+
+class TipoEquipamentoViewSet(viewsets.ModelViewSet):
+    serializer_class = TipoEquipamentoSerializer
+    permission_classes = [IsGestorOrReadOnly]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.tipo_usuario == 'admin':
+            return TipoEquipamento.objects.all()
+        return TipoEquipamento.objects.filter(empresa=user.empresa) if user.empresa else TipoEquipamento.objects.none()
+
+
+class HistoricoCriticidadeEquipamentoViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = HistoricoCriticidadeEquipamentoSerializer
+    filterset_fields = ['equipamento']
+
+    def get_queryset(self):
+        user = self.request.user
+        qs = HistoricoCriticidadeEquipamento.objects.select_related('equipamento', 'alterado_por')
+        if user.tipo_usuario == 'admin':
+            return qs
+        return qs.filter(equipamento__empresa=user.empresa) if user.empresa else qs.none()
 
 
 class EquipamentoLocalizacaoViewSet(viewsets.ModelViewSet):

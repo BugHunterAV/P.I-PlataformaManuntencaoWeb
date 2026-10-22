@@ -1,7 +1,7 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
-from .models import Empresa, Equipamento, PlanoManutencao
+from .models import Empresa, Equipamento, PlanoManutencao, TipoEquipamento, HistoricoCriticidadeEquipamento
 from manutencao.models import OrdemServico
 from accounts.models import Usuario
 
@@ -109,8 +109,41 @@ class PlanoManutencaoTests(APITestCase):
         self.motor.horimetro = 310.0
         self.motor.save()
         self.assertEqual(OrdemServico.objects.filter(tipo_os='preditiva').count(), 1)
-        
+
         # 3. Teste anti-duplicação (315h não gera nova OS)
         self.motor.horimetro = 315.0
         self.motor.save()
         self.assertEqual(OrdemServico.objects.filter(tipo_os='preditiva').count(), 1)
+
+
+class CriticidadeTests(APITestCase):
+    def setUp(self):
+        self.empresa = Empresa.objects.create(nome='Crit', cnpj='991', email='crit@a.com')
+        self.gestor = Usuario.objects.create_user(username='gestor_crit', password='123', tipo_usuario='gestor', empresa=self.empresa)
+        self.tecnico = Usuario.objects.create_user(username='tecnico_crit', password='123', tipo_usuario='tecnico', empresa=self.empresa)
+        self.tipo = TipoEquipamento.objects.create(empresa=self.empresa, nome='Bomba de processo', criticidade_padrao='B', descricao_criterios='Impacto alto na continuidade.')
+
+    def test_tipo_sugere_criticidade_sem_usar_nome_do_equipamento(self):
+        self.client.force_authenticate(self.gestor)
+        response = self.client.post(reverse('equipamentos-list'), {
+            'empresa': self.empresa.id, 'nome': 'Bomba instalada na linha 2', 'numero_serie': 'CRIT-01',
+            'tipo_equipamento': self.tipo.id,
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        self.assertEqual(response.data['criticidade'], 'B')
+        self.assertEqual(response.data['criticidade_origem'], 'tipo')
+
+    def test_ajuste_individual_exige_justificativa_e_gera_historico(self):
+        equipamento = Equipamento.objects.create(empresa=self.empresa, nome='Equipamento', numero_serie='CRIT-02')
+        self.client.force_authenticate(self.gestor)
+        response = self.client.patch(reverse('equipamentos-detail', args=[equipamento.id]), {
+            'criticidade': 'A', 'justificativa_criticidade': 'Sem redundância e com risco ambiental.'
+        }, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+        self.assertEqual(HistoricoCriticidadeEquipamento.objects.filter(equipamento=equipamento, criticidade_nova='A').count(), 1)
+
+    def test_tecnico_nao_altera_criticidade(self):
+        equipamento = Equipamento.objects.create(empresa=self.empresa, nome='Equipamento', numero_serie='CRIT-03')
+        self.client.force_authenticate(self.tecnico)
+        response = self.client.patch(reverse('equipamentos-detail', args=[equipamento.id]), {'criticidade': 'A'}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

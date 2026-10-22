@@ -762,6 +762,10 @@
                   <span class="equip-card-label">Empresa</span>
                   <span class="equip-card-value">{{ empresaNome(e.empresa) }}</span>
                 </div>
+                <div class="equip-card-field">
+                  <span class="equip-card-label">Criticidade</span>
+                  <span class="equip-card-value">{{ e.criticidade ? e.criticidade + ' — ' + ({A:'Crítica',B:'Alta',C:'Moderada',D:'Baixa'}[e.criticidade]) : 'Não avaliada' }}</span>
+                </div>
               </div>
               
               <div class="equip-card-footer">
@@ -1320,11 +1324,19 @@
             <div class="field" :class="{hasError:formErrors.criticidade}">
               <label>Criticidade</label>
               <select v-model="fd.criticidade">
-                <option value="normal">Normal</option>
-                <option value="alta">Alta</option>
+                <option :value="null">Não avaliada</option>
+                <option value="A">A — Crítica</option>
+                <option value="B">B — Alta</option>
+                <option value="C">C — Moderada</option>
+                <option value="D">D — Baixa</option>
               </select>
               <span v-if="formErrors.criticidade" class="field-error">{{ formErrors.criticidade }}</span>
             </div>
+          </div>
+          <div class="field" :class="{hasError:formErrors.justificativa_criticidade}">
+            <label>Justificativa da criticidade</label>
+            <textarea v-model="fd.justificativa_criticidade" placeholder="Segurança, meio ambiente, produção, redundância, qualidade e recuperação."></textarea>
+            <span v-if="formErrors.justificativa_criticidade" class="field-error">{{ formErrors.justificativa_criticidade }}</span>
           </div>
           <div class="field-row">
             <div class="field" :class="{hasError:formErrors.empresa}">
@@ -1401,6 +1413,21 @@
                 <option v-for="e in lists.equipamentos" :key="e.id" :value="e.id">{{ e.nome }} (#{{ e.id }})</option>
               </select>
               <span v-if="formErrors.equipamento" class="field-error">{{ formErrors.equipamento }}</span>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field" :class="{hasError:formErrors.gravidade_condicao}">
+              <label>Gravidade da condição</label>
+              <select v-model="fd.gravidade_condicao">
+                <option value="ausente">Ainda não informada</option>
+                <option value="baixa">Baixa</option>
+                <option value="moderada">Moderada</option>
+                <option value="alta">Alta</option>
+                <option value="critica">Crítica</option>
+              </select>
+            </div>
+            <div class="field">
+              <label><input type="checkbox" v-model="fd.risco_seguranca"> Há risco de segurança</label>
             </div>
           </div>
           <div class="field-row">
@@ -1903,6 +1930,9 @@
                 <div class="detail-card-label">Responsável</div>
                 <div class="detail-card-value">{{ usuarioNome(equipModal.currentOS.responsavel) || '—' }}</div>
               </div>
+            </div>
+            <div v-if="equipModal.currentOS.justificativa_prioridade" style="width:100%; font-size:12px; color:var(--t2);">
+              <strong>Motivo da prioridade:</strong> {{ equipModal.currentOS.justificativa_prioridade }}
             </div>
           </div>
         </div>

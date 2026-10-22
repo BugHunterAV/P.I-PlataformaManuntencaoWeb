@@ -1,6 +1,26 @@
 from django.db import models
 from accounts.models import Empresa
 
+
+class TipoEquipamento(models.Model):
+    """Catálogo por empresa usado apenas como sugestão, nunca como sobrescrita."""
+
+    CRITICIDADE_CHOICES = (
+        ('A', 'A — Crítica'), ('B', 'B — Alta'),
+        ('C', 'C — Moderada'), ('D', 'D — Baixa'),
+    )
+    empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='tipos_equipamento')
+    nome = models.CharField(max_length=100)
+    criticidade_padrao = models.CharField(max_length=1, choices=CRITICIDADE_CHOICES, blank=True, null=True)
+    descricao_criterios = models.TextField(blank=True, help_text='Critérios locais que justificam a sugestão.')
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['empresa', 'nome'], name='tipo_equipamento_por_empresa_unico')]
+        ordering = ['nome']
+
+    def __str__(self):
+        return self.nome
+
 class Equipamento(models.Model):
     
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='equipamentos')
@@ -23,6 +43,11 @@ class Equipamento(models.Model):
         null=True,
         help_text="Ex: Motor elétrico, Bomba Hidráulica"
     )
+    tipo_equipamento = models.ForeignKey(
+        TipoEquipamento, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='equipamentos',
+        help_text='Catálogo opcional; sua criticidade é apenas uma sugestão inicial.'
+    )
     fabricante = models.CharField(max_length=100, blank=True, null=True)
     modelo = models.CharField(max_length=100, blank=True, null=True)
     numero_serie = models.CharField(max_length=100, unique=True)
@@ -38,14 +63,32 @@ class Equipamento(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='ativo')
 
     CRITICIDADE_CHOICES = (
-        ('normal', 'Normal'),
-        ('alta', 'Alta'),
+        ('A', 'A — Crítica'), ('B', 'B — Alta'),
+        ('C', 'C — Moderada'), ('D', 'D — Baixa'),
     )
-    criticidade = models.CharField(max_length=20, choices=CRITICIDADE_CHOICES, default='normal',
-                                   help_text="Define a criticidade do equipamento para priorização de manutenções")
+    ORIGEM_CRITICIDADE_CHOICES = (
+        ('nao_avaliada', 'Não avaliada'), ('tipo', 'Sugerida pelo tipo'),
+        ('individual', 'Avaliação individual'),
+    )
+    criticidade = models.CharField(max_length=1, choices=CRITICIDADE_CHOICES, blank=True, null=True,
+                                   help_text='Classe A/B/C/D; nulo significa que a avaliação ainda não foi feita.')
+    criticidade_origem = models.CharField(max_length=20, choices=ORIGEM_CRITICIDADE_CHOICES, default='nao_avaliada')
+    justificativa_criticidade = models.TextField(blank=True, help_text='Justificativa da avaliação individual ou da sugestão aceita.')
     
     def __str__(self):
         return f"{self.nome} (SN: {self.numero_serie})"
+
+
+class HistoricoCriticidadeEquipamento(models.Model):
+    equipamento = models.ForeignKey(Equipamento, on_delete=models.CASCADE, related_name='historico_criticidade')
+    criticidade_anterior = models.CharField(max_length=1, blank=True, null=True)
+    criticidade_nova = models.CharField(max_length=1, choices=Equipamento.CRITICIDADE_CHOICES, blank=True, null=True)
+    justificativa = models.TextField(blank=True)
+    alterado_por = models.ForeignKey('accounts.Usuario', on_delete=models.SET_NULL, null=True, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-criado_em']
 
 class EquipamentoLocalizacao(models.Model):
     equipamento = models.OneToOneField(Equipamento, on_delete=models.CASCADE, related_name='localizacao')
