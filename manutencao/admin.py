@@ -3,8 +3,8 @@ from .models import OrdemServico, HistoricoManutencao
 
 @admin.register(OrdemServico)
 class OrdemServicoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'titulo', 'equipamento', 'status', 'prioridade', 'responsavel')
-    list_filter = ('status', 'prioridade', 'equipamento')
+    list_display = ('id', 'titulo', 'equipamento', 'tipo_os', 'status', 'prioridade', 'responsavel')
+    list_filter = ('tipo_os', 'status', 'prioridade', 'equipamento')
     search_fields = ('titulo', 'equipamento__nome')
 
 @admin.register(HistoricoManutencao)

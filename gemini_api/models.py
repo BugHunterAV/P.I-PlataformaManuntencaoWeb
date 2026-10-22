@@ -15,6 +15,7 @@ class PromptConfig(models.Model):
         ('os_analysis', 'Análise de Ordens de Serviço'),
         ('unassigned_orders', 'Ordens Sem Atribuição'),
         ('finance', 'Gestão Financeira'),
+        ('trend_analysis', 'Explicação de Tendência'),
     ]
 
     key = models.CharField(

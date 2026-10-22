@@ -13,4 +13,7 @@ def vincular_ordem_servico_ao_alerta(sender, instance, created, **kwargs):
     if instance.status != 'ativo':
         return
 
-    PrioridadeOSService.criar_por_alerta(instance)
+    if instance.origem == 'tendencia':
+        PrioridadeOSService.criar_por_tendencia(instance)
+    else:
+        PrioridadeOSService.criar_por_alerta(instance)

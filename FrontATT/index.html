@@ -371,6 +371,12 @@
                   <span v-if="trend.projected_breach_hours === 0" style="color:var(--danger); font-weight:600">Limite ultrapassado!</span>
                   <span v-else>Projeção: limite em <strong>{{ trend.projected_breach_hours }}h</strong></span>
                 </div>
+                <div v-if="trend.predictive_work_order" class="trend-projection">
+                  OS preditiva #{{ trend.predictive_work_order.id }} — {{ trend.predictive_work_order.status }}
+                </div>
+                <div v-else-if="trend.intervention_recommended" class="trend-projection">
+                  Intervenção preditiva recomendada
+                </div>
               </div>
             </div>
           </div>
@@ -829,6 +835,9 @@
                 </div>
               </div>
               <div class="alerta-card-body" v-if="a.descricao">{{ a.descricao }}</div>
+              <div v-if="a.origem === 'tendencia'" class="alerta-card-body" style="color:var(--warn)">
+                Tendência preditiva · OS vinculada: {{ a.ordem_servico_id ? '#' + a.ordem_servico_id : 'não necessária' }}
+              </div>
               <div class="alerta-card-footer">
                 <div class="alerta-card-equip">⚙ {{ eqNome(a.equipamento) }}</div>
                 <div class="alerta-card-date">{{ fmtDate(a.data_alerta) }}</div>

@@ -306,4 +306,14 @@ class GeminiTrendAnalysisView(GeminiBaseView):
                 status=http_status.HTTP_404_NOT_FOUND
             )
 
-        return super().post(request)
+        response = super().post(request)
+        # A explicação é enriquecimento opcional: nunca altera a decisão
+        # matemática nem impede o alerta/OS se a IA estiver indisponível.
+        if response.status_code < 300 and isinstance(getattr(response, 'data', None), dict):
+            text = response.data.get('response', '')
+            if text and not text.startswith('A IA do Gemini não está configurada'):
+                from alertas.models import Alerta
+                Alerta.objects.filter(
+                    sensor_id=sensor_id, origem='tendencia', status='ativo'
+                ).update(analise_ia=text)
+        return response

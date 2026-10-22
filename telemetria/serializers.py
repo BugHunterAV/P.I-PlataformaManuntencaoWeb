@@ -67,4 +67,10 @@ class TrendConfigSerializer(serializers.ModelSerializer):
                 'sensor': 'Somente administradores podem alterar a configuração global.'
             })
         validate_sensor_resource(user, sensor)
+        periodo = data.get('periodo_horas', getattr(self.instance, 'periodo_horas', 24))
+        leituras = data.get('num_leituras', getattr(self.instance, 'num_leituras', 50))
+        if periodo < 1:
+            raise serializers.ValidationError({'periodo_horas': 'Informe um período positivo.'})
+        if not 3 <= leituras <= 500:
+            raise serializers.ValidationError({'num_leituras': 'Use entre 3 e 500 leituras.'})
         return data

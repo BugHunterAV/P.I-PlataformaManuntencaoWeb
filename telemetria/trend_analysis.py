@@ -6,6 +6,7 @@ para detectar tendências crescentes/decrescentes e projetar quando o
 limite operacional será atingido.
 """
 from datetime import timedelta
+import math
 from django.utils import timezone
 from .models import Sensor, Telemetria, TrendConfig
 
@@ -79,14 +80,26 @@ def analyze_sensor_trend(sensor_id):
     config = get_effective_config(sensor)
     since = timezone.now() - timedelta(hours=config['periodo_horas'])
 
-    leituras = list(
-        Telemetria.objects.filter(
-            sensor=sensor,
-            timestamp__gte=since
-        )
-        .order_by('timestamp')[:config['num_leituras']]
+    # Busca primeiro as mais recentes e só depois reordena para a regressão.
+    # O código anterior aplicava o limite após ordenar ascendentemente e podia
+    # descartar as leituras novas quando havia mais que o limite configurado.
+    raw_limit = max(config['num_leituras'] * 2, config['num_leituras'])
+    raw_readings = list(
+        Telemetria.objects.filter(sensor=sensor, timestamp__gte=since)
+        .order_by('-timestamp', '-id')[:raw_limit]
         .values('valor', 'timestamp')
     )
+
+    # Uma amostra por timestamp: em duplicatas, a primeira é a leitura mais
+    # recente devido à ordenação acima. NaN/inf não sustentam uma projeção.
+    unique = {}
+    for reading in raw_readings:
+        value = reading['valor']
+        timestamp = reading['timestamp']
+        if value is None or not math.isfinite(float(value)) or timestamp is None:
+            continue
+        unique.setdefault(timestamp, {'valor': float(value), 'timestamp': timestamp})
+    leituras = sorted(unique.values(), key=lambda item: item['timestamp'])[-config['num_leituras']:]
 
     if len(leituras) < 3:
         return {
@@ -101,6 +114,10 @@ def analyze_sensor_trend(sensor_id):
             'readings_count': len(leituras),
             'config_used': config,
             'insufficient_data': True,
+            'data_quality': 'insufficient',
+            'analysis_window_hours': config['periodo_horas'],
+            'intervention_recommended': False,
+            **_operational_context(sensor.id),
         }
 
     # Regressão linear simples: y = a + b*x
@@ -144,7 +161,8 @@ def analyze_sensor_trend(sensor_id):
     else:
         direction = 'stable'
 
-    # Projeção: quando atingirá o limite?
+    # Projeção: o sensor existente modela um limite superior. Uma tendência
+    # decrescente, portanto, não é tratada como aproximação desse limite.
     projected_breach_hours = None
     ultimo_valor = ys[-1]
     ultimo_x = xs[-1]
@@ -159,6 +177,13 @@ def analyze_sensor_trend(sensor_id):
     # Calcula nível de risco
     risk_level = _calculate_risk_level(
         ultimo_valor, limite, direction, projected_breach_hours, config['sensibilidade']
+    )
+
+    intervention_recommended = (
+        direction == 'increasing' and risk_level in ('alto', 'critico')
+    ) or (
+        direction == 'increasing' and projected_breach_hours is not None
+        and projected_breach_hours <= 24
     )
 
     return {
@@ -178,6 +203,28 @@ def analyze_sensor_trend(sensor_id):
         'readings_count': len(leituras),
         'config_used': config,
         'insufficient_data': False,
+        'data_quality': 'valid',
+        'analysis_window_hours': config['periodo_horas'],
+        'intervention_recommended': intervention_recommended,
+        'analyzed_at': timezone.now().isoformat(),
+        **_operational_context(sensor.id),
+    }
+
+
+def _operational_context(sensor_id):
+    """Retorna vínculos operacionais sem tornar o algoritmo dependente deles."""
+    from alertas.models import Alerta
+    from manutencao.models import OrdemServico
+
+    alerta = Alerta.objects.filter(
+        sensor_id=sensor_id, origem='tendencia', status='ativo'
+    ).order_by('-data_alerta').first()
+    if alerta is None:
+        return {'active_alert_id': None, 'predictive_work_order': None}
+    ordem = OrdemServico.objects.filter(alerta_origem=alerta).values('id', 'status').first()
+    return {
+        'active_alert_id': alerta.id,
+        'predictive_work_order': ordem,
     }
 
 

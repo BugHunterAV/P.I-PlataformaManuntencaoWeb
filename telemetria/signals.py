@@ -2,6 +2,7 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .models import Telemetria
 from alertas.models import Alerta
+from .predictive_service import sync_sensor_trend
 
 
 @receiver(post_save, sender=Telemetria)
@@ -17,6 +18,10 @@ def checar_limites_telemetria(sender, instance, created, **kwargs):
     sensor = instance.sensor
     if not sensor.ativo:
         return
+
+    # A análise preditiva é executada na ingestão, sem depender do dashboard.
+    # Ela é isolada do alerta de limite para preservar o fluxo legado.
+    sync_sensor_trend(sensor.id)
 
     valor = instance.valor
     equipamento = sensor.equipamento

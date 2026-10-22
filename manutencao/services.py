@@ -1,5 +1,6 @@
 """Regras determinísticas para priorização de ordens de serviço."""
 
+from django.db import transaction
 from .models import OrdemServico
 
 
@@ -77,4 +78,70 @@ class PrioridadeOSService:
                 setattr(ordem, campo, valor)
             ordem.descricao += f'\n\n[ATUALIZAÇÃO DE ALERTA] {alerta.descricao}'
             ordem.save()
+        return ordem
+
+    @classmethod
+    def criar_por_tendencia(cls, alerta):
+        """Cria ou atualiza a única OS aberta do episódio de tendência.
+
+        A relação OneToOne com o alerta é a chave de idempotência operacional:
+        análises repetidas atualizam a mesma ordem e um episódio resolvido pode
+        gerar uma nova ordem no futuro por estar associado a outro alerta.
+        """
+        if alerta.status != 'ativo':
+            return None
+
+        dados = alerta.dados_analise or {}
+        if not dados.get('intervention_recommended'):
+            return None
+
+        gravidade = {
+            'baixo': 'baixa', 'medio': 'moderada',
+            'alto': 'alta', 'critico': 'critica',
+        }.get(dados.get('risk_level'), 'moderada')
+        prioridade, justificativa, criticidade = cls.calcular(
+            alerta.equipamento, 'preditiva', gravidade,
+        )
+        titulo = f'MANUTENÇÃO PREDITIVA: {alerta.tipo_alerta}'
+        descricao = (
+            f'Intervenção preditiva vinculada ao alerta #{alerta.id}.\n'
+            f'{alerta.descricao}\n'
+            f'Indicadores: inclinação {dados.get("slope_per_hour")} por hora; '
+            f'leituras analisadas: {dados.get("readings_count")}; '
+            f'projeção até o limite: {dados.get("projected_breach_hours")} horas.'
+        )
+        with transaction.atomic():
+            ordem = (
+                OrdemServico.objects.select_for_update()
+                .filter(alerta_origem=alerta)
+                .first()
+            )
+            if ordem is None:
+                ordem = OrdemServico.objects.create(
+                    equipamento=alerta.equipamento,
+                    sensor_origem=alerta.sensor,
+                    alerta_origem=alerta,
+                    tipo_os='preditiva',
+                    titulo=titulo,
+                    descricao=descricao,
+                    status='pendente',
+                    prioridade=prioridade,
+                    gravidade_condicao=gravidade,
+                    prioridade_automatica=prioridade,
+                    justificativa_prioridade=justificativa,
+                    criticidade_na_abertura=criticidade,
+                    justificativa_criticidade_na_abertura=(
+                        alerta.equipamento.justificativa_criticidade or ''
+                    ),
+                )
+            elif ordem.status in ('pendente', 'andamento') and not ordem.prioridade_manual:
+                ordem.prioridade = prioridade
+                ordem.prioridade_automatica = prioridade
+                ordem.gravidade_condicao = gravidade
+                ordem.justificativa_prioridade = justificativa
+                ordem.descricao = descricao
+                ordem.save(update_fields=[
+                    'prioridade', 'prioridade_automatica', 'gravidade_condicao',
+                    'justificativa_prioridade', 'descricao',
+                ])
         return ordem

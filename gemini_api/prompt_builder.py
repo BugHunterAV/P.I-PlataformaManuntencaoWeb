@@ -203,6 +203,8 @@ def build_trend_analysis_prompt(user, context, message, trend_data=None):
     }
 
     blocks = [
+        "O backend já calculou a tendência e o nível de risco. Não altere essa classificação.",
+        "Use somente os dados abaixo; diferencie observações de hipóteses e informe limitações.",
         "DADOS DE TENDÊNCIA DO SENSOR:",
         f"- Sensor: {sensor.get('nome', '?')} ({sensor.get('tipo_display', '?')})",
         f"- Equipamento: {sensor.get('equipamento_nome', '?')}",

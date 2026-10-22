@@ -108,6 +108,16 @@ class TrendConfig(models.Model):
     )
     ativo = models.BooleanField(default=True)
 
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.periodo_horas < 1:
+            raise ValidationError({'periodo_horas': 'A janela deve ser de pelo menos uma hora.'})
+        if self.num_leituras < 3:
+            raise ValidationError({'num_leituras': 'São necessárias pelo menos três leituras.'})
+        if self.num_leituras > 500:
+            raise ValidationError({'num_leituras': 'O limite configurável é de 500 leituras.'})
+
     class Meta:
         verbose_name = "Configuração de Tendência"
         verbose_name_plural = "Configurações de Tendência"

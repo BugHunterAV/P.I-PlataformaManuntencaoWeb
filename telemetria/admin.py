@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Sensor, Telemetria
+from .models import Sensor, Telemetria, TrendConfig
 
 @admin.register(Sensor)
 class SensorAdmin(admin.ModelAdmin):
@@ -16,3 +16,8 @@ class TelemetriaAdmin(admin.ModelAdmin):
     def get_equipamento(self, obj):
         return obj.sensor.equipamento.nome
     get_equipamento.short_description = 'Equipamento'
+
+@admin.register(TrendConfig)
+class TrendConfigAdmin(admin.ModelAdmin):
+    list_display = ('sensor', 'periodo_horas', 'num_leituras', 'sensibilidade', 'ativo')
+    list_filter = ('sensibilidade', 'ativo')

@@ -3,11 +3,21 @@ from django.utils import timezone
 from decimal import Decimal
 from ativos.models import Equipamento
 from accounts.models import Usuario
+from alertas.models import Alerta
 
 class OrdemServico(models.Model):
     # Relacionamentos Mágicos
     equipamento = models.ForeignKey(Equipamento, on_delete=models.CASCADE, related_name='ordens_servico')
     responsavel = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='minhas_os')
+    alerta_origem = models.OneToOneField(
+        Alerta, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='ordem_servico_preditiva',
+        help_text='Alerta que originou a ordem automática, quando aplicável.'
+    )
+    sensor_origem = models.ForeignKey(
+        'telemetria.Sensor', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='ordens_servico_origem',
+    )
     
     # Tipo da OS
     TIPO_OS_CHOICES = (
