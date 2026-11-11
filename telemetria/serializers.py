@@ -73,4 +73,9 @@ class TrendConfigSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'periodo_horas': 'Informe um período positivo.'})
         if not 3 <= leituras <= 500:
             raise serializers.ValidationError({'num_leituras': 'Use entre 3 e 500 leituras.'})
+        timeout = data.get('max_horas_sem_dados', getattr(self.instance, 'max_horas_sem_dados', 48))
+        if timeout < periodo:
+            raise serializers.ValidationError({
+                'max_horas_sem_dados': 'Deve ser igual ou maior que o período de análise.'
+            })
         return data

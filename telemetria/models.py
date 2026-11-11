@@ -107,6 +107,10 @@ class TrendConfig(models.Model):
         default='media'
     )
     ativo = models.BooleanField(default=True)
+    max_horas_sem_dados = models.IntegerField(
+        default=48,
+        help_text='Após este período sem leituras, encerra alertas preditivos ativos.'
+    )
 
     def clean(self):
         from django.core.exceptions import ValidationError
@@ -117,6 +121,10 @@ class TrendConfig(models.Model):
             raise ValidationError({'num_leituras': 'São necessárias pelo menos três leituras.'})
         if self.num_leituras > 500:
             raise ValidationError({'num_leituras': 'O limite configurável é de 500 leituras.'})
+        if self.max_horas_sem_dados < self.periodo_horas:
+            raise ValidationError({
+                'max_horas_sem_dados': 'Deve ser igual ou maior que a janela de análise.'
+            })
 
     class Meta:
         verbose_name = "Configuração de Tendência"
@@ -126,3 +134,28 @@ class TrendConfig(models.Model):
         if self.sensor:
             return f"TrendConfig: {self.sensor.nome} ({self.sensor.equipamento.nome})"
         return "TrendConfig: Global (padrão)"
+
+
+class TrendAnalysisRun(models.Model):
+    """Auditoria de execuções periódicas de análise preditiva."""
+    STATUS_CHOICES = (
+        ('running', 'Em execução'),
+        ('success', 'Concluída'),
+        ('partial_failure', 'Concluída com falhas'),
+        ('failed', 'Falhou'),
+    )
+    started_at = models.DateTimeField(auto_now_add=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='running')
+    processed_count = models.PositiveIntegerField(default=0)
+    insufficient_data_count = models.PositiveIntegerField(default=0)
+    created_alert_count = models.PositiveIntegerField(default=0)
+    resolved_alert_count = models.PositiveIntegerField(default=0)
+    created_work_order_count = models.PositiveIntegerField(default=0)
+    failure_count = models.PositiveIntegerField(default=0)
+    details = models.TextField(blank=True, default='')
+
+    class Meta:
+        ordering = ['-started_at']
+        verbose_name = 'Execução de análise de tendências'
+        verbose_name_plural = 'Execuções de análise de tendências'

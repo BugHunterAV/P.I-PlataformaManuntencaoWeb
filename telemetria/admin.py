@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Sensor, Telemetria, TrendConfig
+from .models import Sensor, Telemetria, TrendConfig, TrendAnalysisRun
 
 @admin.register(Sensor)
 class SensorAdmin(admin.ModelAdmin):
@@ -21,3 +21,9 @@ class TelemetriaAdmin(admin.ModelAdmin):
 class TrendConfigAdmin(admin.ModelAdmin):
     list_display = ('sensor', 'periodo_horas', 'num_leituras', 'sensibilidade', 'ativo')
     list_filter = ('sensibilidade', 'ativo')
+
+@admin.register(TrendAnalysisRun)
+class TrendAnalysisRunAdmin(admin.ModelAdmin):
+    list_display = ('started_at', 'finished_at', 'status', 'processed_count', 'failure_count')
+    list_filter = ('status',)
+    readonly_fields = ('started_at', 'finished_at')

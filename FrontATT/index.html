@@ -838,6 +838,10 @@
               <div v-if="a.origem === 'tendencia'" class="alerta-card-body" style="color:var(--warn)">
                 Tendência preditiva · OS vinculada: {{ a.ordem_servico_id ? '#' + a.ordem_servico_id : 'não necessária' }}
               </div>
+              <details v-if="a.origem === 'tendencia' && a.analise_ia" class="alerta-card-body">
+                <summary>Explicação técnica da IA</summary>
+                <div v-html="formatMarkdown(a.analise_ia)"></div>
+              </details>
               <div class="alerta-card-footer">
                 <div class="alerta-card-equip">⚙ {{ eqNome(a.equipamento) }}</div>
                 <div class="alerta-card-date">{{ fmtDate(a.data_alerta) }}</div>

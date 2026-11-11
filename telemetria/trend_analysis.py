@@ -59,7 +59,7 @@ def _sensitivity_threshold(sensibilidade):
     }.get(sensibilidade, 0.02)
 
 
-def analyze_sensor_trend(sensor_id):
+def analyze_sensor_trend(sensor_id, include_operational_context=True):
     """
     Analisa a tendência de um sensor específico.
 
@@ -110,14 +110,17 @@ def analyze_sensor_trend(sensor_id):
             'slope_per_hour': 0.0,
             'projected_breach_hours': None,
             'risk_level': 'baixo',
-            'readings_summary': leituras,
+            'readings_summary': [
+                {'valor': round(reading['valor'], 2), 'timestamp': reading['timestamp'].isoformat()}
+                for reading in leituras
+            ],
             'readings_count': len(leituras),
             'config_used': config,
             'insufficient_data': True,
             'data_quality': 'insufficient',
             'analysis_window_hours': config['periodo_horas'],
             'intervention_recommended': False,
-            **_operational_context(sensor.id),
+            **(_operational_context(sensor.id) if include_operational_context else {}),
         }
 
     # Regressão linear simples: y = a + b*x
@@ -207,7 +210,7 @@ def analyze_sensor_trend(sensor_id):
         'analysis_window_hours': config['periodo_horas'],
         'intervention_recommended': intervention_recommended,
         'analyzed_at': timezone.now().isoformat(),
-        **_operational_context(sensor.id),
+        **(_operational_context(sensor.id) if include_operational_context else {}),
     }
 
 

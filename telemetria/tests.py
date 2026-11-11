@@ -37,7 +37,9 @@ class TelemetriaAlertTests(APITestCase):
         
         os = OrdemServico.objects.filter(equipamento=self.motor, status='pendente').first()
         self.assertIsNotNone(os)
-        self.assertEqual(os.prioridade, 'baixo')
+        # Equipamento sem criticidade avaliada recebe prioridade alta para não
+        # reduzir uma condição operacional sem classificação de impacto.
+        self.assertEqual(os.prioridade, 'alta')
 
         # 2. Alerta Médio (90% de 100 = 90.0) -> Escalada
         data_medio = {"sensor": self.sensor.id, "valor": 90.0}
@@ -46,7 +48,7 @@ class TelemetriaAlertTests(APITestCase):
         self.assertEqual(alerta.nivel, 'medio')
         
         os.refresh_from_db()
-        self.assertEqual(os.prioridade, 'medio')
+        self.assertEqual(os.prioridade, 'alta')
 
         # 3. Alerta Crítico (110% de 100 = 110.0) -> Escalada Máxima
         data_critico = {"sensor": self.sensor.id, "valor": 110.0}
@@ -55,7 +57,7 @@ class TelemetriaAlertTests(APITestCase):
         self.assertEqual(alerta.nivel, 'critico')
         
         os.refresh_from_db()
-        self.assertEqual(os.prioridade, 'critico')
+        self.assertEqual(os.prioridade, 'critica')
 
     def test_custom_alert_thresholds(self):
         sensor = Sensor.objects.create(
@@ -170,6 +172,24 @@ class TelemetriaAlertTests(APITestCase):
             global_config_response,
         ):
             self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_manual_alert_cannot_impersonate_predictive_event(self):
+        response = self.client.post(
+            reverse('alertas-list'),
+            {
+                'equipamento': self.motor.id,
+                'tipo_alerta': 'Tentativa externa',
+                'nivel': 'critico',
+                'descricao': 'Não deve abrir OS preditiva.',
+                'origem': 'tendencia',
+                'dados_analise': {'intervention_recommended': True},
+            },
+            format='json',
+        )
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        alerta = Alerta.objects.get(pk=response.data['id'])
+        self.assertEqual(alerta.origem, 'manual')
+        self.assertFalse(OrdemServico.objects.filter(alerta_origem=alerta).exists())
 
 
 class TrendDashboardTests(APITestCase):

@@ -52,6 +52,7 @@ def checar_limites_telemetria(sender, instance, created, **kwargs):
     # Deduplicação: busca alerta ativo do mesmo tipo no mesmo equipamento
     alerta_existente = Alerta.objects.filter(
         equipamento=equipamento,
+        sensor=sensor,
         tipo_alerta=tipo_alerta,
         status='ativo'
     ).first()
@@ -80,7 +81,9 @@ def checar_limites_telemetria(sender, instance, created, **kwargs):
 
     Alerta.objects.create(
         equipamento=equipamento,
+        sensor=sensor,
         tipo_alerta=tipo_alerta,
+        origem='limite',
         nivel=nivel,
         descricao=alerta_descricao
     ) # Gatilho para o sinal de Alerta criar O.S.

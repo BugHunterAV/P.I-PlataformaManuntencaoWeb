@@ -14,7 +14,10 @@ class AlertaSerializer(serializers.ModelSerializer):
             'data_ultima_analise', 'nivel', 'descricao', 'data_alerta',
             'status', 'ordem_servico_id',
         ]
-        read_only_fields = ['data_alerta', 'data_ultima_analise', 'ordem_servico_id']
+        read_only_fields = [
+            'sensor', 'origem', 'evento_chave', 'dados_analise', 'analise_ia',
+            'data_alerta', 'data_ultima_analise', 'ordem_servico_id',
+        ]
 
     def get_ordem_servico_id(self, obj):
         try:
@@ -36,3 +39,8 @@ class AlertaSerializer(serializers.ModelSerializer):
                 'sensor': 'O sensor deve pertencer ao equipamento informado.'
             })
         return data
+
+    def create(self, validated_data):
+        # A API só permite alertas manuais; limites e tendências são internos.
+        validated_data['origem'] = 'manual'
+        return super().create(validated_data)

@@ -81,8 +81,68 @@ abertura de OS. A resposta de tendência também expõe `active_alert_id` e
 
 ## Migrações e testes
 
-Os apps deste repositório não continham migrações iniciais versionadas; os novos
-campos devem ser incluídos no ciclo normal de `makemigrations`/`migrate` antes de
-um deploy. A execução local desta entrega não conseguiu iniciar a suíte porque
-o ambiente não possui Django instalado (`ModuleNotFoundError: No module named
-'django'`). Portanto nenhum teste é declarado como aprovado aqui.
+As migrações versionadas incluem os novos vínculos, a restrição de episódio
+ativo, a configuração de ausência de dados e a auditoria das execuções. Antes
+de implantar, execute `python manage.py migrate` em uma cópia do banco e valide
+o plano de migração do PostgreSQL.
+
+O endpoint de alertas expõe os dados de tendência para consulta, mas os campos
+que controlam automação (`sensor`, origem, chave do evento, métricas e análise
+da IA) são somente leitura. Criações pela API passam a ser sempre alertas
+manuais. Alertas por limite recebem o sensor de origem para evitar que dois
+sensores iguais do mesmo equipamento sejam agrupados indevidamente.
+
+Quando não há dados suficientes, a rotina conserva o alerta enquanto a última
+leitura ainda estiver dentro de `max_horas_sem_dados`; após isso, encerra o
+episódio com justificativa auditável. A configuração pertence a `TrendConfig`
+e deve ser maior ou igual à janela de análise.
+
+Cada execução do comando também grava um `TrendAnalysisRun`, com horário,
+contadores e detalhes de falhas. Se qualquer sensor falhar, o comando devolve
+erro para que o agendador/monitor detecte a execução degradada.
+
+Para testes locais/CI sem PostgreSQL, use
+`DJANGO_SETTINGS_MODULE=app.settings_test`. A validação final deve incluir
+PostgreSQL porque a proteção de unicidade condicional é aplicada pelo banco.
+
+## Implementação complementar — 4 de novembro de 2026
+
+Foram aplicadas as melhorias identificadas na revisão técnica:
+
+- Migrações geradas e conferidas para alertas, OS, configurações de tendência,
+  histórico de execuções e configuração de ausência de dados.
+- A API passou a aceitar somente criação de alertas manuais. Os campos que
+  identificam e controlam eventos de tendência são somente leitura.
+- O alerta por limite agora é vinculado ao sensor que o produziu, impedindo que
+  sensores do mesmo tipo no mesmo equipamento compartilhem indevidamente um
+  alerta ativo.
+- Dados insuficientes não encerram um alerta prematuramente: a última leitura
+  precisa estar ausente por mais que `max_horas_sem_dados`. O encerramento fica
+  registrado na descrição e nas métricas da análise.
+- O comando periódico registra cada execução em `TrendAnalysisRun`, incluindo
+  sensores processados, análises sem dados, alertas/OS criados, resoluções e
+  falhas. Ele retorna erro quando houver falha, permitindo que o agendador
+  detecte execução degradada.
+- O frontend passou a exibir a explicação persistida do Gemini no próprio alerta
+  de tendência, sem exigir nova chamada ao modelo.
+- A configuração de testes `app.settings_test` usa SQLite isolado. Ela é
+  indicada para desenvolvimento e CI; a validação final em PostgreSQL continua
+  obrigatória para confirmar a semântica da restrição parcial de unicidade.
+
+### Agendamento recomendado
+
+Agende `python manage.py analisar_tendencias` a cada 15 minutos no ambiente de
+execução. No Windows, use o Agendador de Tarefas apontando para o interpretador
+do ambiente virtual e para a pasta do projeto; no Linux, use cron ou o
+orquestrador de deploy. Monitore registros `TrendAnalysisRun` com status
+`partial_failure` ou `failed`.
+
+### Validação executada
+
+Em 4 de novembro de 2026, com `DJANGO_SETTINGS_MODULE=app.settings_test`:
+
+- `python manage.py check`: aprovado, sem problemas.
+- `python manage.py makemigrations --check --dry-run`: aprovado, sem mudanças
+  pendentes.
+- `python manage.py test`: aprovado, 52 testes executados.
+- Compilação estática dos módulos Python afetados: aprovada.

@@ -1,7 +1,9 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.utils import timezone
+from rest_framework.test import APIClient
 
 from ativos.models import Empresa, Equipamento
 from .models import Sensor, Telemetria, TrendConfig
@@ -24,11 +26,18 @@ class TrendAnalysisRulesTests(TestCase):
 
     def _readings(self, values, start=None, step_minutes=30):
         start = start or (timezone.now() - timedelta(hours=2))
-        Telemetria.objects.bulk_create([
+        readings = Telemetria.objects.bulk_create([
             Telemetria(sensor=self.sensor, valor=value,
                        timestamp=start + timedelta(minutes=index * step_minutes))
             for index, value in enumerate(values)
         ])
+        # auto_now_add sobrescreve timestamps em bulk_create; ajustamos a
+        # amostra sem disparar os sinais, pois estes não fazem parte do teste
+        # matemático da regressão.
+        for index, reading in enumerate(readings):
+            Telemetria.objects.filter(pk=reading.pk).update(
+                timestamp=start + timedelta(minutes=index * step_minutes)
+            )
 
     def test_uses_the_most_recent_readings(self):
         TrendConfig.objects.create(sensor=self.sensor, num_leituras=3, periodo_horas=24)
@@ -75,3 +84,32 @@ class TrendAnalysisRulesTests(TestCase):
         sync_sensor_trend(self.sensor.id)
         self.assertFalse(Alerta.objects.filter(sensor=self.sensor, origem='tendencia', status='ativo').exists())
         self.assertTrue(Alerta.objects.filter(sensor=self.sensor, origem='tendencia', status='resolvido').exists())
+
+    def test_insufficient_data_resolves_only_after_configured_timeout(self):
+        TrendConfig.objects.create(
+            sensor=self.sensor, num_leituras=3, periodo_horas=1, max_horas_sem_dados=2
+        )
+        alerta = Alerta.objects.create(
+            equipamento=self.sensor.equipamento, sensor=self.sensor, origem='tendencia',
+            evento_chave=f'tendencia:{self.sensor.id}:increasing', tipo_alerta='Tendência',
+            nivel='medio', descricao='Ativo para teste', dados_analise={'intervention_recommended': False},
+        )
+        Telemetria.objects.create(sensor=self.sensor, valor=50)
+        result = sync_sensor_trend(self.sensor.id)
+        self.assertFalse(result['resolved_alert'])
+        alerta.refresh_from_db()
+        self.assertEqual(alerta.status, 'ativo')
+
+        Telemetria.objects.filter(sensor=self.sensor).update(
+            timestamp=timezone.now() - timedelta(hours=3)
+        )
+        result = sync_sensor_trend(self.sensor.id)
+        self.assertTrue(result['resolved_alert'])
+        alerta.refresh_from_db()
+        self.assertEqual(alerta.status, 'resolvido')
+
+    def test_sync_does_not_fetch_operational_context(self):
+        self._readings([70, 80, 90])
+        with patch('telemetria.trend_analysis._operational_context') as context:
+            sync_sensor_trend(self.sensor.id)
+        context.assert_not_called()
